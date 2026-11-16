@@ -1,0 +1,21 @@
+% sbc-like.sty — APROXIMAÇÃO do estilo SBC (A4, Times 12pt, coluna única, seções em negrito).
+% O template oficial (sbc-template.sty + sbc.bst) não estava disponível no ambiente de escrita.
+% ANTES DE SUBMETER: substitua \usepackage{sbc-like} por \usepackage{sbc-template} em main.tex,
+% troque \bibliographystyle{apalike} por {sbc}, recompile e confira o limite de 6–8 páginas.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{sbc-like}[2026/11/13 aproximacao do estilo SBC]
+\RequirePackage[a4paper,top=3cm,bottom=2.5cm,left=3cm,right=3cm]{geometry}
+\RequirePackage{mathptmx}
+\RequirePackage[scaled=.90]{helvet}
+\RequirePackage{courier}
+\RequirePackage{titlesec}
+\RequirePackage{setspace}
+\renewcommand{\normalsize}{\fontsize{12}{14.4}\selectfont}
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{1.2em}{0.5em}
+\titlespacing*{\subsection}{0pt}{0.9em}{0.3em}
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+\pagestyle{plain}
+\newcommand{\sbctitle}[1]{\begin{center}{\Large\bfseries #1\par}\end{center}}

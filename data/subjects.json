@@ -1,0 +1,129 @@
+{
+  "schema_version": "0.1",
+  "libraries": [
+    {
+      "name": "ufo",
+      "repo": "unjs/ufo",
+      "commit": "f06c800d0c59f2a4a1b9ba65eb6cb61a84419be6",
+      "license": "MIT",
+      "pnpm": "10",
+      "modules": [
+        {
+          "id": "query",
+          "path": "src/query.ts",
+          "loc": 138,
+          "humanTests": [
+            "test/query.test.ts"
+          ],
+          "importPath": "../../src/query"
+        },
+        {
+          "id": "parse",
+          "path": "src/parse.ts",
+          "loc": 229,
+          "humanTests": [
+            "test/parse.test.ts"
+          ],
+          "importPath": "../../src/parse"
+        },
+        {
+          "id": "punycode",
+          "path": "src/punycode.ts",
+          "loc": 100,
+          "humanTests": [
+            "test/punycode.test.ts"
+          ],
+          "importPath": "../../src/punycode"
+        },
+        {
+          "id": "url",
+          "path": "src/url.ts",
+          "loc": 148,
+          "humanTests": [
+            "test/url.test.ts"
+          ],
+          "importPath": "../../src/url"
+        },
+        {
+          "id": "utils",
+          "path": "src/utils.ts",
+          "loc": 775,
+          "humanTests": [
+            "test/base.test.ts",
+            "test/double-slash.test.ts",
+            "test/is-same.test.ts",
+            "test/join.test.ts",
+            "test/normalize.test.ts",
+            "test/resolve.test.ts",
+            "test/trailing-slash.test.ts",
+            "test/utilities.test.ts"
+          ],
+          "importPath": "../../src/utils"
+        }
+      ]
+    },
+    {
+      "name": "defu",
+      "repo": "unjs/defu",
+      "commit": "82632b66f5914e9946edce300e10633a3d5c0cb7",
+      "license": "MIT",
+      "pnpm": "10",
+      "modules": [
+        {
+          "id": "defu",
+          "path": "src/defu.ts",
+          "loc": 71,
+          "humanTests": [
+            "test/defu.test.ts"
+          ],
+          "importPath": "../../src/defu"
+        }
+      ]
+    },
+    {
+      "name": "pathe",
+      "repo": "unjs/pathe",
+      "commit": "bc7477a01f0bd60ada017add8142c9f9d69ccdc5",
+      "license": "MIT",
+      "pnpm": "10",
+      "modules": [
+        {
+          "id": "path",
+          "path": "src/_path.ts",
+          "loc": 314,
+          "humanTests": [
+            "test/index.spec.ts"
+          ],
+          "importPath": "../../src/_path"
+        },
+        {
+          "id": "utils",
+          "path": "src/utils.ts",
+          "loc": 134,
+          "humanTests": [
+            "test/utils.spec.ts"
+          ],
+          "importPath": "../../src/utils"
+        }
+      ]
+    },
+    {
+      "name": "knitwork",
+      "repo": "unjs/knitwork",
+      "commit": "a95f4d421ffa602723cb5ac2606bd854e1dfc49a",
+      "license": "MIT",
+      "pnpm": "10",
+      "modules": [
+        {
+          "id": "string",
+          "path": "src/string.ts",
+          "loc": 104,
+          "humanTests": [
+            "test/string.test.ts"
+          ],
+          "importPath": "../../src/string"
+        }
+      ]
+    }
+  ]
+}

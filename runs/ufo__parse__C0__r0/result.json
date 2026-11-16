@@ -1,0 +1,124 @@
+{
+  "schema_version": "0.1",
+  "run_id": "ufo__parse__C0__r0",
+  "started_at": "2026-11-13T22:57:42.782Z",
+  "finished_at": "2026-11-13T22:58:13.369Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "ufo",
+    "repo": "unjs/ufo",
+    "commit": "f06c800d0c59f2a4a1b9ba65eb6cb61a84419be6",
+    "license": "MIT",
+    "module_path": "src/parse.ts",
+    "module_loc": 229,
+    "mutants_total": 150,
+    "human_test_files": [
+      "test/parse.test.ts"
+    ]
+  },
+  "condition": "C0",
+  "repetition": 0,
+  "c0_scope": "module",
+  "model": null,
+  "tooling": {
+    "node": "v22.23.4",
+    "vitest": "4.1.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": null
+  },
+  "memorization": null,
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 57.7465,
+        "ms_feedback": 58.2278,
+        "ms_all": 58,
+        "ms_covered": 91.5789
+      },
+      "coverage": {
+        "line_cov": 70.96,
+        "branch_cov": 52.83
+      },
+      "mutants_eval": {
+        "killed": 41,
+        "survived": 3,
+        "no_coverage": 27,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 46,
+        "survived": 5,
+        "no_coverage": 28,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 4,
+        "n_asserts": 4,
+        "sha256": "8f3f48909dea5c04524029acb07657b46451970ced70e40dab368c111577cb8b"
+      },
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 0,
+        "repair_calls": 0,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "usd_ref": 0,
+        "wall_s": 30.59,
+        "stryker_s": 27.42
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 57.7465,
+      "ms_feedback": 58.2278,
+      "ms_all": 58,
+      "ms_covered": 91.5789
+    },
+    "coverage": {
+      "line_cov": 70.96,
+      "branch_cov": 52.83
+    },
+    "cost": {
+      "calls": 0,
+      "repair_calls": 0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "usd_ref": 0,
+      "wall_s": 30.59,
+      "stryker_s": 27.42
+    },
+    "tests": {
+      "n_tests": 4,
+      "n_asserts": 4,
+      "sha256": "8f3f48909dea5c04524029acb07657b46451970ced70e40dab368c111577cb8b"
+    },
+    "gap_cov_ms": 12.96,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/ufo__parse__C0__r0/raw"
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "schema_version": "0.1",
+  "run_id": "knitwork__string__C0__r0",
+  "started_at": "2026-11-13T23:04:42.976Z",
+  "finished_at": "2026-11-13T23:05:08.623Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "knitwork",
+    "repo": "unjs/knitwork",
+    "commit": "a95f4d421ffa602723cb5ac2606bd854e1dfc49a",
+    "license": "MIT",
+    "module_path": "src/string.ts",
+    "module_loc": 104,
+    "mutants_total": 81,
+    "human_test_files": [
+      "test/string.test.ts"
+    ]
+  },
+  "condition": "C0",
+  "repetition": 0,
+  "c0_scope": "module",
+  "model": null,
+  "tooling": {
+    "node": "v22.23.4",
+    "vitest": "4.0.8",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": null
+  },
+  "memorization": null,
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 11.4286,
+        "ms_feedback": 12.8205,
+        "ms_all": 12.1622,
+        "ms_covered": 14.5161
+      },
+      "coverage": {
+        "line_cov": 68.75,
+        "branch_cov": 71.42
+      },
+      "mutants_eval": {
+        "killed": 4,
+        "survived": 25,
+        "no_coverage": 6,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 5,
+        "survived": 28,
+        "no_coverage": 6,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 2,
+        "n_asserts": 2,
+        "sha256": "545f91d0c35f406282bfd4fcd2cf481cc594df88b50cbd62058e546ada78f1c5"
+      },
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 0,
+        "repair_calls": 0,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "usd_ref": 0,
+        "wall_s": 25.65,
+        "stryker_s": 14.86
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 11.4286,
+      "ms_feedback": 12.8205,
+      "ms_all": 12.1622,
+      "ms_covered": 14.5161
+    },
+    "coverage": {
+      "line_cov": 68.75,
+      "branch_cov": 71.42
+    },
+    "cost": {
+      "calls": 0,
+      "repair_calls": 0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "usd_ref": 0,
+      "wall_s": 25.65,
+      "stryker_s": 14.86
+    },
+    "tests": {
+      "n_tests": 2,
+      "n_asserts": 2,
+      "sha256": "545f91d0c35f406282bfd4fcd2cf481cc594df88b50cbd62058e546ada78f1c5"
+    },
+    "gap_cov_ms": 56.5878,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/knitwork__string__C0__r0/raw"
+  }
+}

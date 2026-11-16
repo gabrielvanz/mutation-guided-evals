@@ -1,0 +1,14 @@
+node_modules/
+subjects/
+.stryker-tmp/
+*.log
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+analysis/__pycache__/
+analysis/out/
+.env

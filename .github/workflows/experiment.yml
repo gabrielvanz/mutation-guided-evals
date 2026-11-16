@@ -1,0 +1,95 @@
+name: experiment
+# Executa a malha de continuous evals: matriz módulo × condição × repetição.
+# Requer o secret GEMINI_API_KEY (ou ajuste LLM_PROVIDER/LLM_BASE_URL/LLM_API_KEY para outro provedor).
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "ID EXATO do modelo (sem alias -latest). Registrado em cada result.json."
+        required: true
+      conditions:
+        description: "Condições (separadas por vírgula)"
+        default: "C0,C1,C2,C2r,C3"
+      reps:
+        description: "Repetições por condição com LLM"
+        default: "3"
+      library:
+        description: "Opcional: rodar só uma biblioteca (ufo, defu, pathe, knitwork)"
+        default: ""
+      min_interval_ms:
+        description: "Intervalo mínimo entre chamadas por job (ms). Com max-parallel=2, use o dobro do necessário por job."
+        default: "9000"
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - id: m
+        run: |
+          ARGS="--conditions ${{ inputs.conditions }} --reps ${{ inputs.reps }}"
+          if [ -n "${{ inputs.library }}" ]; then ARGS="$ARGS --library ${{ inputs.library }}"; fi
+          echo "matrix=$(npm run -s matrix -- $ARGS)" >> "$GITHUB_OUTPUT"
+
+  run:
+    needs: matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.matrix.outputs.matrix) }}
+    env:
+      LLM_PROVIDER: gemini
+      LLM_MODEL: ${{ inputs.model }}
+      LLM_MIN_INTERVAL_MS: ${{ inputs.min_interval_ms }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Preparar sujeito no commit fixado
+        run: scripts/setup-subject.sh ${{ matrix.library }} "$RUNNER_TEMP/${{ matrix.library }}"
+      - name: Executar run
+        run: >
+          npm run -s run --
+          --library ${{ matrix.library }} --module ${{ matrix.module }}
+          --condition ${{ matrix.condition }} --rep ${{ matrix.rep }}
+          --workdir "$RUNNER_TEMP/${{ matrix.library }}"
+          --memo-file data/memorization.flat.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: run-${{ matrix.library }}-${{ matrix.module }}-${{ matrix.condition }}-r${{ matrix.rep }}
+          path: runs/
+          retention-days: 90
+
+  analyze:
+    needs: run
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: run-*
+          path: runs
+          merge-multiple: true
+      - run: npm run -s validate
+      - run: pip install -r analysis/requirements.txt
+      - run: python analysis/analyze.py --runs runs --out analysis/out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: analysis
+          path: analysis/out/

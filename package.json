@@ -1,0 +1,25 @@
+{
+  "name": "mutation-guided-evals",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Malha de continuous evals guiada por mutação para geração de testes com LLM (Toazza & Vanz)",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "agent": "tsx agent/src/cli.ts",
+    "run": "tsx agent/src/cli.ts run",
+    "matrix": "tsx agent/src/cli.ts matrix",
+    "validate": "tsx agent/src/cli.ts validate"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.2.4"
+  }
+}

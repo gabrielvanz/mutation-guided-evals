@@ -1,0 +1,293 @@
+\documentclass[12pt]{article}
+% Para submissão: troque sbc-like por sbc-template (ver comentário em sbc-like.sty).
+\usepackage{sbc-like}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazilian]{babel}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+\captionsetup{font=small,labelfont=bf}
+
+% Marcador de conteúdo que depende de execução ainda não realizada.
+\newcommand{\pendente}[1]{{\color{red}\textbf{[PENDENTE: #1]}}}
+
+\begin{document}
+
+\sbctitle{Malha de \textit{Continuous Evals} Guiada por Mutação\\ para Geração de Testes com LLM}
+
+\begin{center}
+\textbf{Andriano Toazza, Gabriel Vanz}\\[2pt]
+Programa de Pós-Graduação em Computação Aplicada (PPGCA)\\
+\texttt{\{andriano.toazza, gabriel.vanz\}@\pendente{domínio institucional}}
+\end{center}
+
+\begin{abstract}
+Cobertura de linha é uma métrica fraca de qualidade de testes, e testes gerados por modelos de linguagem (LLMs)
+tendem a cobrir código sem detectar defeitos. Este trabalho, do estágio \textit{Test} do SDLC AI-Native, propõe e
+implementa uma malha de \textit{continuous evals} em que um agente de LLM gera testes unitários em Vitest para módulos
+de bibliotecas TypeScript reais, o Stryker mede o \textit{mutation score} e os mutantes sobreviventes realimentam o
+agente em um laço executado no GitHub Actions. O desenho compara cinco condições (testes humanos, \textit{zero-shot},
+convenções de projeto, amostragem independente com o mesmo orçamento e laço com feedback), usa um \textit{split} de
+mutantes para separar o sinal de feedback do sinal de avaliação e define guardrails contra testes triviais. Apresentamos
+o arcabouço (código aberto, com testes unitários e validação de ponta a ponta), o protocolo estatístico e o
+\textit{baseline} humano medido em 9 módulos de 4 bibliotecas. As condições com LLM ainda não foram executadas: este
+texto \textbf{não reporta} resultados delas.
+\end{abstract}
+
+{\renewcommand{\abstractname}{Abstract}\begin{abstract}
+\noindent Line coverage is a weak proxy for test quality, and LLM-generated tests often cover code
+without detecting faults. We present a mutation-guided continuous-evals loop for LLM test generation: an agent writes
+Vitest tests for real TypeScript libraries, Stryker computes the mutation score, and surviving mutants are fed back to
+the agent in a GitHub Actions pipeline. The design compares five conditions (human tests, zero-shot, project
+conventions, equal-budget independent sampling, and feedback loop), uses a mutant hold-out split and guardrails against
+trivial tests. We release the framework, the statistical protocol and a measured human baseline over 9 modules from 4
+libraries. LLM conditions have not been run yet; no results for them are reported here.
+\end{abstract}}
+
+\section{Introdução}
+
+A adoção de IA generativa no desenvolvimento de software passou da aceleração da escrita de código para a
+reorganização do ciclo de vida inteiro. No paradigma AI-Native SDLC adotado na disciplina, o estágio de testes deixa
+de ser um portão rígido no fim do desenvolvimento e passa a ser uma malha de avaliação contínua (\textit{continuous
+evals}) integrada ao fluxo de implementação e ao CI. Em paralelo, o conhecimento do projeto é codificado em arquivos
+legíveis por humanos e executáveis por máquinas, como o \texttt{CLAUDE.md}.
+
+Nesse contexto, LLMs são usados para gerar testes unitários, mas a pergunta relevante não é se os testes gerados
+compilam, passam ou cobrem linhas, e sim se eles \textbf{detectam defeitos}. A cobertura mede o que foi executado, não o que
+foi verificado \cite{inozemtseva2014}. O teste de mutação mede diretamente a capacidade de detecção: introduz pequenas
+alterações sintáticas (mutantes) no código e verifica se os testes falham \cite{jia2011,papadakis2019}. Mutantes que
+sobrevivem apontam lacunas concretas, e isso os torna um sinal natural de feedback para um agente.
+
+Este trabalho investiga a seguinte \textbf{pergunta de pesquisa}: \emph{o feedback de mutantes sobreviventes aumenta o
+mutation score de testes gerados por LLM, e a que custo, comparado a testes escritos por humanos?} Formulamos três
+hipóteses:
+\begin{itemize}
+  \item \textbf{H1.} Testes gerados com o laço de mutantes (C3) têm \textit{mutation score} maior que \textit{zero-shot}
+  (C1), que o uso de convenções de projeto (C2) e que a amostragem independente com o mesmo orçamento (C2r).
+  \item \textbf{H2.} A cobertura de linha sobe sem que o \textit{mutation score} suba na mesma proporção: cobrir não é
+  detectar.
+  \item \textbf{H3.} O ganho de C3 tem retorno decrescente após poucas iterações, com custo em tokens por ponto de
+  \textit{score} crescente.
+\end{itemize}
+
+\noindent\textbf{Contribuições.} (i) Um arcabouço aberto e testado que implementa o laço, os guardrails e o registro de
+métricas por iteração; (ii) um desenho experimental com controle de orçamento (C2r) e \textit{hold-out} de mutantes, que
+evita que o agente seja avaliado no mesmo sinal que otimiza; (iii) o \textit{baseline} humano medido em 9 módulos reais,
+com achados de engenharia sobre a medição; e (iv) o protocolo estatístico para H1--H3. Não relatamos ainda resultados
+de LLM; a Seção~\ref{sec:resultados} separa explicitamente o que foi medido do que está pendente.
+
+\section{Fundamentação e trabalhos relacionados}
+
+\textbf{Teste de mutação.} Mutantes são programas ligeiramente alterados por operadores como troca de operador
+aritmético ou relacional, remoção de condicionais e alteração de literais. Um mutante é \emph{morto} se algum teste falha
+sobre ele e \emph{sobrevive} caso contrário \cite{demillo1978}. O \textit{mutation score} é a razão entre mutantes
+detectados e mutantes válidos. Usamos o critério do Stryker: $\text{MS}=\frac{K+T}{K+T+S+N}$, em que $K$ são mortos, $T$
+\textit{timeouts}, $S$ sobreviventes e $N$ mutantes sem cobertura; erros de compilação, de execução e mutantes ignorados
+saem do denominador. Mutantes equivalentes, que não alteram o comportamento, não podem ser mortos e fazem o \textit{score}
+subestimar a qualidade; tratamos isso como limitação e como análise de sensibilidade (Seção~\ref{sec:ameacas}). Há
+evidência de que mutantes são um substituto razoável para defeitos reais \cite{just2014} e de que o uso de teste de
+mutação em desenvolvimento muda práticas de teste \cite{petrovic2021}.
+
+\textbf{Cobertura versus eficácia.} Inozemtseva e Holmes \cite{inozemtseva2014} mostram que a correlação entre
+cobertura e eficácia de suítes é fraca quando se controla o tamanho da suíte. Essa é a base conceitual de H2.
+
+\textbf{Geração de testes com LLM.} Schäfer et al.\ \cite{schafer2024} avaliaram a geração de testes unitários por LLM
+para pacotes JavaScript com refinamento iterativo de testes que falham, reportando cobertura mediana da ordem de 70\%.
+Alshahwan et al.\ \cite{alshahwan2024} descrevem, na Meta, filtros em camadas (compila, passa, aumenta cobertura) sobre
+testes melhorados por LLM. Dakhel et al.\ \cite{dakhel2024} propõem usar mutantes sobreviventes para refinar o prompt
+(MuTAP), avaliando em programas Python, e Foster et al.\ \cite{foster2025} descrevem geração de testes guiada por
+mutantes em escala industrial. Até onde conseguimos verificar sem acesso a busca bibliográfica, nosso desenho se
+diferencia por (i) isolar o efeito do \emph{feedback} do efeito de \emph{mais tentativas} com C2r, (ii) separar mutantes de
+feedback e de avaliação, (iii) comparar com a suíte humana do próprio projeto sob o mesmo escopo de mutação, (iv) reportar
+curvas de custo por iteração e (v) estratificar por risco de memorização. Uma revisão sistemática completa é trabalho futuro.
+
+\textbf{AI-Native SDLC.} No estágio \textit{Test}, a abordagem tradicional concentra portões de QA no fim das fases; a
+abordagem AI-Native integra malhas de avaliação contínua ao fluxo de implementação e ao CI. Nossa malha instancia essa
+ideia: cada alteração gera testes, mede-os com um oráculo automático (mutantes) e decide se continua iterando.
+
+\section{Metodologia}
+
+\subsection{Arquitetura}
+
+A Figura~\ref{fig:arq} resume o pipeline, implementado em TypeScript e executado em uma matriz do GitHub Actions
+(módulo $\times$ condição $\times$ repetição). Para cada \textit{run}, o agente monta o prompt, chama o LLM, extrai o arquivo
+de teste, aplica guardrails estáticos, executa o Vitest sobre o código original (com até 2 reparos) e então mede a
+cobertura (provedor v8), a estabilidade (3 reexecuções) e o \textit{mutation score} (Stryker com análise de cobertura por
+teste). Em C3, os sobreviventes do grupo de feedback voltam ao prompt até o critério de parada.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw,rounded corners=2pt,minimum height=9mm,minimum width=24mm,align=center,font=\footnotesize,inner sep=3pt},
+  arr/.style={-{Stealth[length=2mm]},thick}]
+  \node[box] (src) at (0,0) {Código-fonte\\do módulo};
+  \node[box,fill=blue!8] (llm) at (3.2,0) {Agente\\LLM};
+  \node[box] (guard) at (6.4,0) {Guardrails\\+ Vitest};
+  \node[box] (str) at (9.6,0) {Stryker\\+ \textit{split}};
+  \node[box] (stop) at (9.6,-1.9) {Parar?\\{\scriptsize $k{=}N$ ou sem sobreviventes}};
+  \node[box] (rep) at (9.6,-3.7) {Relatório\\{\scriptsize \textit{score} e custo}};
+  \draw[arr] (src)--(llm); \draw[arr] (llm)--(guard); \draw[arr] (guard)--(str);
+  \draw[arr] (str)--(stop);
+  \draw[arr] (stop)--node[right,font=\scriptsize]{sim}(rep);
+  \draw[arr] (stop.west) -- node[above,font=\scriptsize]{não: sobreviventes do grupo \textit{feedback}} (llm |- stop.west) -- (llm.south);
+\end{tikzpicture}
+\caption{Malha de \textit{continuous evals}: mutantes sobreviventes do grupo de feedback realimentam o agente.}
+\label{fig:arq}
+\end{figure}
+
+\subsection{Sujeitos e seleção de módulos}
+
+Usamos bibliotecas pequenas, em TypeScript, com suíte humana em Vitest, licença MIT e funções puras (sem rede, banco ou
+I/O): \texttt{ufo}, \texttt{defu}, \texttt{pathe} e \texttt{knitwork}, cada uma fixada em um \textit{commit}. A unidade de
+análise é o \textbf{módulo} (um arquivo \texttt{.ts}), pareado entre condições, porque quatro bibliotecas seriam
+poucas observações. Consideramos 16 módulos candidatos e medimos 13 com a suíte humana e o Stryker (\texttt{scule} e \texttt{ohash} não puderam ser medidos por falhas de ferramenta, e \texttt{pathe/\_glob} ficou de fora por tempo); aplicamos, \textbf{antes} de qualquer
+execução de LLM, os critérios: pelo menos 50 mutantes válidos (para que cada metade do \textit{split} tenha $\geq 25$) e
+\textit{score} humano de no máximo 92\% (para haver espaço de melhoria). Restaram 9 módulos (Tabela~\ref{tab:sujeitos}).
+O \texttt{scule} usa Vitest 1.x, incompatível com o executor do Stryker usado.
+
+\begin{table}[t]
+\centering\small
+\input{tables/tab_subjects}
+\caption{Módulos incluídos. ``Mutantes válidos'' exclui erros de compilação/execução. MS: \textit{mutation score} da
+suíte humana completa do repositório, medido no commit fixado.}
+\label{tab:sujeitos}
+\end{table}
+
+\subsection{Condições}
+
+Todas usam o mesmo modelo e parâmetros. \textbf{C0}: testes humanos do módulo (e, como referência superior,
+\textbf{C0-suite}: toda a suíte humana, com a mutação restrita ao módulo). \textbf{C1}: \textit{zero-shot}, apenas o
+código-fonte. \textbf{C2}: C1 mais um arquivo de convenções (estilo, estrutura, casos a cobrir), injetado no prompt;
+o arquivo é deliberadamente livre de menções a teste de mutação para não contaminar o efeito de C3. \textbf{C2r}:
+$1+N$ amostras independentes de C2, escolhendo-se a de maior \textit{score} no grupo de feedback; é o controle de
+orçamento. \textbf{C3}: C2 mais até $N=5$ iterações com até 20 sobreviventes do grupo de feedback, cada um com linha,
+operador, trecho original e trecho mutado. A iteração seguinte parte da melhor iteração válida até o momento.
+
+\subsection{\textit{Split} de mutantes e guardrails}
+
+Como C3 otimiza o mesmo \textit{score} usado para avaliá-lo, dividimos os mutantes de cada módulo em dois grupos
+determinísticos e estratificados por operador: dentro de cada operador, ordenam-se os mutantes por
+$\text{SHA-256}(\text{seed}\,\|\,\text{chave})$ e alternam-se os grupos \textit{feedback} e \textit{avaliação}. O grupo
+é calculado sobre todos os mutantes gerados, independentemente do estado, e portanto é idêntico em todas as condições. Só
+sobreviventes de \textit{feedback} chegam ao agente; a métrica principal de H1 é o \textit{score} no grupo de avaliação.
+Os guardrails rejeitam: alteração do código-fonte; \texttt{.skip/.only/.todo}; \texttt{expect(true)} e tautologias;
+testes sem \textit{assertion}; imports além do Vitest e do módulo; rede, relógio e aleatoriedade sem controle; e
+testes que falham em reexecução (marcados como instáveis).
+
+\subsection{Métricas e análise estatística}
+
+Por \textit{run} e por iteração registramos \textit{mutation score} (avaliação, feedback e total), cobertura de linha e de ramo,
+tokens de entrada e saída (os reportados pela API, incluindo reparos), custo de referência em USD, tempo, iterações,
+taxa de iterações válidas, estabilidade e tamanho da suíte. A unidade estatística é o módulo (mediana das repetições).
+Para H1 usamos Wilcoxon pareado unilateral com correção de Holm, tamanho de efeito (Cliff $\delta$) e IC bootstrap de
+95\%; para H2, a diferença entre o ganho de cobertura e o de \textit{score} (Wilcoxon e Spearman) e a lacuna
+$\text{cob}_{\text{linha}}-\text{MS}$; para H3, as curvas por iteração, o teste de Friedman sobre os ganhos marginais, o teste de
+tendência de Page e os tokens por ponto percentual. O \textit{score} é também reportado sobre o conjunto de mutantes
+mortos por qualquer condição ($\text{MS}_{\text{killable}}$), um limite inferior prático para o teto atingível dado que
+equivalência é indecidível.
+
+\subsection{Modelo, reprodutibilidade e uso de IA}
+
+O modelo é acessado por API de camada gratuita (Google AI Studio), com ID exato registrado em cada \textit{run}
+(\pendente{ID do modelo e data da coleta}), $T=0{,}7$ em todas as condições e saída máxima de 8192 tokens. Como modelos
+gratuitos mudam, arquivamos todos os prompts, respostas brutas e relatórios do Stryker. O custo real é zero; reportamos
+um custo de referência com preços fixos para discussão. O código, o protocolo, os dados e a análise estão no repositório
+\pendente{URL do repositório público}.
+
+\textbf{Uso de IA no desenvolvimento do trabalho.} Utilizamos o Claude (Anthropic) para propor o desenho experimental,
+escrever o código do arcabouço e dos scripts de análise, executar as medições de seleção e o \textit{baseline} C0 em ambiente
+isolado e redigir o rascunho deste texto. O registro detalhado, incluindo erros do assistente que foram detectados e
+corrigidos, está em \texttt{AI\_USAGE.md}. A IA não executou as condições com LLM e nenhum número delas aparece aqui. Os autores revisaram o
+conteúdo \pendente{confirmar revisão integral pelos autores antes da entrega}.
+
+\section{Resultados}
+\label{sec:resultados}
+
+\subsection{\textit{Baseline} humano (C0)}
+
+A Tabela~\ref{tab:c0} mostra o \textit{baseline} humano medido pelo próprio pipeline, com os testes humanos mapeados a cada
+módulo. \input{tables/c0_text}
+
+\begin{table}[t]
+\centering\small
+\input{tables/tab_c0}
+\caption{C0 (escopo módulo): suíte humana do módulo. MS\textsubscript{eval} e MS\textsubscript{all} no grupo de avaliação e no total.}
+\label{tab:c0}
+\end{table}
+
+\subsection{Achados de engenharia da medição}
+
+A execução do arcabouço sobre código real revelou problemas que afetariam a validade e que corrigimos antes da coleta:
+(i) o Stryker exclui erros de execução (\textit{RuntimeError}) do denominador do \textit{score}, o que nosso protocolo
+inicial não previa; (ii) a chave de identificação dos mutantes colidia para mutantes aninhados, que começam na mesma
+posição e terminam em posições diferentes, o que corromperia o \textit{split}; (iii) com pnpm o plugin de Vitest do
+Stryker precisa ser declarado explicitamente; (iv) Vitest 1.x é incompatível com o executor atual; (v) o escopo dos
+testes humanos altera muito o \textit{baseline} (Seção anterior), por isso reportamos C0 em dois escopos; e (vi) vários
+módulos têm poucos mutantes ou \textit{score} humano próximo de 100\%, o que cria efeito teto e motivou os critérios de
+inclusão. Em um teste de fumaça com provedor simulado e testes escritos à mão, o executor completo (Vitest, cobertura,
+Stryker, \textit{split} e esquema de resultado) funcionou de ponta a ponta; isso valida o encanamento e \textbf{não} é um
+resultado experimental.
+
+\subsection{Condições com LLM (C1, C2, C2r, C3)}
+
+\pendente{executar a matriz do GitHub Actions com o modelo escolhido e reanalisar}. As Tabelas~\ref{tab:cond} e~\ref{tab:h1}
+são geradas automaticamente por \texttt{analysis/analyze.py} e, até a coleta, exibem ``n/d'' nas condições sem dados.
+
+\begin{table}[t]
+\centering\small
+\input{tables/tab_cond}
+\caption{Resumo por condição (medianas das execuções). ``n/d'': sem dados.}
+\label{tab:cond}
+\end{table}
+
+\begin{table}[t]
+\centering\small
+\input{tables/tab_h1}
+\caption{H1: comparações pareadas por módulo (Wilcoxon unilateral, Holm).}
+\label{tab:h1}
+\end{table}
+
+\section{Discussão e ameaças à validade}
+\label{sec:ameacas}
+
+\textbf{Validade de construto.} O \textit{mutation score} subestima a qualidade quando há mutantes equivalentes; por isso
+reportamos também $\text{MS}_{\text{killable}}$. Mutantes sintéticos não são defeitos reais, embora haja evidência de
+correlação \cite{just2014}. Usamos o código atual como oráculo: um teste gerado que afirma um comportamento incorreto
+mas atual passa e ``mata'' mutantes; não medimos corretude semântica das expectativas.
+
+\textbf{Validade interna.} A estocasticidade do modelo é tratada com repetições e testes não paramétricos; o desvio de
+modelos gratuitos, com ID fixo e janela de coleta curta; o \textit{overfitting} ao Stryker, com o \textit{split} (mitigação
+parcial, pois a ferramenta é a mesma nos dois grupos; planejamos reavaliar com outros operadores); e a comparação
+injusta entre C1/C2 e C3, com C2r. Ainda assim C1 e C2 usam menos orçamento por construção.
+
+\textbf{Validade externa.} Nove módulos de quatro bibliotecas de funções puras em TypeScript, de um mesmo ecossistema e com
+um único modelo, não generalizam para código com estado, I/O ou outras linguagens.
+
+\textbf{Memorização.} Bibliotecas populares provavelmente fazem parte do treino do modelo \cite{carlini2021}. Mitigamos com um
+\textit{probe} que mede quanto da segunda metade do teste humano o modelo reproduz a partir da primeira, e estratificamos as
+análises em baixa e alta memorização.
+
+\textbf{Custo e governança.} O teste de mutação multiplica a execução da suíte; medimos de 20 s a 160 s por rodada em
+1 vCPU, e uma coleta completa exige centenas de rodadas. O tier gratuito pode usar dados para treino (código aberto, risco
+baixo) e impõe limites que podem forçar a coleta em vários dias. Há risco de alucinação de APIs e de testes frágeis; os
+guardrails e a exigência de que os testes passem no código original mitigam, sem eliminar.
+
+\section{Conclusão}
+
+Apresentamos uma malha de \textit{continuous evals} guiada por mutação para geração de testes com LLM, com controle de
+orçamento, \textit{hold-out} de mutantes, guardrails, protocolo estatístico e \textit{baseline} humano medido em 9 módulos reais. O
+arcabouço está implementado, testado e validado de ponta a ponta; a coleta das condições com LLM é o próximo passo e
+determinará se H1--H3 se sustentam. Trabalhos futuros incluem uma revisão sistemática, mais bibliotecas e linguagens,
+mais de um modelo, tratamento de mutantes equivalentes e avaliação com defeitos reais.
+
+\bibliographystyle{apalike}
+\bibliography{refs}
+
+\end{document}

@@ -1,0 +1,32 @@
+name: memorization-probe
+# Probe de memorização (PROTOCOL.md V1): mede quanto da 2ª metade do teste humano o modelo reproduz.
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "ID EXATO do modelo"
+        required: true
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      LLM_PROVIDER: gemini
+      LLM_MODEL: ${{ inputs.model }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Preparar sujeitos (apenas checkout dos testes humanos é necessário)
+        run: |
+          for l in ufo defu pathe knitwork; do
+            scripts/setup-subject.sh $l "$RUNNER_TEMP/$l"
+          done
+      - run: >
+          npm run -s agent -- probe
+          --workdirs "ufo=$RUNNER_TEMP/ufo,defu=$RUNNER_TEMP/defu,pathe=$RUNNER_TEMP/pathe,knitwork=$RUNNER_TEMP/knitwork"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: memorization
+          path: data/memorization*.json

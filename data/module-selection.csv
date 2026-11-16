@@ -1,0 +1,18 @@
+library,module,loc,mutants_total,mutants_valid,human_ms_suite_pct,stryker_run_s,decision,reason
+ufo,query,138,78,78,85.9,27,include,
+ufo,parse,229,150,150,86.0,156_all5,include,
+ufo,punycode,100,180,180,73.9,156_all5,include,
+ufo,url,148,90,90,75.6,156_all5,include,
+ufo,utils,775,470,470,84.5,130,include,
+ufo,encoding,176,43,43,95.3,156_all5,exclude,<50 mutantes válidos e score humano >92% (efeito teto)
+defu,defu,71,67,67,79.1,23,include,
+defu,_utils,26,36,36,94.4,23,exclude,<50 mutantes válidos e score humano >92%
+pathe,_path,314,397,397,89.7,158,include,"mais pesado do conjunto (~2,6 min por rodada em 1 vCPU)"
+pathe,utils,134,89,87,80.5,158,include,2 RuntimeError fora do denominador
+pathe,_glob,482,?,?,?,?,pending,medição não concluída
+knitwork,string,104,81,70,31.9,60,include,11 RuntimeError fora do denominador; baixo score humano = bastante espaço de melhoria
+knitwork,object,125,47,26,84.6,60,exclude,<50 mutantes válidos
+knitwork,typescript,119,55,33,84.8,60,exclude,<50 mutantes válidos
+knitwork,esm,155,44,34,100.0,60,exclude,<50 mutantes válidos e score humano 100%
+scule,index,197,n/d,n/d,n/d,n/d,exclude,Vitest 1.x incompatível com @stryker-mutator/vitest-runner 10 (ctx.provide is not a function); único módulo de lógica
+ohash,serialize,288,n/d,n/d,n/d,n/d,exclude,Stryker falhou na primeira execução; não investigado

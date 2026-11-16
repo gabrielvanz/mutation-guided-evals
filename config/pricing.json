@@ -1,0 +1,6 @@
+{
+  "reference_model": "referência fixa para discussão de custo (não é cobrança real)",
+  "usd_per_mtok_in": 0.10,
+  "usd_per_mtok_out": 0.40,
+  "note": "Valores ilustrativos de um modelo 'flash-lite' pago; ajuste e cite a fonte/data no artigo. O custo real do experimento é zero (tier gratuito)."
+}
