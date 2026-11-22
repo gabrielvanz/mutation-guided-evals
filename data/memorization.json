@@ -1,42 +1,42 @@
 {
-  "model": "gemini-4-hydrogen",
-  "median": 0.3194,
+  "model": "gemini-3.5-flash-lite",
+  "median": 0.141,
   "modules": {
     "ufo/query": {
-      "similarity": 0.3243,
+      "similarity": 0.1892,
       "stratum": "high"
     },
     "ufo/parse": {
-      "similarity": 0.311,
-      "stratum": "low"
-    },
-    "ufo/punycode": {
-      "similarity": 0.3333,
+      "similarity": 0.2103,
       "stratum": "high"
     },
+    "ufo/punycode": {
+      "similarity": 0.141,
+      "stratum": "low"
+    },
     "ufo/url": {
-      "similarity": 0.136,
+      "similarity": 0.128,
       "stratum": "low"
     },
     "ufo/utils": {
-      "similarity": 0.6729,
+      "similarity": 0.485,
       "stratum": "high"
     },
     "defu/defu": {
-      "similarity": 0.2606,
+      "similarity": 0.05,
       "stratum": "low"
     },
     "pathe/path": {
-      "similarity": 0.1392,
+      "similarity": 0.1257,
       "stratum": "low"
     },
     "pathe/utils": {
-      "similarity": 0.3789,
-      "stratum": "high"
+      "similarity": 0.0791,
+      "stratum": "low"
     },
     "knitwork/string": {
-      "similarity": 0.3194,
-      "stratum": "low"
+      "similarity": 0.2222,
+      "stratum": "high"
     }
   }
 }
