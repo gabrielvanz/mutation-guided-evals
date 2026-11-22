@@ -1,0 +1,236 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { defu, createDefu, defuFn, defuArrayFn } from "../../src/defu";
+
+describe("defu", () => {
+  it("should return an empty object when called with no arguments", () => {
+    expect(defu()).toEqual({});
+  });
+
+  it("should handle basic object merging with priority to the first argument", () => {
+    const cases = [
+      {
+        input: [{ a: 1 }, { b: 2 }],
+        expected: { a: 1, b: 2 },
+      },
+      {
+        input: [{ a: 1 }, { a: 2, b: 2 }],
+        expected: { a: 1, b: 2 },
+      },
+      {
+        input: [{ a: 1 }, { a: 2, b: 2 }, { b: 3, c: 3 }],
+        expected: { a: 1, b: 2, c: 3 },
+      },
+      {
+        input: [{}, { a: 1 }],
+        expected: { a: 1 },
+      },
+      {
+        input: [{ a: 1 }, {}],
+        expected: { a: 1 },
+      },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(defu(...input)).toEqual(expected);
+    }
+  });
+
+  it("should ignore null and undefined values in the source object", () => {
+    expect(defu({ a: null, b: undefined, c: 0, d: false, e: "" }, { a: 1, b: 2, c: 3, d: true, e: "x" })).toEqual({
+      a: 1,
+      b: 2,
+      c: 0,
+      d: false,
+      e: "",
+    });
+  });
+
+  it("should handle non-plain-object defaults by treating them as empty objects", () => {
+    expect(defu({ a: 1 }, null as any)).toEqual({ a: 1 });
+    expect(defu({ a: 1 }, undefined as any)).toEqual({ a: 1 });
+    expect(defu({ a: 1 }, "invalid" as any)).toEqual({ a: 1 });
+    expect(defu({ a: 1 }, 42 as any)).toEqual({ a: 1 });
+  });
+
+  it("should recursively merge nested plain objects", () => {
+    const source = {
+      nested: {
+        a: 1,
+        deep: {
+          x: true,
+        },
+      },
+    };
+    const defaults = {
+      nested: {
+        a: 2,
+        b: 3,
+        deep: {
+          x: false,
+          y: "hello",
+        },
+      },
+    };
+
+    expect(defu(source, defaults)).toEqual({
+      nested: {
+        a: 1,
+        b: 3,
+        deep: {
+          x: true,
+          y: "hello",
+        },
+      },
+    });
+  });
+
+  it("should concatenate arrays with source items first", () => {
+    expect(defu({ arr: [1, 2] }, { arr: [3, 4] })).toEqual({
+      arr: [1, 2, 3, 4],
+    });
+  });
+
+  it("should overwrite non-array defaults with array source and vice versa", () => {
+    expect(defu({ val: [1, 2] }, { val: "str" })).toEqual({ val: [1, 2] });
+    expect(defu({ val: "str" }, { val: [1, 2] })).toEqual({ val: "str" });
+  });
+
+  it("should skip dangerous keys like __proto__ and constructor", () => {
+    const malicious = JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"polluted": true}, "safe": 1}');
+    const result = defu(malicious, { safe: 2 }) as Record<string, any>;
+
+    expect(result).toEqual({ safe: 1 });
+    expect(({} as any).polluted).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(result, "constructor")).toBe(false);
+  });
+});
+
+describe("createDefu", () => {
+  it("should use custom merger when it returns true", () => {
+    const customDefu = createDefu((obj, key, value) => {
+      if (typeof obj[key] === "number" && typeof value === "number") {
+        obj[key] = obj[key] + value;
+        return true;
+      }
+    });
+
+    expect(customDefu({ a: 10, b: "x" }, { a: 5, b: "y", c: 3 })).toEqual({
+      a: 15,
+      b: "x",
+      c: 3,
+    });
+  });
+
+  it("should fall back to default merge when custom merger does not return true", () => {
+    const customDefu = createDefu(() => false);
+
+    expect(customDefu({ a: [1], b: { x: 1 } }, { a: [2], b: { y: 2 } })).toEqual({
+      a: [1, 2],
+      b: { x: 1, y: 2 },
+    });
+  });
+
+  it("should pass the correct namespace to the custom merger", () => {
+    const namespaces: Array<{ key: string; namespace: string }> = [];
+    const customDefu = createDefu((_obj, key, _value, namespace) => {
+      namespaces.push({ key: String(key), namespace });
+      return false;
+    });
+
+    customDefu(
+      {
+        root: 1,
+        nested: {
+          child: {
+            leaf: 2,
+          },
+        },
+      },
+      {
+        nested: {
+          child: {
+            other: 3,
+          },
+        },
+      },
+    );
+
+    expect(namespaces).toEqual([
+      { key: "root", namespace: "" },
+      { key: "nested", namespace: "" },
+      { key: "child", namespace: "nested" },
+      { key: "leaf", namespace: "nested.child" },
+    ]);
+  });
+});
+
+describe("defuFn", () => {
+  it("should invoke function in source with default value when default is defined", () => {
+    const result = defuFn(
+      {
+        count: (val: number) => val * 2,
+        items: (arr: number[]) => [...arr, 3],
+      },
+      {
+        count: 5,
+        items: [1, 2],
+      },
+    );
+
+    expect(result).toEqual({
+      count: 10,
+      items: [1, 2, 3],
+    });
+  });
+
+  it("should keep function as value when default is undefined", () => {
+    const fn = (val: number) => val + 1;
+    const result = defuFn({ fn }, {});
+
+    expect(result.fn).toBe(fn);
+  });
+
+  it("should perform normal merge for non-function values", () => {
+    expect(defuFn({ a: 1, arr: [1] }, { a: 2, arr: [2], b: 3 })).toEqual({
+      a: 1,
+      arr: [1, 2],
+      b: 3,
+    });
+  });
+});
+
+describe("defuArrayFn", () => {
+  it("should invoke function in source when default value is an array", () => {
+    const result = defuArrayFn(
+      {
+        items: (arr: string[]) => arr.filter((item) => item !== "b"),
+      },
+      {
+        items: ["a", "b", "c"],
+      },
+    );
+
+    expect(result).toEqual({
+      items: ["a", "c"],
+    });
+  });
+
+  it("should keep function as value when default value is not an array", () => {
+    const fn = (val: number) => val * 2;
+    const result = defuArrayFn(
+      {
+        count: fn,
+        missing: fn,
+      },
+      {
+        count: 5,
+      },
+    );
+
+    expect(result.count).toBe(fn);
+    expect(result.missing).toBe(fn);
+  });
+});
+```

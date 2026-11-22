@@ -1,0 +1,82 @@
+{
+  "schema_version": "0.1",
+  "run_id": "defu__defu__C3__r2",
+  "started_at": "2026-11-22T22:22:47.415Z",
+  "finished_at": "2026-11-22T22:26:55.302Z",
+  "status": "provider_error",
+  "error": "Gemini HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, mode",
+  "subject": {
+    "library": "defu",
+    "repo": "unjs/defu",
+    "commit": "82632b66f5914e9946edce300e10633a3d5c0cb7",
+    "license": "MIT",
+    "module_path": "src/defu.ts",
+    "module_loc": 71,
+    "mutants_total": 0,
+    "human_test_files": [
+      "test/defu.test.ts"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-4-hydrogen",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.6",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "9f69cf6e7e2cc5929c8426f548e3d554b3a2a3679a28ed39688cd56e2359f980",
+    "git_sha_agent": "68a8d4ed5ffc995e92bc31bbc47bc72b800a5b9a"
+  },
+  "memorization": {
+    "probe_similarity": 0.2606,
+    "stratum": "low"
+  },
+  "iterations": [],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": null,
+      "ms_feedback": null,
+      "ms_all": null,
+      "ms_covered": null
+    },
+    "coverage": {
+      "line_cov": null,
+      "branch_cov": null
+    },
+    "cost": {
+      "calls": 0,
+      "repair_calls": 0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "usd_ref": 0,
+      "wall_s": 247.89,
+      "stryker_s": 0
+    },
+    "tests": {
+      "n_tests": 0,
+      "n_asserts": 0,
+      "sha256": ""
+    },
+    "gap_cov_ms": null,
+    "valid_rate": 0,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 0
+  },
+  "artifacts": {
+    "raw_dir": "runs/defu__defu__C3__r2/raw"
+  }
+}
