@@ -145,7 +145,13 @@ async function cmdRun(argv: string[]): Promise<number> {
 async function cmdMatrix(argv: string[]): Promise<number> {
   const { values: v } = parseArgs({
     args: argv,
-    options: { conditions: { type: "string", default: "C1,C2,C2r,C3" }, reps: { type: "string" }, library: { type: "string" } },
+    options: {
+      conditions: { type: "string", default: "C1,C2,C2r,C3" },
+      reps: { type: "string" },
+      library: { type: "string" },
+      // omite runs que já têm result.json em runs/ (status final); provider_error/stryker_error/timeout são refeitos
+      "skip-done": { type: "boolean", default: false },
+    },
   });
   const cfg = await loadExperiment(ROOT);
   const subjects = await loadSubjects(ROOT);
@@ -160,8 +166,28 @@ async function cmdMatrix(argv: string[]): Promise<number> {
       }
     }
   }
-  console.log(JSON.stringify({ include }));
+  const pending = v["skip-done"] ? await filterPending(include) : include;
+  if (v["skip-done"]) console.error(`[matrix] ${include.length - pending.length} de ${include.length} runs já concluídos; ${pending.length} pendentes`);
+  console.log(JSON.stringify({ include: pending }));
   return 0;
+}
+
+async function filterPending<T extends { library: string; module: string; condition: string; rep: number }>(all: T[]): Promise<T[]> {
+  const pending: T[] = [];
+  for (const e of all) {
+    const id = runId(e.library, e.module, e.condition as Condition, e.rep, e.condition === "C0" ? "module" : undefined);
+    const file = path.join(ROOT, "runs", id, "result.json");
+    let done = false;
+    if (existsSync(file)) {
+      try {
+        done = !RETRY_STATUSES.has((JSON.parse(await readFile(file, "utf8")) as RunResult).status);
+      } catch {
+        done = false; // result.json ilegível: refaz
+      }
+    }
+    if (!done) pending.push(e);
+  }
+  return pending;
 }
 
 async function findResults(dir: string): Promise<string[]> {

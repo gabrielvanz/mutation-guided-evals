@@ -20,11 +20,17 @@ on:
         description: "Intervalo mínimo entre chamadas por job (ms). Com max-parallel=2, use o dobro do necessário por job."
         default: "9000"
 
+# Um dispatch por vez: cada lote commita seus resultados em runs/ e o próximo lote os enxerga.
+concurrency:
+  group: experiment
+  cancel-in-progress: false
+
 jobs:
   matrix:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.m.outputs.matrix }}
+      pending: ${{ steps.m.outputs.pending }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,12 +38,15 @@ jobs:
       - run: npm ci
       - id: m
         run: |
-          ARGS="--conditions ${{ inputs.conditions }} --reps ${{ inputs.reps }}"
+          ARGS="--conditions ${{ inputs.conditions }} --reps ${{ inputs.reps }} --skip-done"
           if [ -n "${{ inputs.library }}" ]; then ARGS="$ARGS --library ${{ inputs.library }}"; fi
-          echo "matrix=$(npm run -s matrix -- $ARGS)" >> "$GITHUB_OUTPUT"
+          M="$(npm run -s matrix -- $ARGS)"
+          echo "matrix=$M" >> "$GITHUB_OUTPUT"
+          echo "pending=$(echo "$M" | jq '.include | length')" >> "$GITHUB_OUTPUT"
 
   run:
     needs: matrix
+    if: needs.matrix.outputs.pending != '0'
     runs-on: ubuntu-latest
     timeout-minutes: 340
     strategy:
@@ -66,26 +75,53 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: run-${{ matrix.library }}-${{ matrix.module }}-${{ matrix.condition }}-r${{ matrix.rep }}
-          path: runs/
+          # nome = run_id: o job persist baixa cada artifact em runs/<run_id>/
+          name: ${{ matrix.library }}__${{ matrix.module }}__${{ matrix.condition }}__r${{ matrix.rep }}
+          path: runs/${{ matrix.library }}__${{ matrix.module }}__${{ matrix.condition }}__r${{ matrix.rep }}
           retention-days: 90
 
-  analyze:
-    needs: run
-    if: always()
+  # Guarda os resultados no repositório ao fim de cada lote. Sem isso, o próximo dispatch começa do zero.
+  persist:
+    needs: [matrix, run]
+    if: always() && needs.matrix.result == 'success' && needs.run.result != 'skipped'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "*__r[0-9]*"
+          path: runs
+      - name: Commitar resultados (result.json + raw/, sem work/)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add runs/ ':(exclude,glob)runs/*/work/**'
+          if git diff --cached --quiet; then echo "Nada novo para guardar."; exit 0; fi
+          git commit -m "data: resultados do lote (modelo ${{ inputs.model }}, workflow run ${{ github.run_id }})"
+          for i in 1 2 3; do
+            git pull --rebase origin "${{ github.ref_name }}" && git push origin "HEAD:${{ github.ref_name }}" && exit 0
+            sleep 5
+          done
+          echo "Falha ao enviar os resultados"; exit 1
+
+  analyze:
+    needs: [matrix, persist]
+    if: always() && needs.matrix.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      # lê o repositório já com os resultados deste lote E dos anteriores
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: npm ci
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: run-*
-          path: runs
-          merge-multiple: true
       - run: npm run -s validate
       - run: pip install -r analysis/requirements.txt
       - run: python analysis/analyze.py --runs runs --out analysis/out
