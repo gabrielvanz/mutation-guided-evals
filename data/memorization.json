@@ -7,31 +7,31 @@
       "stratum": "high"
     },
     "ufo/parse": {
-      "similarity": 0.2975,
+      "similarity": 0.311,
       "stratum": "low"
     },
     "ufo/punycode": {
-      "similarity": 0.4103,
+      "similarity": 0.3333,
       "stratum": "high"
     },
     "ufo/url": {
-      "similarity": 0.144,
+      "similarity": 0.136,
       "stratum": "low"
     },
     "ufo/utils": {
-      "similarity": 0.4774,
+      "similarity": 0.6729,
       "stratum": "high"
     },
     "defu/defu": {
-      "similarity": 0.2939,
+      "similarity": 0.2606,
       "stratum": "low"
     },
     "pathe/path": {
-      "similarity": 0.2472,
+      "similarity": 0.1392,
       "stratum": "low"
     },
     "pathe/utils": {
-      "similarity": 0.3837,
+      "similarity": 0.3789,
       "stratum": "high"
     },
     "knitwork/string": {
