@@ -1,0 +1,98 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  it("should generate a double quoted string by default", () => {
+    const input = "hello world";
+    const result = genString(input);
+    expect(result).toBe("\"hello world\"");
+  });
+
+  it("should generate a single quoted string when singleQuotes is true", () => {
+    const input = "hello world";
+    const result = genString(input, { singleQuotes: true });
+    expect(result).toBe("'hello world'");
+  });
+
+  it("should escape double quotes when using double quotes", () => {
+    const input = "hello \"world\"";
+    const result = genString(input);
+    expect(result).toBe("\"hello \\\"world\\\"\"");
+  });
+
+  it("should escape single quotes and handle double quotes when using single quotes", () => {
+    const input = "hello 'world' and \"universe\"";
+    const result = genString(input, { singleQuotes: true });
+    expect(result).toBe("'hello \\'world\\' and \"universe\"'");
+  });
+
+  it("should handle empty string", () => {
+    const result = genString("");
+    expect(result).toBe("\"\"");
+  });
+
+  it("should handle empty string with single quotes", () => {
+    const result = genString("", { singleQuotes: true });
+    expect(result).toBe("''");
+  });
+});
+
+describe("escapeString", () => {
+  it("should return the original string if no escapes are needed", () => {
+    const input = "simple";
+    const result = escapeString(input);
+    expect(result).toBe("simple");
+  });
+
+  it("should escape backslashes", () => {
+    const input = "path\\to\\file";
+    const result = escapeString(input);
+    expect(result).toBe("path\\\\to\\\\file");
+  });
+
+  it("should escape newlines and carriage returns", () => {
+    const input = "line1\nline2\rline3";
+    const result = escapeString(input);
+    expect(result).toBe("line1\\\nline2\\\rline3");
+  });
+
+  it("should escape single quotes", () => {
+    const input = "it's working";
+    const result = escapeString(input);
+    expect(result).toBe("it\\'s working");
+  });
+
+  it("should escape unicode line separators", () => {
+    const input = "line\u2028separator";
+    const result = escapeString(input);
+    expect(result).toBe("line\\\u2028separator");
+  });
+});
+
+describe("genSafeVariableName", () => {
+  it("should return the name as is if it is a normal identifier", () => {
+    const input = "myVariable123";
+    const result = genSafeVariableName(input);
+    expect(result).toBe("myVariable123");
+  });
+
+  it("should prefix with underscore if name is a reserved keyword", () => {
+    const input = "class";
+    const result = genSafeVariableName(input);
+    expect(result).toBe("_class");
+  });
+
+  it("should prefix with underscore if name starts with a digit", () => {
+    const input = "123var";
+    const result = genSafeVariableName(input);
+    expect(result).toBe("_123var");
+  });
+
+  it("should replace non-word characters with underscore and their character code", () => {
+    const input = "foo-bar.baz";
+    const result = genSafeVariableName(input);
+    expect(result).toBe("foo_45bar_46baz");
+  });
+});
+```

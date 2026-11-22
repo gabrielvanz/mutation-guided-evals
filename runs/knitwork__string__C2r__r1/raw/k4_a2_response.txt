@@ -1,0 +1,71 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  it("should generate a double quoted string by default", () => {
+    const input = "hello world";
+    const result = genString(input);
+    expect(result).toBe("\"hello world\"");
+  });
+
+  it("should generate a single quoted string when singleQuotes is true", () => {
+    const input = "hello world";
+    const result = genString(input, { singleQuotes: true });
+    expect(result).toBe("'hello world'");
+  });
+
+  it("should handle empty string inputs", () => {
+    expect(genString("")).toBe("\"\"");
+    expect(genString("", { singleQuotes: true })).toBe("''");
+  });
+
+  it("should escape special characters correctly with double quotes", () => {
+    const input = "line1\nline2'quote'\\backslash";
+    const result = genString(input);
+    expect(result).toBe("\"line1\\nline2'quote'\\\\backslash\"");
+  });
+
+  it("should escape special characters correctly with single quotes", () => {
+    const input = "line1\nline2'quote'\\backslash";
+    const result = genString(input, { singleQuotes: true });
+    expect(result).toBe("'line1\\nline2\\'quote\\'\\\\backslash'");
+  });
+});
+
+describe("escapeString", () => {
+  const cases = [
+    { input: "plain", expected: "plain" },
+    { input: "line1\nline2", expected: "line1\\nline2" },
+    { input: "carriage\rreturn", expected: "carriage\\rreturn" },
+    { input: "single'quote", expected: "single\\'quote" },
+    { input: "back\\slash", expected: "back\\\\slash" },
+    { input: "line\u2028separator", expected: "line\\u2028separator" },
+    { input: "paragraph\u2029separator", expected: "paragraph\\u2029separator" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should escape string: ${JSON.stringify(input)}`, () => {
+      expect(escapeString(JSON.stringify(input))).toBe(expected);
+    });
+  }
+});
+
+describe("genSafeVariableName", () => {
+  const cases = [
+    { input: "normalName", expected: "normalName" },
+    { input: "class", expected: "_class" },
+    { input: "const", expected: "_const" },
+    { input: "123var", expected: "_123var" },
+    { input: "foo-bar", expected: "foo_45bar" },
+    { input: "foo.bar", expected: "foo_46bar" },
+    { input: "", expected: "" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should generate safe variable name for ${JSON.stringify(input)}`, () => {
+      expect(genSafeVariableName(input)).toBe(expected);
+    });
+  }
+});
+```

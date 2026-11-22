@@ -1,0 +1,71 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  it("should generate a double quoted string by default", () => {
+    const input = "hello world";
+    const expected = "\"hello world\"";
+    expect(genString(input)).toBe(expected);
+  });
+
+  it("should generate a single quoted string when singleQuotes is true", () => {
+    const input = "hello world";
+    const expected = "'hello world'";
+    expect(genString(input, { singleQuotes: true })).toBe(expected);
+  });
+
+  it("should handle double quotes inside single quoted strings", () => {
+    const input = "hello \"world\"";
+    const expected = "'hello \\\"world\\\"'";
+    expect(genString(input, { singleQuotes: true })).toBe(expected);
+  });
+
+  it("should handle single quotes inside single quoted strings by escaping them", () => {
+    const input = "hello 'world'";
+    const expected = "'hello \\'world\\''";
+    expect(genString(input, { singleQuotes: true })).toBe(expected);
+  });
+
+  it("should handle empty strings correctly", () => {
+    expect(genString("")).toBe("\"\"");
+    expect(genString("", { singleQuotes: true })).toBe("''");
+  });
+});
+
+describe("escapeString", () => {
+  const cases = [
+    { input: "hello", expected: "hello" },
+    { input: "hello\nworld", expected: "hello\\nworld" },
+    { input: "hello\rworld", expected: "hello\\rworld" },
+    { input: "hello'world", expected: "hello\\'world" },
+    { input: "hello\\world", expected: "hello\\\\world" },
+    { input: "hello\u2028world", expected: "hello\\u2028world" },
+    { input: "hello\u2029world", expected: "hello\\u2029world" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should escape special characters in ${JSON.stringify(input)}`, () => {
+      expect(escapeString(input)).toBe(expected);
+    });
+  }
+});
+
+describe("genSafeVariableName", () => {
+  const cases = [
+    { input: "fooBar", expected: "fooBar" },
+    { input: "const", expected: "_const" },
+    { input: "return", expected: "_return" },
+    { input: "123var", expected: "_123var" },
+    { input: "foo-bar", expected: "foo_45bar" },
+    { input: "foo.bar", expected: "foo_46bar" },
+    { input: "foo bar", expected: "foo_32bar" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should convert ${JSON.stringify(input)} to a safe variable name`, () => {
+      expect(genSafeVariableName(input)).toBe(expected);
+    });
+  }
+});
+```

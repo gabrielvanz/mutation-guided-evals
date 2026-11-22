@@ -1,0 +1,77 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  it("should generate a double quoted string by default", () => {
+    const input = "hello world";
+    const result = genString(input);
+    expect(result).toBe("\"hello world\"");
+  });
+
+  it("should generate a single quoted string when singleQuotes is true", () => {
+    const input = "hello world";
+    const result = genString(input, { singleQuotes: true });
+    expect(result).toBe("'hello world'");
+  });
+
+  it("should handle empty strings", () => {
+    expect(genString("")).toBe("\"\"");
+    expect(genString("", { singleQuotes: true })).toBe("''");
+  });
+
+  it("should handle escaped characters correctly", () => {
+    const input = "line1\nline2's";
+    expect(genString(input)).toBe("\"line1\\nline2's\"");
+    expect(genString(input, { singleQuotes: true })).toBe("'line1\\nline2\\'s'");
+  });
+});
+
+describe("escapeString", () => {
+  it("should return the string as is if no escaping is needed", () => {
+    const input = "simpleString123";
+    const result = escapeString(input);
+    expect(result).toBe("simpleString123");
+  });
+
+  it("should escape newlines, returns, quotes, backslashes, and line/paragraph separators", () => {
+    const input = "a\nb\rc\\'d\\e\u2028f\u2029g";
+    const result = escapeString(input);
+    expect(result).toBe("a\\nb\\rc\\\\'d\\\\e\\u2028f\\u2029g");
+  });
+
+  it("should handle empty strings", () => {
+    expect(escapeString("")).toBe("");
+  });
+});
+
+describe("genSafeVariableName", () => {
+  it("should return the name as is if it is a valid non-reserved identifier", () => {
+    const input = "myVariable";
+    const result = genSafeVariableName(input);
+    expect(result).toBe("myVariable");
+  });
+
+  it("should prepend an underscore if the name is a reserved keyword", () => {
+    const input = "class";
+    const result = genSafeVariableName(input);
+    expect(result).toBe("_class");
+  });
+
+  it("should prepend an underscore if the name starts with a digit", () => {
+    const input = "123var";
+    const result = genSafeVariableName(input);
+    expect(result).toBe("_123var");
+  });
+
+  it("should replace non-word characters with their character code prefixed by an underscore", () => {
+    const input = "foo-bar.baz";
+    const result = genSafeVariableName(input);
+    expect(result).toBe("foo_45bar_46baz");
+  });
+
+  it("should handle empty strings", () => {
+    expect(genSafeVariableName("")).toBe("");
+  });
+});
+```

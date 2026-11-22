@@ -1,0 +1,267 @@
+The Vitest test file below for `src/string.ts` (import path: `../../src/string`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/string.ts`:
+```ts
+import type { CodegenOptions } from "./types";
+
+/**
+ * Generate a string with double or single quotes and handle escapes.
+ *
+ * @group string
+ */
+export function genString(input: string, options: CodegenOptions = {}) {
+  const str = JSON.stringify(input);
+  if (!options.singleQuotes) {
+    return str;
+  }
+  return `'${escapeString(str).slice(1, -1)}'`;
+}
+
+// https://github.com/rollup/rollup/blob/master/src/utils/escapeId.ts
+const NEEDS_ESCAPE_RE = /[\n\r'\\\u2028\u2029]/;
+const QUOTE_NEWLINE_RE = /([\n\r'\u2028\u2029])/g;
+const BACKSLASH_RE = /\\/g;
+
+/**
+ * Escape a string for use in a javascript string.
+ *
+ * @group string
+ */
+export function escapeString(id: string): string {
+  if (!NEEDS_ESCAPE_RE.test(id)) {
+    return id;
+  }
+  return id.replace(BACKSLASH_RE, "\\\\").replace(QUOTE_NEWLINE_RE, "\\$1");
+}
+
+/**
+ * Generate a safe javascript variable name.
+ *
+ * @group string
+ */
+export function genSafeVariableName(name: string) {
+  if (reservedNames.has(name)) {
+    return `_${name}`;
+  }
+  /* eslint-disable unicorn/prefer-code-point */
+  return name
+    .replace(/^\d/, (r) => `_${r}`)
+    .replace(/\W/g, (r) => "_" + r.charCodeAt(0));
+  /* eslint-enable unicorn/prefer-code-point */
+}
+
+// -- internal --
+
+// Credit: https://mathiasbynens.be/notes/reserved-keywords
+const reservedNames = new Set([
+  "Infinity",
+  "NaN",
+  "arguments",
+  "await",
+  "break",
+  "case",
+  "catch",
+  "class",
+  "const",
+  "continue",
+  "debugger",
+  "default",
+  "delete",
+  "do",
+  "else",
+  "enum",
+  "eval",
+  "export",
+  "extends",
+  "false",
+  "finally",
+  "for",
+  "function",
+  "if",
+  "implements",
+  "import",
+  "in",
+  "instanceof",
+  "interface",
+  "let",
+  "new",
+  "null",
+  "package",
+  "private",
+  "protected",
+  "public",
+  "return",
+  "static",
+  "super",
+  "switch",
+  "this",
+  "throw",
+  "true",
+  "try",
+  "typeof",
+  "undefined",
+  "var",
+  "void",
+  "while",
+  "with",
+  "yield",
+]);
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  const cases = [
+    { input: "hello", options: {}, expected: "\"hello\"" },
+    { input: "hello", options: { singleQuotes: true }, expected: "'hello'" },
+    { input: "it's", options: {}, expected: "\"it's\"" },
+    { input: "it's", options: { singleQuotes: true }, expected: "'it\\'s'" },
+    { input: "", options: {}, expected: "\"\"" },
+    { input: "", options: { singleQuotes: true }, expected: "''" },
+    { input: "line1\nline2", options: {}, expected: "\"line1\\nline2\"" },
+    { input: "line1\nline2", options: { singleQuotes: true }, expected: "'line1\\nline2'" },
+  ];
+
+  for (const { input, options, expected } of cases) {
+    it(`should generate string for ${JSON.stringify(input)} with options ${JSON.stringify(options)}`, () => {
+      expect(genString(input, options)).toBe(expected);
+    });
+  }
+});
+
+describe("escapeString", () => {
+  const cases = [
+    { input: "hello", expected: "hello" },
+    { input: "it's", expected: "it\\'s" },
+    { input: "line1\nline2", expected: "line1\\nline2" },
+    { input: "line1\rline2", expected: "line1\\rline2" },
+    { input: "path\\to\\file", expected: "path\\\\to\\\\file" },
+    { input: "", expected: "" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should escape string ${JSON.stringify(input)}`, () => {
+      expect(escapeString(input)).toBe(expected);
+    });
+  }
+});
+
+describe("genSafeVariableName", () => {
+  const cases = [
+    { input: "fooBar", expected: "fooBar" },
+    { input: "const", expected: "_const" },
+    { input: "let", expected: "_let" },
+    { input: "123var", expected: "_123var" },
+    { input: "foo-bar", expected: "foo_45bar" },
+    { input: "foo.bar", expected: "foo_46bar" },
+    { input: "", expected: "" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should generate safe variable name for ${JSON.stringify(input)}`, () => {
+      expect(genSafeVariableName(input)).toBe(expected);
+    });
+  }
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.0.8 /home/runner/work/_temp/knitwork
+
+ ❯ test/__generated__/string.gen.test.ts (21 tests | 3 failed) 8ms
+     ✓ should generate string for "hello" with options {} 1ms
+     ✓ should generate string for "hello" with options {"singleQuotes":true} 0ms
+     ✓ should generate string for "it's" with options {} 0ms
+     ✓ should generate string for "it's" with options {"singleQuotes":true} 0ms
+     ✓ should generate string for "" with options {} 0ms
+     ✓ should generate string for "" with options {"singleQuotes":true} 0ms
+     ✓ should generate string for "line1\nline2" with options {} 0ms
+     × should generate string for "line1\nline2" with options {"singleQuotes":true} 4ms
+     ✓ should escape string "hello" 0ms
+     ✓ should escape string "it's" 0ms
+     × should escape string "line1\nline2" 1ms
+     × should escape string "line1\rline2" 0ms
+     ✓ should escape string "path\\to\\file" 0ms
+     ✓ should escape string "" 0ms
+     ✓ should generate safe variable name for "fooBar" 0ms
+     ✓ should generate safe variable name for "const" 0ms
+     ✓ should generate safe variable name for "let" 0ms
+     ✓ should generate safe variable name for "123var" 0ms
+     ✓ should generate safe variable name for "foo-bar" 0ms
+     ✓ should generate safe variable name for "foo.bar" 0ms
+     ✓ should generate safe variable name for "" 0ms
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 18 passed (21)
+   Start at  23:49:10
+   Duration  129ms (transform 24ms, setup 0ms, collect 33ms, tests 8ms, environment 0ms, prepare 3ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > genString > should generate string for "line1\nline2" with options {"singleQuotes":true}
+AssertionError: expected '\'line1\\nline2\'' to be '\'line1\nline2\'' // Object.is equality
+
+Expected: "'line1\nline2'"
+Received: "'line1\\nline2'"
+
+ ❯ test/__generated__/string.gen.test.ts:18:41
+     16|   for (const { input, options, expected } of cases) {
+     17|     it(`should generate string for ${JSON.stringify(input)} with optio…
+     18|       expect(genString(input, options)).toBe(expected);
+       |                                         ^
+     19|     });
+     20|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string "line1\nline2"
+AssertionError: expected 'line1\\nline2' to be 'line1\nline2' // Object.is equality
+
+- Expected
++ Received
+
+- line1\nline2
++ line1\
++ line2
+
+ ❯ test/__generated__/string.gen.test.ts:35:35
+     33|   for (const { input, expected } of cases) {
+     34|     it(`should escape string ${JSON.stringify(input)}`, () => {
+     35|       expect(escapeString(input)).toBe(expected);
+       |                                   ^
+     36|     });
+     37|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string "line1\rline2"
+AssertionError: expected 'line1\\rline2' to be 'line1\rline2' // Object.is equality
+
+Expected: "line1\rline2"
+Received: "line1\line2"
+
+ ❯ test/__generated__/string.gen.test.ts:35:35
+     33|   for (const { input, expected } of cases) {
+     34|     it(`should escape string ${JSON.stringify(input)}`, () => {
+     35|       expect(escapeString(input)).toBe(expected);
+       |                                   ^
+     36|     });
+     37|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

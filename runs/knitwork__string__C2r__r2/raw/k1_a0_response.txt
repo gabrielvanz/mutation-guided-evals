@@ -1,0 +1,69 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  it("should generate a double quoted string by default", () => {
+    const input = "hello world";
+    const result = genString(input);
+    expect(result).toBe("\"hello world\"");
+  });
+
+  it("should generate a single quoted string when singleQuotes is true", () => {
+    const input = "hello world";
+    const result = genString(input, { singleQuotes: true });
+    expect(result).toBe("'hello world'");
+  });
+
+  it("should handle empty strings", () => {
+    expect(genString("")).toBe("\"\"");
+    expect(genString("", { singleQuotes: true })).toBe("''");
+  });
+
+  it("should escape quotes properly based on options", () => {
+    const input = "it's \"quoted\"";
+    expect(genString(input)).toBe("\"it's \\\"quoted\\\"\"");
+    expect(genString(input, { singleQuotes: true })).toBe("'it\\'s \"quoted\"'");
+  });
+});
+
+describe("escapeString", () => {
+  it("should return the original string if no escapes are needed", () => {
+    const input = "simpleString123";
+    const result = escapeString(input);
+    expect(result).toBe("simpleString123");
+  });
+
+  it("should escape special characters like newlines, carriage returns, and quotes", () => {
+    const input = "line1\nline2\rcarriage'single'\\backslash";
+    const result = escapeString(input);
+    expect(result).toBe("line1\\nline2\\rcarriage\\'single\\'\\\\backslash");
+  });
+
+  it("should handle empty strings", () => {
+    expect(escapeString("")).toBe("");
+  });
+});
+
+describe("genSafeVariableName", () => {
+  it("should return the same name if it is safe", () => {
+    const result = genSafeVariableName("myVariable");
+    expect(result).toBe("myVariable");
+  });
+
+  it("should prefix with underscore if name is a reserved keyword", () => {
+    const result = genSafeVariableName("class");
+    expect(result).toBe("_class");
+  });
+
+  it("should prefix with underscore if name starts with a digit", () => {
+    const result = genSafeVariableName("123var");
+    expect(result).toBe("_123var");
+  });
+
+  it("should replace non-word characters with underscore and char code", () => {
+    const result = genSafeVariableName("my-var.name");
+    expect(result).toBe("my_45var_46name");
+  });
+});
+```
