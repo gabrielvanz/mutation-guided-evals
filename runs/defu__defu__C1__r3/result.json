@@ -1,10 +1,10 @@
 {
   "schema_version": "0.1",
   "run_id": "defu__defu__C1__r3",
-  "started_at": "2026-11-22T22:02:37.158Z",
-  "finished_at": "2026-11-22T22:06:25.073Z",
-  "status": "ok",
-  "error": null,
+  "started_at": "2026-11-22T22:36:51.707Z",
+  "finished_at": "2026-11-22T22:41:02.760Z",
+  "status": "provider_error",
+  "error": "Gemini HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, mode",
   "subject": {
     "library": "defu",
     "repo": "unjs/defu",
@@ -12,7 +12,7 @@
     "license": "MIT",
     "module_path": "src/defu.ts",
     "module_loc": 71,
-    "mutants_total": 67,
+    "mutants_total": 0,
     "human_test_files": [
       "test/defu.test.ts"
     ]
@@ -39,96 +39,42 @@
     "probe_similarity": 0.2606,
     "stratum": "low"
   },
-  "iterations": [
-    {
-      "k": 0,
-      "valid": true,
-      "discard_reason": null,
-      "repair_attempts": 0,
-      "scores": {
-        "ms_eval": 93.3333,
-        "ms_feedback": 91.8919,
-        "ms_all": 92.5373,
-        "ms_covered": 93.9394
-      },
-      "coverage": {
-        "line_cov": 100,
-        "branch_cov": 100
-      },
-      "mutants_eval": {
-        "killed": 28,
-        "survived": 2,
-        "no_coverage": 0,
-        "timeout": 0,
-        "compile_error": 0,
-        "runtime_error": 0,
-        "ignored": 0
-      },
-      "mutants_feedback": {
-        "killed": 32,
-        "survived": 2,
-        "no_coverage": 1,
-        "timeout": 2,
-        "compile_error": 0,
-        "runtime_error": 0,
-        "ignored": 0
-      },
-      "survivors_sent": 0,
-      "survivor_ids": [],
-      "tests": {
-        "n_tests": 15,
-        "n_asserts": 28,
-        "sha256": "b9eeed23d92642da6cdcca9c9c774827a68bab7525c170fdb8a13eb35ea2817d"
-      },
-      "prompt_file": "runs/defu__defu__C1__r3/raw/k0_a0_prompt.txt",
-      "response_file": "runs/defu__defu__C1__r3/raw/k0_a0_response.txt",
-      "best_k_so_far": 0,
-      "cost_cumulative": {
-        "calls": 1,
-        "repair_calls": 0,
-        "tokens_in": 935,
-        "tokens_out": 2513,
-        "usd_ref": 0.001099,
-        "wall_s": 227.92,
-        "stryker_s": 7.58
-      }
-    }
-  ],
+  "iterations": [],
   "selected_iteration": 0,
   "final": {
     "scores": {
-      "ms_eval": 93.3333,
-      "ms_feedback": 91.8919,
-      "ms_all": 92.5373,
-      "ms_covered": 93.9394
+      "ms_eval": null,
+      "ms_feedback": null,
+      "ms_all": null,
+      "ms_covered": null
     },
     "coverage": {
-      "line_cov": 100,
-      "branch_cov": 100
+      "line_cov": null,
+      "branch_cov": null
     },
     "cost": {
-      "calls": 1,
+      "calls": 0,
       "repair_calls": 0,
-      "tokens_in": 935,
-      "tokens_out": 2513,
-      "usd_ref": 0.001099,
-      "wall_s": 227.92,
-      "stryker_s": 7.58
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "usd_ref": 0,
+      "wall_s": 251.05,
+      "stryker_s": 0
     },
     "tests": {
-      "n_tests": 15,
-      "n_asserts": 28,
-      "sha256": "b9eeed23d92642da6cdcca9c9c774827a68bab7525c170fdb8a13eb35ea2817d"
+      "n_tests": 0,
+      "n_asserts": 0,
+      "sha256": ""
     },
-    "gap_cov_ms": 7.4627,
-    "valid_rate": 1,
+    "gap_cov_ms": null,
+    "valid_rate": 0,
     "tokens_per_pp": null
   },
   "guardrails": {
     "src_diff_empty": true,
     "forbidden_patterns_found": [],
     "flaky": false,
-    "reruns": 3
+    "reruns": 0
   },
   "artifacts": {
     "raw_dir": "runs/defu__defu__C1__r3/raw"

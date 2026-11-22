@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "defu__defu__C2__r1",
-  "started_at": "2026-11-22T22:06:42.891Z",
-  "finished_at": "2026-11-22T22:07:52.792Z",
+  "started_at": "2026-11-22T22:41:26.616Z",
+  "finished_at": "2026-11-22T22:43:31.254Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -46,18 +46,18 @@
       "discard_reason": null,
       "repair_attempts": 0,
       "scores": {
-        "ms_eval": 90,
+        "ms_eval": 86.6667,
         "ms_feedback": 91.8919,
-        "ms_all": 91.0448,
-        "ms_covered": 92.4242
+        "ms_all": 89.5522,
+        "ms_covered": 90.9091
       },
       "coverage": {
         "line_cov": 100,
         "branch_cov": 100
       },
       "mutants_eval": {
-        "killed": 27,
-        "survived": 3,
+        "killed": 26,
+        "survived": 4,
         "no_coverage": 0,
         "timeout": 0,
         "compile_error": 0,
@@ -76,9 +76,9 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 17,
-        "n_asserts": 27,
-        "sha256": "89958938370a79b3fc449acbf8464d092e368c59bbdd3c9072771226c178b77a"
+        "n_tests": 18,
+        "n_asserts": 30,
+        "sha256": "4d6d18f969235152ac1960f542841d930bd02a446e8738129d48e94293214e0e"
       },
       "prompt_file": "runs/defu__defu__C2__r1/raw/k0_a0_prompt.txt",
       "response_file": "runs/defu__defu__C2__r1/raw/k0_a0_response.txt",
@@ -87,20 +87,20 @@
         "calls": 1,
         "repair_calls": 0,
         "tokens_in": 1355,
-        "tokens_out": 2911,
-        "usd_ref": 0.0013,
-        "wall_s": 69.9,
-        "stryker_s": 6.31
+        "tokens_out": 3049,
+        "usd_ref": 0.001355,
+        "wall_s": 124.64,
+        "stryker_s": 9.1
       }
     }
   ],
   "selected_iteration": 0,
   "final": {
     "scores": {
-      "ms_eval": 90,
+      "ms_eval": 86.6667,
       "ms_feedback": 91.8919,
-      "ms_all": 91.0448,
-      "ms_covered": 92.4242
+      "ms_all": 89.5522,
+      "ms_covered": 90.9091
     },
     "coverage": {
       "line_cov": 100,
@@ -110,17 +110,17 @@
       "calls": 1,
       "repair_calls": 0,
       "tokens_in": 1355,
-      "tokens_out": 2911,
-      "usd_ref": 0.0013,
-      "wall_s": 69.9,
-      "stryker_s": 6.31
+      "tokens_out": 3049,
+      "usd_ref": 0.001355,
+      "wall_s": 124.64,
+      "stryker_s": 9.1
     },
     "tests": {
-      "n_tests": 17,
-      "n_asserts": 27,
-      "sha256": "89958938370a79b3fc449acbf8464d092e368c59bbdd3c9072771226c178b77a"
+      "n_tests": 18,
+      "n_asserts": 30,
+      "sha256": "4d6d18f969235152ac1960f542841d930bd02a446e8738129d48e94293214e0e"
     },
-    "gap_cov_ms": 8.9552,
+    "gap_cov_ms": 10.4478,
     "valid_rate": 1,
     "tokens_per_pp": null
   },

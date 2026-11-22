@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "defu__defu__C1__r2",
-  "started_at": "2026-11-22T22:02:37.042Z",
-  "finished_at": "2026-11-22T22:06:24.021Z",
+  "started_at": "2026-11-22T22:36:52.331Z",
+  "finished_at": "2026-11-22T22:42:01.828Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -76,9 +76,9 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 13,
-        "n_asserts": 22,
-        "sha256": "ce501022e51abed5c64235b2b58a66854737bb28b9dafda9a7a30ef3b39b72ca"
+        "n_tests": 16,
+        "n_asserts": 24,
+        "sha256": "22659c56600873b6e0ffd2c48986294fb3a2247ae489bc2239cc790551cef577"
       },
       "prompt_file": "runs/defu__defu__C1__r2/raw/k0_a0_prompt.txt",
       "response_file": "runs/defu__defu__C1__r2/raw/k0_a0_response.txt",
@@ -87,10 +87,10 @@
         "calls": 1,
         "repair_calls": 0,
         "tokens_in": 935,
-        "tokens_out": 2213,
-        "usd_ref": 0.000979,
-        "wall_s": 226.98,
-        "stryker_s": 6.76
+        "tokens_out": 2318,
+        "usd_ref": 0.001021,
+        "wall_s": 309.5,
+        "stryker_s": 8.97
       }
     }
   ],
@@ -110,15 +110,15 @@
       "calls": 1,
       "repair_calls": 0,
       "tokens_in": 935,
-      "tokens_out": 2213,
-      "usd_ref": 0.000979,
-      "wall_s": 226.98,
-      "stryker_s": 6.76
+      "tokens_out": 2318,
+      "usd_ref": 0.001021,
+      "wall_s": 309.5,
+      "stryker_s": 8.97
     },
     "tests": {
-      "n_tests": 13,
-      "n_asserts": 22,
-      "sha256": "ce501022e51abed5c64235b2b58a66854737bb28b9dafda9a7a30ef3b39b72ca"
+      "n_tests": 16,
+      "n_asserts": 24,
+      "sha256": "22659c56600873b6e0ffd2c48986294fb3a2247ae489bc2239cc790551cef577"
     },
     "gap_cov_ms": 10.4478,
     "valid_rate": 1,

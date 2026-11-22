@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "defu__defu__C2__r2",
-  "started_at": "2026-11-22T22:06:48.076Z",
-  "finished_at": "2026-11-22T22:10:37.462Z",
+  "started_at": "2026-11-22T22:42:24.421Z",
+  "finished_at": "2026-11-22T22:46:09.342Z",
   "status": "provider_error",
   "error": "Gemini HTTP 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, mode",
   "subject": {
@@ -58,7 +58,7 @@
       "tokens_in": 0,
       "tokens_out": 0,
       "usd_ref": 0,
-      "wall_s": 229.39,
+      "wall_s": 224.92,
       "stryker_s": 0
     },
     "tests": {
