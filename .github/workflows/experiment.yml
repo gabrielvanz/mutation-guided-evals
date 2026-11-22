@@ -37,6 +37,9 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - id: m
+        env:
+          # runs de OUTRO modelo não contam como concluídos (não misturar modelos)
+          LLM_MODEL: ${{ inputs.model }}
         run: |
           ARGS="--conditions ${{ inputs.conditions }} --reps ${{ inputs.reps }} --skip-done"
           if [ -n "${{ inputs.library }}" ]; then ARGS="$ARGS --library ${{ inputs.library }}"; fi
@@ -95,6 +98,17 @@ jobs:
         with:
           pattern: "*__r[0-9]*"
           path: runs
+      - name: Descartar runs com erro de infraestrutura (refeitos no próximo lote)
+        run: |
+          # provider_error (ex.: 429 de cota), stryker_error e timeout não têm dado válido e violam o schema.
+          # Também limpa os que já estavam commitados de lotes anteriores.
+          for f in runs/*/result.json; do
+            [ -f "$f" ] || continue
+            s="$(jq -r .status "$f")"
+            case "$s" in
+              provider_error|stryker_error|timeout) echo "descartando $(dirname "$f") ($s)"; rm -rf "$(dirname "$f")" ;;
+            esac
+          done
       - name: Commitar resultados (result.json + raw/, sem work/)
         run: |
           git config user.name "github-actions[bot]"

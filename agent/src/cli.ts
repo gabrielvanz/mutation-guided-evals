@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
@@ -16,6 +16,17 @@ import { sha256 } from "./util.js";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const CONDITIONS: Condition[] = ["C0", "C1", "C2", "C2r", "C3"];
 const RETRY_STATUSES = new Set(["provider_error", "stryker_error", "timeout"]);
+
+/**
+ * Um resultado anterior é definitivo (não precisa refazer) se terminou sem erro de infraestrutura E,
+ * quando é uma condição com LLM, foi gerado pelo MESMO modelo (PROTOCOL/CLAUDE.md: não misturar modelos).
+ * O baseline humano (C0) não usa modelo. Sem `model` (uso local sem LLM_MODEL), só o status conta.
+ */
+function isFinal(prev: RunResult, model: string | undefined): boolean {
+  if (RETRY_STATUSES.has(prev.status)) return false;
+  if (prev.condition === "C0") return true;
+  return !model || prev.model?.model_id === model;
+}
 
 async function pkgVersion(workdir: string, name: string): Promise<string> {
   try {
@@ -76,11 +87,13 @@ async function cmdRun(argv: string[]): Promise<number> {
   const resultFile = path.join(runDir, "result.json");
   if (existsSync(resultFile) && !v.force) {
     const prev = JSON.parse(await readFile(resultFile, "utf8")) as RunResult;
-    if (!RETRY_STATUSES.has(prev.status)) {
+    if (isFinal(prev, process.env.LLM_MODEL)) {
       console.log(`[skip] ${id} já existe (status=${prev.status}). Use --force para refazer.`);
       return 0;
     }
   }
+  // Refazendo (erro anterior, ou resultado de outro modelo): limpa o diretório para não sobrar raw/ antigo.
+  if (existsSync(runDir)) await rm(runDir, { recursive: true, force: true });
 
   const workdir = path.resolve(v.workdir);
   const source = await readFile(path.join(workdir, mod.path), "utf8");
@@ -180,7 +193,7 @@ async function filterPending<T extends { library: string; module: string; condit
     let done = false;
     if (existsSync(file)) {
       try {
-        done = !RETRY_STATUSES.has((JSON.parse(await readFile(file, "utf8")) as RunResult).status);
+        done = isFinal(JSON.parse(await readFile(file, "utf8")) as RunResult, process.env.LLM_MODEL);
       } catch {
         done = false; // result.json ilegível: refaz
       }
@@ -208,15 +221,23 @@ async function cmdValidate(argv: string[]): Promise<number> {
   const validate = ajv.compile(schema);
   const files = await findResults(v.dir!);
   let bad = 0;
+  let skipped = 0;
   for (const f of files) {
     const j = JSON.parse(await readFile(f, "utf8"));
+    // Erros de infraestrutura (ex.: 429) não são dado do experimento: serão refeitos e a análise já os ignora.
+    if (RETRY_STATUSES.has(j.status)) {
+      skipped++;
+      console.warn(`IGNORADO ${f} (status=${j.status}; será refeito)`);
+      continue;
+    }
     if (!validate(j)) {
       bad++;
       console.error(`INVÁLIDO ${f}`);
       console.error(ajv.errorsText(validate.errors, { separator: "\n  " }));
     }
   }
-  console.log(`${files.length - bad}/${files.length} result.json válidos`);
+  const checked = files.length - skipped;
+  console.log(`${checked - bad}/${checked} result.json válidos` + (skipped ? ` (${skipped} com erro de infraestrutura ignorados)` : ""));
   return bad === 0 ? 0 : 1;
 }
 
