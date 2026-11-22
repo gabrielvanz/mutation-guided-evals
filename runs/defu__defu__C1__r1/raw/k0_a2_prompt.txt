@@ -1,0 +1,236 @@
+The Vitest test file below for `src/defu.ts` (import path: `../../src/defu`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/defu.ts`:
+```ts
+import { isPlainObject } from "./_utils";
+import type { Merger, DefuFn as DefuFunction, DefuInstance } from "./types";
+
+// Base function to apply defaults
+function _defu<T>(baseObject: T, defaults: any, namespace = ".", merger?: Merger): T {
+  if (!isPlainObject(defaults)) {
+    return _defu(baseObject, {}, namespace, merger);
+  }
+
+  const object = { ...defaults };
+
+  for (const key of Object.keys(baseObject as Record<string, any>)) {
+    if (key === "__proto__" || key === "constructor") {
+      continue;
+    }
+
+    const value = (baseObject as Record<string, any>)[key];
+
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    if (merger && merger(object, key, value, namespace)) {
+      continue;
+    }
+
+    if (Array.isArray(value) && Array.isArray(object[key])) {
+      object[key] = [...value, ...object[key]];
+    } else if (isPlainObject(value) && isPlainObject(object[key])) {
+      object[key] = _defu(
+        value,
+        object[key],
+        (namespace ? `${namespace}.` : "") + key.toString(),
+        merger,
+      );
+    } else {
+      object[key] = value;
+    }
+  }
+
+  return object;
+}
+
+// Create defu wrapper with optional merger and multi arg support
+export function createDefu(merger?: Merger): DefuFunction {
+  return (...arguments_) =>
+    // eslint-disable-next-line unicorn/no-array-reduce
+    arguments_.reduce((p, c) => _defu(p, c, "", merger), {} as any);
+}
+
+// Standard version
+export const defu = createDefu() as DefuInstance;
+export default defu;
+
+// Custom version with function merge support
+export const defuFn = createDefu((object, key, currentValue) => {
+  if (object[key] !== undefined && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+// Custom version with function merge support only for defined arrays
+export const defuArrayFn = createDefu((object, key, currentValue) => {
+  if (Array.isArray(object[key]) && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+export type { Defu, DefuFn, DefuInstance } from "./types";
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import defu, { createDefu, defuFn, defuArrayFn } from "../../src/defu";
+
+describe("defu", () => {
+  it("should assign default values when properties are missing", () => {
+    const base = { a: 1 };
+    const defaults = { a: 2, b: 3 };
+    const result = defu(base, defaults);
+
+    expect(result).toEqual({ a: 1, b: 3 });
+  });
+
+  it("should handle multiple arguments correctly", () => {
+    const result = defu({ a: 1 }, { a: 5, b: 2 }, { b: 3, c: 4 });
+    expect(result).toEqual({ a: 1, b: 2, c: 4 });
+  });
+
+  it("should concatenate arrays", () => {
+    const base = { arr: [3, 4] };
+    const defaults = { arr: [1, 2] };
+    const result = defu(base, defaults);
+
+    expect(result).toEqual({ arr: [3, 4, 1, 2] });
+  });
+
+  it("should recursively merge plain objects", () => {
+    const base = { obj: { x: 1 } };
+    const defaults = { obj: { y: 2, x: 99 } };
+    const result = defu(base, defaults);
+
+    expect(result).toEqual({ obj: { x: 1, y: 2 } });
+  });
+
+  it("should ignore null and undefined values in base object", () => {
+    const base = { a: null, b: undefined, c: 1 };
+    const defaults = { a: 10, b: 20, c: 30 };
+    const result = defu(base, defaults);
+
+    expect(result).toEqual({ a: 10, b: 20, c: 1 });
+  });
+
+  it("should prevent prototype pollution", () => {
+    const base = JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"prototype": {"polluted": true}}, "a": 1}');
+    const defaults = { a: 2, b: 3 };
+    const result = defu(base, defaults);
+
+    expect(result).toEqual({ a: 1, b: 3 });
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
+  it("should fallback to empty defaults if defaults is not a plain object", () => {
+    const base = { a: 1 };
+    const result = defu(base, null as any);
+
+    expect(result).toEqual({ a: 1 });
+  });
+
+  it("should work with createDefu and custom merger", () => {
+    const customDefu = createDefu((object, key, value) => {
+      if (key === "custom") {
+        object[key] = "merged-" + value;
+        return true;
+      }
+    });
+
+    const result = customDefu({ custom: "base" }, { custom: "default" });
+    expect(result).toEqual({ custom: "merged-default" });
+  });
+
+  it("should support defuFn for function merging", () => {
+    const base = {
+      val: (val: number) => val + 1,
+    };
+    const defaults = {
+      val: 5,
+    };
+
+    const result = defuFn(base, defaults);
+    expect(result.val).toBe(6);
+  });
+
+  it("should support defuArrayFn for array-specific function merging", () => {
+    const base = {
+      items: (arr: number[]) => [...arr, 3],
+    };
+    const defaults = {
+      items: [1, 2],
+    };
+
+    const result = defuArrayFn(base, defaults);
+    expect(result.items).toEqual([1, 2, 3]);
+  });
+
+  it("should default export the same function instance", () => {
+    const importedDefu = defu;
+    const result = importedDefu({ a: 1 }, { a: 2 });
+    expect(result).toEqual({ a: 1 });
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.6 /home/runner/work/_temp/defu
+
+ ❯ test/__generated__/defu.gen.test.ts (11 tests | 1 failed) 14ms
+     ✓ should assign default values when properties are missing 2ms
+     ✓ should handle multiple arguments correctly 0ms
+     ✓ should concatenate arrays 0ms
+     ✓ should recursively merge plain objects 0ms
+     ✓ should ignore null and undefined values in base object 0ms
+     ✓ should prevent prototype pollution 0ms
+     ✓ should fallback to empty defaults if defaults is not a plain object 0ms
+     × should work with createDefu and custom merger 7ms
+     ✓ should support defuFn for function merging 1ms
+     ✓ should support defuArrayFn for array-specific function merging 0ms
+     ✓ should default export the same function instance 0ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 10 passed (11)
+   Start at  23:19:50
+   Duration  207ms (transform 40ms, setup 0ms, import 54ms, tests 14ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/defu.gen.test.ts > defu > should work with createDefu and custom merger
+AssertionError: expected { custom: 'merged-base' } to deeply equal { custom: 'merged-default' }
+
+- Expected
++ Received
+
+  {
+-   "custom": "merged-default",
++   "custom": "merged-base",
+  }
+
+ ❯ test/__generated__/defu.gen.test.ts:67:20
+     65|
+     66|     const result = customDefu({ custom: "base" }, { custom: "default" …
+     67|     expect(result).toEqual({ custom: "merged-default" });
+       |                    ^
+     68|   });
+     69|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.
