@@ -1,0 +1,311 @@
+The Vitest test file below for `src/defu.ts` (import path: `../../src/defu`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/defu.ts`:
+```ts
+import { isPlainObject } from "./_utils";
+import type { Merger, DefuFn as DefuFunction, DefuInstance } from "./types";
+
+// Base function to apply defaults
+function _defu<T>(baseObject: T, defaults: any, namespace = ".", merger?: Merger): T {
+  if (!isPlainObject(defaults)) {
+    return _defu(baseObject, {}, namespace, merger);
+  }
+
+  const object = { ...defaults };
+
+  for (const key of Object.keys(baseObject as Record<string, any>)) {
+    if (key === "__proto__" || key === "constructor") {
+      continue;
+    }
+
+    const value = (baseObject as Record<string, any>)[key];
+
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    if (merger && merger(object, key, value, namespace)) {
+      continue;
+    }
+
+    if (Array.isArray(value) && Array.isArray(object[key])) {
+      object[key] = [...value, ...object[key]];
+    } else if (isPlainObject(value) && isPlainObject(object[key])) {
+      object[key] = _defu(
+        value,
+        object[key],
+        (namespace ? `${namespace}.` : "") + key.toString(),
+        merger,
+      );
+    } else {
+      object[key] = value;
+    }
+  }
+
+  return object;
+}
+
+// Create defu wrapper with optional merger and multi arg support
+export function createDefu(merger?: Merger): DefuFunction {
+  return (...arguments_) =>
+    // eslint-disable-next-line unicorn/no-array-reduce
+    arguments_.reduce((p, c) => _defu(p, c, "", merger), {} as any);
+}
+
+// Standard version
+export const defu = createDefu() as DefuInstance;
+export default defu;
+
+// Custom version with function merge support
+export const defuFn = createDefu((object, key, currentValue) => {
+  if (object[key] !== undefined && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+// Custom version with function merge support only for defined arrays
+export const defuArrayFn = createDefu((object, key, currentValue) => {
+  if (Array.isArray(object[key]) && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+export type { Defu, DefuFn, DefuInstance } from "./types";
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import { defu, createDefu, defuFn, defuArrayFn } from "../../src/defu";
+
+describe("defu", () => {
+  it("should merge basic objects", () => {
+    const result = defu({ a: 1 }, { b: 2 });
+    expect(result).toEqual({ a: 1, b: 2 });
+  });
+
+  it("should prioritize base object over defaults", () => {
+    const result = defu({ a: 1 }, { a: 2, b: 3 });
+    expect(result).toEqual({ a: 1, b: 3 });
+  });
+
+  it("should ignore null and undefined values in base object", () => {
+    const result = defu({ a: null, b: undefined, c: 3 }, { a: 1, b: 2, c: 1 });
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should recursively merge nested plain objects with correct default namespace tracking", () => {
+    const customMerger = createDefu((object, key, value, namespace) => {
+      if (key === "target") {
+        object[key] = `${namespace}:${value}`;
+        return true;
+      }
+    });
+
+    const result = customMerger(
+      { a: { target: "val" } },
+      { a: { target: "default" } }
+    );
+    expect(result).toEqual({ a: { target: "a:val" } });
+  });
+
+  it("should pass default dot namespace when namespace parameter is omitted", () => {
+    let capturedNamespace = "";
+    const customMerger = createDefu((_object, key, _value, namespace) => {
+      if (key === "nested") {
+        capturedNamespace = namespace;
+      }
+    });
+
+    customMerger(
+      { a: { nested: 1 } },
+      { a: { nested: 2 } }
+    );
+    expect(capturedNamespace).toBe(".a");
+  });
+
+  it("should concatenate arrays", () => {
+    const result = defu({ a: [1, 2] }, { a: [3, 4] });
+    expect(result).toEqual({ a: [1, 2, 3, 4] });
+  });
+
+  it("should handle multiple arguments", () => {
+    const result = defu({ a: 1 }, { b: 2 }, { c: 3 }, { a: 10 });
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should ignore __proto__ and constructor keys", () => {
+    const result = defu(
+      JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"polluted": true}, "a": 1}'),
+      { a: 2, b: 3 }
+    );
+    expect(result).toEqual({ a: 1, b: 3 });
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
+  it("should allow a regular key named __proto__ when it is not the prototype chain property", () => {
+    const result = defu({ "__proto__": "safe-value" }, { "__proto__": "default-value" });
+    expect(result).toEqual({ "__proto__": "safe-value" });
+  });
+
+  it("should not allow prototype pollution via __proto__ key", () => {
+    const malicious = JSON.parse('{"__proto__": {"polluted": true}}');
+    const result = defu(malicious, { a: 1 });
+    expect(result).toEqual({ a: 1 });
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
+  it("should handle non-plain object defaults gracefully by falling back to empty object", () => {
+    const result = defu({ a: 1 }, "not-an-object" as any);
+    expect(result).toEqual({ a: 1 });
+  });
+});
+
+describe("createDefu", () => {
+  it("should create a custom defu instance with a custom merger", () => {
+    const customDefu = createDefu((object, key, value) => {
+      if (key === "special") {
+        object[key] = `custom_${value}`;
+        return true;
+      }
+    });
+
+    const result = customDefu({ special: "value", normal: 1 }, { special: "default", normal: 2 });
+    expect(result).toEqual({ special: "custom_value", normal: 1 });
+  });
+});
+
+describe("defuFn", () => {
+  it("should execute function values passing current value when object[key] is defined", () => {
+    const result = defuFn(
+      {
+        arr: (val: number[]) => [...val, 3],
+      },
+      {
+        arr: [1, 2],
+      }
+    );
+    expect(result).toEqual({ arr: [1, 2, 3] });
+  });
+
+  it("should NOT execute function values when object[key] is undefined", () => {
+    const result = defuFn(
+      {
+        arr: (val: number[]) => [...val, 3],
+      },
+      {
+        other: 1,
+      }
+    );
+    expect(result).toEqual({
+      arr: expect.any(Function),
+      other: 1,
+    });
+  });
+
+  it("should treat non-function values normally even if object[key] is defined", () => {
+    const result = defuFn(
+      {
+        val: "override",
+      },
+      {
+        val: "original",
+      }
+    );
+    expect(result).toEqual({ val: "override" });
+  });
+});
+
+describe("defuArrayFn", () => {
+  it("should execute function values only when target is an array", () => {
+    const result = defuArrayFn(
+      {
+        arr: (val: number[]) => [...val, 3],
+        notArr: (val: string) => `${val}_modified`,
+      },
+      {
+        arr: [1, 2],
+        notArr: "original",
+      }
+    );
+    expect(result).toEqual({
+      arr: [1, 2, 3],
+      notArr: expect.any(Function),
+    });
+  });
+
+  it("should NOT execute non-function values when target is an array", () => {
+    const result = defuArrayFn(
+      {
+        arr: [5, 6],
+      },
+      {
+        arr: [1, 2],
+      }
+    );
+    expect(result).toEqual({
+      arr: [5, 6, 1, 2],
+    });
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.6 /home/runner/work/_temp/defu
+
+ ❯ test/__generated__/defu.gen.test.ts (17 tests | 1 failed) 8ms
+     ✓ should merge basic objects 1ms
+     ✓ should prioritize base object over defaults 0ms
+     ✓ should ignore null and undefined values in base object 0ms
+     ✓ should recursively merge nested plain objects with correct default namespace tracking 0ms
+     × should pass default dot namespace when namespace parameter is omitted 3ms
+     ✓ should concatenate arrays 0ms
+     ✓ should handle multiple arguments 0ms
+     ✓ should ignore __proto__ and constructor keys 0ms
+     ✓ should allow a regular key named __proto__ when it is not the prototype chain property 0ms
+     ✓ should not allow prototype pollution via __proto__ key 0ms
+     ✓ should handle non-plain object defaults gracefully by falling back to empty object 0ms
+     ✓ should create a custom defu instance with a custom merger 0ms
+     ✓ should execute function values passing current value when object[key] is defined 0ms
+     ✓ should NOT execute function values when object[key] is undefined 0ms
+     ✓ should treat non-function values normally even if object[key] is defined 0ms
+     ✓ should execute function values only when target is an array 0ms
+     ✓ should NOT execute non-function values when target is an array 0ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 passed (17)
+   Start at  23:33:11
+   Duration  147ms (transform 32ms, setup 0ms, import 43ms, tests 8ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/defu.gen.test.ts > defu > should pass default dot namespace when namespace parameter is omitted
+AssertionError: expected 'a' to be '.a' // Object.is equality
+
+Expected: ".a"
+Received: "a"
+
+ ❯ test/__generated__/defu.gen.test.ts:47:31
+     45|       { a: { nested: 2 } }
+     46|     );
+     47|     expect(capturedNamespace).toBe(".a");
+       |                               ^
+     48|   });
+     49|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

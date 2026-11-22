@@ -1,0 +1,247 @@
+The Vitest test file below for `src/defu.ts` (import path: `../../src/defu`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/defu.ts`:
+```ts
+import { isPlainObject } from "./_utils";
+import type { Merger, DefuFn as DefuFunction, DefuInstance } from "./types";
+
+// Base function to apply defaults
+function _defu<T>(baseObject: T, defaults: any, namespace = ".", merger?: Merger): T {
+  if (!isPlainObject(defaults)) {
+    return _defu(baseObject, {}, namespace, merger);
+  }
+
+  const object = { ...defaults };
+
+  for (const key of Object.keys(baseObject as Record<string, any>)) {
+    if (key === "__proto__" || key === "constructor") {
+      continue;
+    }
+
+    const value = (baseObject as Record<string, any>)[key];
+
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    if (merger && merger(object, key, value, namespace)) {
+      continue;
+    }
+
+    if (Array.isArray(value) && Array.isArray(object[key])) {
+      object[key] = [...value, ...object[key]];
+    } else if (isPlainObject(value) && isPlainObject(object[key])) {
+      object[key] = _defu(
+        value,
+        object[key],
+        (namespace ? `${namespace}.` : "") + key.toString(),
+        merger,
+      );
+    } else {
+      object[key] = value;
+    }
+  }
+
+  return object;
+}
+
+// Create defu wrapper with optional merger and multi arg support
+export function createDefu(merger?: Merger): DefuFunction {
+  return (...arguments_) =>
+    // eslint-disable-next-line unicorn/no-array-reduce
+    arguments_.reduce((p, c) => _defu(p, c, "", merger), {} as any);
+}
+
+// Standard version
+export const defu = createDefu() as DefuInstance;
+export default defu;
+
+// Custom version with function merge support
+export const defuFn = createDefu((object, key, currentValue) => {
+  if (object[key] !== undefined && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+// Custom version with function merge support only for defined arrays
+export const defuArrayFn = createDefu((object, key, currentValue) => {
+  if (Array.isArray(object[key]) && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+export type { Defu, DefuFn, DefuInstance } from "./types";
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import { defu, createDefu, defuFn, defuArrayFn } from "../../src/defu";
+
+describe("defu", () => {
+  it("should merge basic objects with defaults", () => {
+    const base = { a: 1, c: 3 };
+    const defaults = { a: 2, b: 2 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should handle multiple arguments", () => {
+    const result = defu({ a: 1 }, { b: 2 }, { c: 3 }, { a: 10 });
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should ignore null and undefined values in base", () => {
+    const base = { a: null, b: undefined, c: 3 };
+    const defaults = { a: 1, b: 2, c: 4 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should concatenate arrays", () => {
+    const base = { arr: [3, 4] };
+    const defaults = { arr: [1, 2] };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ arr: [3, 4, 1, 2] });
+  });
+
+  it("should recursively merge plain objects", () => {
+    const base = { nested: { a: 1 } };
+    const defaults = { nested: { b: 2, a: 10 } };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ nested: { a: 1, b: 2 } });
+  });
+
+  it("should prevent prototype pollution via __proto__ and constructor", () => {
+    const base = JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"polluted": true}, "a": 1}');
+    const defaults = { a: 2 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1 });
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
+  it("should handle non-plain object defaults gracefully", () => {
+    const base = { a: 1 };
+    const defaults = null as any;
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1 });
+  });
+});
+
+describe("createDefu", () => {
+  it("should allow custom mergers", () => {
+    const customDefu = createDefu((object, key, value) => {
+      if (typeof object[key] === "number" && typeof value === "number") {
+        object[key] = object[key] + value;
+        return true;
+      }
+    });
+
+    const result = customDefu({ a: 10 }, { a: 5, b: 2 });
+    expect(result).toEqual({ a: 15, b: 2 });
+  });
+});
+
+describe("defuFn", () => {
+  it("should invoke functions with current value when defined", () => {
+    const base = {
+      callback: (val: number) => val * 2,
+    };
+    const defaults = {
+      callback: 10,
+    };
+    const result = defuFn(base, defaults);
+    expect(result).toEqual({ callback: 20 });
+  });
+
+  it("should not invoke function if defaults value is undefined", () => {
+    const base = {
+      callback: (val: number) => val * 2,
+    };
+    const defaults = {};
+    const result = defuFn(base, defaults);
+    expect(result).toEqual({ callback: base.callback });
+  });
+});
+
+describe("defuArrayFn", () => {
+  it("should invoke function only when defaults value is an array", () => {
+    const base = {
+      items: (val: string[]) => [...val, "extra"],
+    };
+    const defaults = {
+      items: ["base"],
+    };
+    const result = defuArrayFn(base, defaults);
+    expect(result).toEqual({ items: ["base", "extra"] });
+  });
+
+  it("should not invoke function when defaults value is not an array", () => {
+    const fn = (val: any) => val;
+    const base = { items: fn };
+    const defaults = { items: "not-an-array" };
+    const result = defuArrayFn(base, defaults);
+    expect(result).toEqual({ items: "not-an-array" });
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.6 /home/runner/work/_temp/defu
+
+ ❯ test/__generated__/defu.gen.test.ts (12 tests | 1 failed) 8ms
+     ✓ should merge basic objects with defaults 1ms
+     ✓ should handle multiple arguments 0ms
+     ✓ should ignore null and undefined values in base 0ms
+     ✓ should concatenate arrays 0ms
+     ✓ should recursively merge plain objects 0ms
+     ✓ should prevent prototype pollution via __proto__ and constructor 0ms
+     ✓ should handle non-plain object defaults gracefully 0ms
+     ✓ should allow custom mergers 0ms
+     ✓ should invoke functions with current value when defined 0ms
+     ✓ should not invoke function if defaults value is undefined 0ms
+     ✓ should invoke function only when defaults value is an array 0ms
+     × should not invoke function when defaults value is not an array 4ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 11 passed (12)
+   Start at  23:32:36
+   Duration  124ms (transform 24ms, setup 0ms, import 33ms, tests 8ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/defu.gen.test.ts > defuArrayFn > should not invoke function when defaults value is not an array
+AssertionError: expected { items: [Function fn] } to deeply equal { items: 'not-an-array' }
+
+- Expected
++ Received
+
+  {
+-   "items": "not-an-array",
++   "items": [Function fn],
+  }
+
+ ❯ test/__generated__/defu.gen.test.ts:107:20
+    105|     const defaults = { items: "not-an-array" };
+    106|     const result = defuArrayFn(base, defaults);
+    107|     expect(result).toEqual({ items: "not-an-array" });
+       |                    ^
+    108|   });
+    109| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

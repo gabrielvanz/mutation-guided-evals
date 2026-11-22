@@ -1,0 +1,113 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { defu, createDefu, defuFn, defuArrayFn } from "../../src/defu";
+
+describe("defu", () => {
+  it("should merge basic objects", () => {
+    const base = { a: 1, b: 2 };
+    const defaults = { b: 3, c: 4 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 2, c: 4 });
+  });
+
+  it("should handle multiple arguments", () => {
+    const result = defu({ a: 1 }, { b: 2 }, { c: 3 }, { a: 10 });
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should ignore null and undefined values from base object", () => {
+    const base = { a: null, b: undefined, c: 5 };
+    const defaults = { a: 1, b: 2, c: 3 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 2, c: 5 });
+  });
+
+  it("should concatenate arrays", () => {
+    const base = { a: [1, 2] };
+    const defaults = { a: [3, 4] };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: [1, 2, 3, 4] });
+  });
+
+  it("should merge nested plain objects recursively", () => {
+    const base = { user: { name: "John", settings: { theme: "dark" } } };
+    const defaults = { user: { name: "Default", age: 30, settings: { theme: "light", notifications: true } } };
+    const result = defu(base, defaults);
+    expect(result).toEqual({
+      user: {
+        name: "John",
+        age: 30,
+        settings: {
+          theme: "dark",
+          notifications: true,
+        },
+      },
+    });
+  });
+
+  it("should fallback to empty defaults when defaults is not a plain object", () => {
+    const base = { a: 1 };
+    const result = defu(base, null as any);
+    expect(result).toEqual({ a: 1 });
+  });
+
+  it("should prevent prototype pollution via __proto__ and constructor", () => {
+    const base = JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"prototype": {"polluted": true}}, "a": 1}');
+    const defaults = { a: 2, b: 3 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 3 });
+    expect({}.polluted).toBeUndefined();
+  });
+});
+
+describe("createDefu", () => {
+  it("should create a custom defu instance with a custom merger", () => {
+    const customDefu = createDefu((object, key, currentValue) => {
+      if (key === "special") {
+        object[key] = `custom-${currentValue}`;
+        return true;
+      }
+    });
+    const result = customDefu({ special: "value" }, { special: "default" });
+    expect(result).toEqual({ special: "custom-value" });
+  });
+});
+
+describe("defuFn", () => {
+  it("should execute functions when merging with existing values", () => {
+    const base = {
+      val: (existing: number) => existing + 10,
+    };
+    const defaults = {
+      val: 5,
+    };
+    const result = defuFn(base, defaults);
+    expect(result).toEqual({ val: 15 });
+  });
+
+  it("should not execute functions if object key is undefined", () => {
+    const base = {
+      val: (existing: number) => existing + 10,
+    };
+    const defaults = {};
+    const result = defuFn(base, defaults);
+    expect(typeof result.val).toBe("function");
+  });
+});
+
+describe("defuArrayFn", () => {
+  it("should execute function only when defaults value is an array", () => {
+    const base = {
+      arr: (existing: number[]) => [...existing, 3],
+      num: (existing: number) => existing + 10,
+    };
+    const defaults = {
+      arr: [1, 2],
+      num: 5,
+    };
+    const result = defuArrayFn(base, defaults);
+    expect(result.arr).toEqual([1, 2, 3]);
+    expect(typeof result.num).toBe("function");
+  });
+});
+```
