@@ -9,6 +9,7 @@
   "max_tokens_per_module": null,
   "vitest_reruns": 3,
   "stryker_concurrency": 2,
-  "thinking_budget": 0,
+  "thinking_budget": null,
+  "thinking_level": "minimal",
   "min_interval_ms": 4500
 }

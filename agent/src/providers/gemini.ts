@@ -7,6 +7,11 @@ interface GeminiOptions {
   minIntervalMs?: number;
   /** 0 desativa o "thinking" (custo e variância menores). undefined = padrão do modelo. */
   thinkingBudget?: number;
+  /**
+   * Modelos Gemini 3.x recusam `thinkingBudget: 0` (HTTP 400) e usam níveis ("minimal", "low", ...).
+   * A API não aceita os dois juntos: se definido, tem prioridade sobre thinkingBudget.
+   */
+  thinkingLevel?: string;
   fetchImpl?: typeof fetch;
   retry?: RetryOptions;
 }
@@ -41,7 +46,8 @@ export class GeminiProvider implements LLMProvider {
       };
       if (req.topP !== null) generationConfig.topP = req.topP;
       if (req.seed !== null) generationConfig.seed = req.seed;
-      if (this.o.thinkingBudget !== undefined) generationConfig.thinkingConfig = { thinkingBudget: this.o.thinkingBudget };
+      if (this.o.thinkingLevel !== undefined) generationConfig.thinkingConfig = { thinkingLevel: this.o.thinkingLevel };
+      else if (this.o.thinkingBudget !== undefined) generationConfig.thinkingConfig = { thinkingBudget: this.o.thinkingBudget };
 
       const t0 = Date.now();
       const res = await this.fetchImpl(`${this.baseUrl}/models/${encodeURIComponent(this.modelId)}:generateContent`, {

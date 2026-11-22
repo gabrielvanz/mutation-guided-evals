@@ -77,8 +77,9 @@ Fallback para qualquer endpoint compatível com OpenAI (Groq, OpenRouter, vLLM):
 
 > **Atenção (não verificado contra a API real).** O cliente do Gemini foi escrito a partir do formato REST conhecido e
 > testado só com `fetch` simulado. Antes da coleta, faça uma chamada de teste e confira: o nome do campo `seed`,
-> `thinkingConfig.thinkingBudget` (valor `0` só é aceito por alguns modelos; se der erro HTTP 400, ponha
-> `"thinking_budget": null` em `config/experiment.json`) e o campo `usageMetadata` usado para contar tokens.
+> `thinkingConfig` e o campo `usageMetadata` usado para contar tokens. Verificado com `gemini-3.5-flash-lite`:
+> `thinkingBudget: 0` dá HTTP 400 e `thinkingLevel: "minimal"` funciona, então `config/experiment.json` usa
+> `thinking_level: "minimal"` (modelos mais antigos usam `thinking_budget: 0`). `agent/scripts/check-api.ts` testa cada campo.
 
 ### Smoke test sem LLM
 

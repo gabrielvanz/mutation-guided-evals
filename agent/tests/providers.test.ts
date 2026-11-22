@@ -29,6 +29,18 @@ describe("GeminiProvider", () => {
     expect((seen!.init.headers as Record<string, string>)["x-goog-api-key"]).toBe("K");
     expect(seen!.url).toContain("models/m-1:generateContent");
   });
+  it("usa thinkingLevel (Gemini 3.x) e nunca envia thinkingBudget junto", async () => {
+    let body: { generationConfig: Record<string, unknown> } | null = null;
+    const p = new GeminiProvider({
+      apiKey: "K", modelId: "m-1", minIntervalMs: 0, retry: fastRetry, thinkingBudget: 0, thinkingLevel: "minimal",
+      fetchImpl: (async (_u: string, init: RequestInit) => {
+        body = JSON.parse(String(init.body));
+        return json(200, { candidates: [{ content: { parts: [{ text: "ok" }] } }] });
+      }) as unknown as typeof fetch,
+    });
+    await p.generate(req);
+    expect(body!.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "minimal" });
+  });
   it("tenta de novo em 429 e depois tem sucesso", async () => {
     let n = 0;
     const p = new GeminiProvider({

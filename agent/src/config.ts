@@ -18,6 +18,8 @@ export interface ExperimentConfig {
   vitest_reruns: number;
   stryker_concurrency: number;
   thinking_budget: number | null;
+  /** Gemini 3.x: "minimal" | "low" | ... (tem prioridade sobre thinking_budget). */
+  thinking_level?: string | null;
   min_interval_ms: number;
 }
 
@@ -73,6 +75,7 @@ export function providerFromEnv(cfg: ExperimentConfig, env: NodeJS.ProcessEnv = 
       modelId,
       minIntervalMs: Number(env.LLM_MIN_INTERVAL_MS) || cfg.min_interval_ms,
       thinkingBudget: cfg.thinking_budget ?? undefined,
+      thinkingLevel: cfg.thinking_level ?? undefined,
     });
   }
   if (kind === "openai") {
