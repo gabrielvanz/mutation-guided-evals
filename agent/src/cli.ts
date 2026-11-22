@@ -152,6 +152,8 @@ async function cmdRun(argv: string[]): Promise<number> {
   console.log(
     `[done] ${id} status=${result.status} k*=${result.selected_iteration} ms_eval=${f.scores.ms_eval} ms_all=${f.scores.ms_all} line=${f.coverage.line_cov} tokens=${f.cost.tokens_in + f.cost.tokens_out}`,
   );
+  // O motivo da falha só existia dentro do result.json; mostra no log (o persist descarta runs com erro de infraestrutura).
+  if (result.error) console.error(`[erro] ${id}: ${result.error}`);
   return result.status === "ok" ? 0 : 2;
 }
 
