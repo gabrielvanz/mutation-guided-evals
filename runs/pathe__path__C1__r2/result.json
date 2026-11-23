@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "pathe__path__C1__r2",
-  "started_at": "2026-11-23T02:35:29.660Z",
-  "finished_at": "2026-11-23T02:36:23.559Z",
+  "started_at": "2026-11-23T13:27:09.346Z",
+  "finished_at": "2026-11-23T13:28:23.993Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -46,28 +46,28 @@
       "discard_reason": null,
       "repair_attempts": 1,
       "scores": {
-        "ms_eval": 67.6923,
-        "ms_feedback": 59.4059,
-        "ms_all": 63.4761,
-        "ms_covered": 70.7865
+        "ms_eval": 65.1282,
+        "ms_feedback": 60.396,
+        "ms_all": 62.7204,
+        "ms_covered": 73.0205
       },
       "coverage": {
-        "line_cov": 90.38,
-        "branch_cov": 77.34
+        "line_cov": 88.46,
+        "branch_cov": 73.43
       },
       "mutants_eval": {
-        "killed": 130,
-        "survived": 46,
-        "no_coverage": 17,
+        "killed": 125,
+        "survived": 43,
+        "no_coverage": 25,
         "timeout": 2,
         "compile_error": 0,
         "runtime_error": 0,
         "ignored": 0
       },
       "mutants_feedback": {
-        "killed": 120,
-        "survived": 58,
-        "no_coverage": 24,
+        "killed": 122,
+        "survived": 49,
+        "no_coverage": 31,
         "timeout": 0,
         "compile_error": 0,
         "runtime_error": 0,
@@ -76,9 +76,9 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 20,
+        "n_tests": 18,
         "n_asserts": 35,
-        "sha256": "6c102e838e984fc6675505ca1e1bf9c520120a7e4f7efcf5f27375396fb5d043"
+        "sha256": "073efa6afdfe20f5da69b02dede326bbeac6c41a449d676f0a0e6d803ca4b564"
       },
       "prompt_file": "runs/pathe__path__C1__r2/raw/k0_a0_prompt.txt",
       "response_file": "runs/pathe__path__C1__r2/raw/k0_a0_response.txt",
@@ -86,41 +86,41 @@
       "cost_cumulative": {
         "calls": 2,
         "repair_calls": 1,
-        "tokens_in": 8264,
-        "tokens_out": 2587,
-        "usd_ref": 0.001861,
-        "wall_s": 53.9,
-        "stryker_s": 39.01
+        "tokens_in": 8599,
+        "tokens_out": 2568,
+        "usd_ref": 0.001887,
+        "wall_s": 74.65,
+        "stryker_s": 37.1
       }
     }
   ],
   "selected_iteration": 0,
   "final": {
     "scores": {
-      "ms_eval": 67.6923,
-      "ms_feedback": 59.4059,
-      "ms_all": 63.4761,
-      "ms_covered": 70.7865
+      "ms_eval": 65.1282,
+      "ms_feedback": 60.396,
+      "ms_all": 62.7204,
+      "ms_covered": 73.0205
     },
     "coverage": {
-      "line_cov": 90.38,
-      "branch_cov": 77.34
+      "line_cov": 88.46,
+      "branch_cov": 73.43
     },
     "cost": {
       "calls": 2,
       "repair_calls": 1,
-      "tokens_in": 8264,
-      "tokens_out": 2587,
-      "usd_ref": 0.001861,
-      "wall_s": 53.9,
-      "stryker_s": 39.01
+      "tokens_in": 8599,
+      "tokens_out": 2568,
+      "usd_ref": 0.001887,
+      "wall_s": 74.65,
+      "stryker_s": 37.1
     },
     "tests": {
-      "n_tests": 20,
+      "n_tests": 18,
       "n_asserts": 35,
-      "sha256": "6c102e838e984fc6675505ca1e1bf9c520120a7e4f7efcf5f27375396fb5d043"
+      "sha256": "073efa6afdfe20f5da69b02dede326bbeac6c41a449d676f0a0e6d803ca4b564"
     },
-    "gap_cov_ms": 26.9039,
+    "gap_cov_ms": 25.7396,
     "valid_rate": 1,
     "tokens_per_pp": null
   },

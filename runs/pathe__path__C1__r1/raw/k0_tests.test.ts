@@ -69,7 +69,7 @@ describe("_path module", () => {
   });
 
   describe("isAbsolute", () => {
-    it("should identify absolute paths", () => {
+    it("should correctly identify absolute paths", () => {
       expect(isAbsolute("/foo/bar")).toBe(true);
       expect(isAbsolute("C:/foo/bar")).toBe(true);
       expect(isAbsolute("foo/bar")).toBe(false);
@@ -77,13 +77,13 @@ describe("_path module", () => {
   });
 
   describe("toNamespacedPath", () => {
-    it("should normalize windows path for namespaced path", () => {
+    it("should normalize windows paths for namespaced path", () => {
       expect(toNamespacedPath("C:\\foo\\bar")).toBe("C:/foo/bar");
     });
   });
 
   describe("extname", () => {
-    it("should return file extension", () => {
+    it("should return the extension of a file", () => {
       expect(extname("index.html")).toBe(".html");
       expect(extname("index")).toBe("");
       expect(extname("..")).toBe("");
@@ -91,7 +91,7 @@ describe("_path module", () => {
   });
 
   describe("relative", () => {
-    it("should compute relative path between two paths", () => {
+    it("should compute relative paths", () => {
       expect(relative("/data/orandea/test/aaa", "/data/orandea/impl/bbb")).toBe("../../impl/bbb");
     });
   });
@@ -104,26 +104,20 @@ describe("_path module", () => {
   });
 
   describe("format", () => {
-    it("should format path object into path string", () => {
-      expect(
-        format({
-          root: "/",
-          dir: "/foo/bar",
-          base: "baz.txt",
-        })
-      ).toBe("/foo/bar/baz.txt");
+    it("should format a path object", () => {
+      expect(format({ root: "/", dir: "/foo/bar", base: "baz.txt" })).toBe("/foo/bar/baz.txt");
     });
   });
 
   describe("basename", () => {
-    it("should return the last portion of a path", () => {
+    it("should return the base name", () => {
       expect(basename("/foo/bar/baz.txt")).toBe("baz.txt");
       expect(basename("/foo/bar/baz.txt", ".txt")).toBe("baz");
     });
   });
 
   describe("parse", () => {
-    it("should parse path into object components", () => {
+    it("should parse a path into components", () => {
       const parsed = parse("/home/user/dir/file.txt");
       expect(parsed).toEqual({
         root: "/",
@@ -136,9 +130,9 @@ describe("_path module", () => {
   });
 
   describe("matchesGlob", () => {
-    it("should match path against glob pattern", () => {
+    it("should match path against a glob pattern", () => {
       expect(matchesGlob("/foo/bar.js", "*.js")).toBe(false);
-      expect(matchesGlob("/foo/bar.js", "/**/*.js")).toBe(true);
+      expect(matchesGlob("/foo/bar.js", "**/bar.js")).toBe(true);
     });
   });
 });

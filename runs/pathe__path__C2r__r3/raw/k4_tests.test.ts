@@ -84,74 +84,92 @@ describe("normalizeString", () => {
 });
 
 describe("isAbsolute", () => {
-  it.each([
+  const cases = [
     { input: "/foo/bar", expected: true },
     { input: "C:/foo/bar", expected: true },
     { input: "C:\\foo\\bar", expected: true },
     { input: "foo/bar", expected: false },
     { input: "", expected: false }
-  ])("should correctly identify absolute path $input as $expected", ({ input, expected }) => {
-    expect(isAbsolute(input)).toBe(expected);
-  });
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for ${input}`, () => {
+      expect(isAbsolute(input)).toBe(expected);
+    });
+  }
 });
 
 describe("toNamespacedPath", () => {
-  it("should normalize windows path for namespacing", () => {
+  it("should normalize Windows path for namespacing", () => {
     expect(toNamespacedPath("C:\\foo\\bar")).toBe("C:/foo/bar");
   });
 });
 
 describe("extname", () => {
-  it.each([
+  const cases = [
     { input: "index.html", expected: ".html" },
     { input: "index.coffee.md", expected: ".md" },
     { input: "index.", expected: "." },
     { input: "index", expected: "" },
-    { input: ".gitignore", expected: "" }
-  ])("should return extension for $input", ({ input, expected }) => {
-    expect(extname(input)).toBe(expected);
-  });
+    { input: ".index", expected: "" },
+    { input: "..", expected: "" }
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for ${input}`, () => {
+      expect(extname(input)).toBe(expected);
+    });
+  }
 });
 
 describe("relative", () => {
-  it("should compute relative path between two paths", () => {
-    expect(relative("/var/lib", "/var/lib/visible")).toBe("visible");
-    expect(relative("/var/lib", "/var")).toBe("..");
+  it("should calculate relative path between two paths", () => {
+    expect(relative("/data/orandea/test/aaa", "/data/orandea/impl/bbb")).toBe("../../impl/bbb");
+  });
+
+  it("should return absolute path if drive letters differ", () => {
+    expect(relative("C:/foo", "D:/bar")).toBe("D:/bar");
   });
 });
 
 describe("dirname", () => {
-  it.each([
-    { input: "/foo/bar/baz.txt", expected: "/foo/bar" },
+  const cases = [
+    { input: "/foo/bar/baz", expected: "/foo/bar" },
     { input: "/foo/bar/", expected: "/foo" },
-    { input: "foo/bar", expected: "foo" },
     { input: "foo", expected: "." },
     { input: "", expected: "." }
-  ])("should return dirname for $input", ({ input, expected }) => {
-    expect(dirname(input)).toBe(expected);
-  });
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for ${input}`, () => {
+      expect(dirname(input)).toBe(expected);
+    });
+  }
 });
 
 describe("format", () => {
   it("should format path object into string", () => {
     expect(format({ root: "/", dir: "/foo/bar", base: "baz.txt" })).toBe("/foo/bar/baz.txt");
   });
+
+  it("should format path object with ext", () => {
+    expect(format({ dir: "foo", name: "bar", ext: "txt" })).toBe("foo/bar.txt");
+  });
 });
 
 describe("basename", () => {
-  it.each([
-    { input: "/foo/bar/baz.txt", ext: undefined, expected: "baz.txt" },
-    { input: "/foo/bar/baz.txt", ext: ".txt", expected: "baz" },
-    { input: "/foo/bar/", ext: undefined, expected: "bar" }
-  ])("should return basename for $input with ext $ext", ({ input, ext, expected }) => {
-    expect(basename(input, ext)).toBe(expected);
+  it("should return base name of path", () => {
+    expect(basename("/foo/bar/baz.html")).toBe("baz.html");
+  });
+
+  it("should strip extension if provided", () => {
+    expect(basename("/foo/bar/baz.html", ".html")).toBe("baz");
   });
 });
 
 describe("parse", () => {
-  it("should parse path into components", () => {
-    const result = parse("/home/user/dir/file.txt");
-    expect(result).toEqual({
+  it("should parse path into object components", () => {
+    expect(parse("/home/user/dir/file.txt")).toEqual({
       root: "/",
       dir: "/home/user/dir",
       base: "file.txt",
@@ -163,7 +181,7 @@ describe("parse", () => {
 
 describe("matchesGlob", () => {
   it("should match path against glob pattern", () => {
-    expect(matchesGlob("foo/bar.js", "*.js")).toBe(false);
-    expect(matchesGlob("foo/bar.js", "**/bar.js")).toBe(true);
+    expect(matchesGlob("foo/bar.js", "**/*.js")).toBe(true);
+    expect(matchesGlob("foo/bar.js", "*.ts")).toBe(false);
   });
 });

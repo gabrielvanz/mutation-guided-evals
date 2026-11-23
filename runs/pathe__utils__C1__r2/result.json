@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "pathe__utils__C1__r2",
-  "started_at": "2026-11-23T02:53:31.806Z",
-  "finished_at": "2026-11-23T02:53:54.547Z",
+  "started_at": "2026-11-23T13:58:19.121Z",
+  "finished_at": "2026-11-23T13:58:39.996Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -44,7 +44,7 @@
       "k": 0,
       "valid": true,
       "discard_reason": null,
-      "repair_attempts": 0,
+      "repair_attempts": 1,
       "scores": {
         "ms_eval": 30,
         "ms_feedback": 46.9388,
@@ -78,19 +78,19 @@
       "tests": {
         "n_tests": 8,
         "n_asserts": 10,
-        "sha256": "042adbe9cda68e1cb3a4b50a97c668ded5ce11c56bf5f71afa960a1a00f69ac7"
+        "sha256": "e1972e067aed2668c674b41cd61088e0de5a488280d2c8ea3efa9a878543c2a3"
       },
       "prompt_file": "runs/pathe__utils__C1__r2/raw/k0_a0_prompt.txt",
       "response_file": "runs/pathe__utils__C1__r2/raw/k0_a0_response.txt",
       "best_k_so_far": 0,
       "cost_cumulative": {
-        "calls": 1,
-        "repair_calls": 0,
-        "tokens_in": 1402,
-        "tokens_out": 517,
-        "usd_ref": 0.000347,
-        "wall_s": 22.74,
-        "stryker_s": 8.52
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 3755,
+        "tokens_out": 1056,
+        "usd_ref": 0.000798,
+        "wall_s": 20.88,
+        "stryker_s": 7.63
       }
     }
   ],
@@ -107,18 +107,18 @@
       "branch_cov": 79.31
     },
     "cost": {
-      "calls": 1,
-      "repair_calls": 0,
-      "tokens_in": 1402,
-      "tokens_out": 517,
-      "usd_ref": 0.000347,
-      "wall_s": 22.74,
-      "stryker_s": 8.52
+      "calls": 2,
+      "repair_calls": 1,
+      "tokens_in": 3755,
+      "tokens_out": 1056,
+      "usd_ref": 0.000798,
+      "wall_s": 20.88,
+      "stryker_s": 7.63
     },
     "tests": {
       "n_tests": 8,
       "n_asserts": 10,
-      "sha256": "042adbe9cda68e1cb3a4b50a97c668ded5ce11c56bf5f71afa960a1a00f69ac7"
+      "sha256": "e1972e067aed2668c674b41cd61088e0de5a488280d2c8ea3efa9a878543c2a3"
     },
     "gap_cov_ms": 56.1242,
     "valid_rate": 1,

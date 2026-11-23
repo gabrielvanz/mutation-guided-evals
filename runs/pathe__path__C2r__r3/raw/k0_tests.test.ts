@@ -104,50 +104,67 @@ describe("extname", () => {
     { input: "index", expected: "" },
     { input: ".gitignore", expected: "" },
     { input: "..", expected: "" }
-  ])("should return $expected for extname($input)", ({ input, expected }) => {
+  ])("should return $expected for $input", ({ input, expected }) => {
     expect(extname(input)).toBe(expected);
   });
 });
 
 describe("relative", () => {
-  it("should compute relative path between two paths", () => {
+  it("should calculate relative path between two paths", () => {
     expect(relative("/data/orandea/test/aaa", "/data/orandea/impl/bbb")).toBe("../../impl/bbb");
+  });
+
+  it("should return absolute path if drive letters differ", () => {
+    expect(relative("C:/foo", "D:/bar")).toBe("D:/bar");
   });
 });
 
 describe("dirname", () => {
   it.each([
     { input: "/foo/bar/baz", expected: "/foo/bar" },
-    { input: "/foo", expected: "/" },
-    { input: "foo/bar", expected: "foo" },
+    { input: "/foo/bar/", expected: "/foo" },
     { input: "foo", expected: "." },
-    { input: "", expected: "." }
-  ])("should return $expected for dirname($input)", ({ input, expected }) => {
+    { input: "C:/foo", expected: "C:/" }
+  ])("should return $expected for $input", ({ input, expected }) => {
     expect(dirname(input)).toBe(expected);
   });
 });
 
 describe("format", () => {
-  it("should format path object", () => {
-    expect(format({ root: "/", dir: "/foo/bar", base: "baz.html" })).toBe("/foo/bar/baz.html");
+  it("should format a path object", () => {
+    expect(format({ root: "/", dir: "/foo/bar", base: "baz.txt" })).toBe("/foo/bar/baz.txt");
+  });
+
+  it("should format using ext and name if base is missing", () => {
+    expect(format({ dir: "/foo/bar", name: "baz", ext: ".txt" })).toBe("/foo/bar/baz.txt");
   });
 });
 
 describe("basename", () => {
   it.each([
-    { input: "/foo/bar/baz.html", expected: "baz.html" },
-    { input: "/foo/bar/baz.html", ext: ".html", expected: "baz" },
+    { input: "/foo/bar/baz.txt", expected: "baz.txt" },
+    { input: "/foo/bar/baz.txt", extension: ".txt", expected: "baz" },
     { input: "/foo/bar/", expected: "bar" }
-  ])("should return $expected for basename", ({ input, ext, expected }) => {
-    expect(basename(input, ext)).toBe(expected);
+  ])("should return $expected for $input with extension $extension", ({ input, extension, expected }) => {
+    expect(basename(input, extension)).toBe(expected);
   });
 });
 
 describe("parse", () => {
-  it("should parse path into components", () => {
+  it("should parse a path into its components", () => {
     expect(parse("/home/user/dir/file.txt")).toEqual({
       root: "/",
       dir: "/home/user/dir",
+      base: "file.txt",
+      ext: ".txt",
+      name: "file"
+    });
+  });
+
+  it("should parse path without directory", () => {
+    expect(parse("file.txt")).toEqual({
+      root: "",
+      dir: "",
       base: "file.txt",
       ext: ".txt",
       name: "file"

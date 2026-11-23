@@ -1,0 +1,94 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { normalizeAliases, resolveAlias, reverseResolveAlias, filename } from "../../src/utils";
+
+describe("normalizeAliases", () => {
+  it("should sort aliases from specific to general and resolve nested aliases", () => {
+    const input = {
+      "~/": "/root/",
+      "~/components": "/root/src/components",
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "~/components": "/root/src/components",
+      "~/": "/root/",
+    });
+  });
+
+  it("should return the same object if already normalized", () => {
+    const input = {
+      "@": "/src",
+    };
+    const normalized = normalizeAliases(input);
+    const reNormalized = normalizeAliases(normalized);
+    expect(reNormalized).toBe(normalized);
+  });
+});
+
+describe("resolveAlias", () => {
+  it("should resolve a path matching an alias", () => {
+    const aliases = {
+      "~": "/app/src",
+    };
+    const result = resolveAlias("~/file.ts", aliases);
+    expect(result).toBe("/app/src/file.ts");
+  });
+
+  it("should return original path if no alias matches", () => {
+    const aliases = {
+      "~": "/app/src",
+    };
+    const result = resolveAlias("/other/path.ts", aliases);
+    expect(result).toBe("/other/path.ts");
+  });
+
+  it("should normalize Windows paths when resolving aliases", () => {
+    const aliases = {
+      "~": "/app/src",
+    };
+    const result = resolveAlias("~\\sub\\file.ts", aliases);
+    expect(result).toBe("/app/src/sub/file.ts");
+  });
+});
+
+describe("reverseResolveAlias", () => {
+  it("should return possible alias resolutions sorted by specificity", () => {
+    const aliases = {
+      "@": "/app/src",
+      "@components": "/app/src/components",
+    };
+    const result = reverseResolveAlias("/app/src/components/Button.ts", aliases);
+    expect(result).toEqual([
+      "@/components/Button.ts",
+      "@components/Button.ts",
+    ]);
+  });
+
+  it("should return an empty array if no reverse alias matches", () => {
+    const aliases = {
+      "@": "/app/src",
+    };
+    const result = reverseResolveAlias("/outside/path.ts", aliases);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("filename", () => {
+  const cases = [
+    { input: "/path/to/file.ts", expected: "file" },
+    { input: "file.js", expected: "file" },
+    { input: "/path/to/.gitignore", expected: ".gitignore" },
+    { input: "path/to/file.spec.ts", expected: "file.spec" },
+    { input: "", expected: undefined },
+    { input: "/", expected: undefined },
+    { input: "C:\\path\\to\\image.png", expected: "image" },
+    { input: "no-extension", expected: "no-extension" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should extract filename from ${JSON.stringify(input)}`, () => {
+      expect(filename(input)).toBe(expected);
+    });
+  }
+});
+```

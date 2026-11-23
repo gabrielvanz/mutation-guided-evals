@@ -191,12 +191,12 @@ describe("parse", () => {
     });
   });
 
-  it("should handle files without directory or extension", () => {
-    expect(parse("file")).toEqual({
+  it("should parse a relative path without directory", () => {
+    expect(parse("file.txt")).toEqual({
       root: "",
       dir: "",
-      base: "file",
-      ext: "",
+      base: "file.txt",
+      ext: ".txt",
       name: "file"
     });
   });
@@ -204,7 +204,11 @@ describe("parse", () => {
 
 describe("matchesGlob", () => {
   it("should match path against glob pattern", () => {
-    expect(matchesGlob("foo/bar.js", "*.js")).toBe(false);
-    expect(matchesGlob("foo/bar.js", "**/bar.js")).toBe(true);
+    expect(matchesGlob("/foo/bar/baz.js", "*.js")).toBe(false);
+    expect(matchesGlob("/foo/bar/baz.js", "**/baz.js")).toBe(true);
+  });
+
+  it("should handle array of glob patterns", () => {
+    expect(matchesGlob("/foo/bar/baz.js", ["*.txt", "**/*.js"])).toBe(true);
   });
 });

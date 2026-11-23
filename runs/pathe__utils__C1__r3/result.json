@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "pathe__utils__C1__r3",
-  "started_at": "2026-11-23T02:54:14.210Z",
-  "finished_at": "2026-11-23T02:54:27.292Z",
+  "started_at": "2026-11-23T13:59:06.941Z",
+  "finished_at": "2026-11-23T14:05:25.663Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -89,8 +89,8 @@
         "tokens_in": 1402,
         "tokens_out": 759,
         "usd_ref": 0.000444,
-        "wall_s": 13.08,
-        "stryker_s": 8.29
+        "wall_s": 378.72,
+        "stryker_s": 10.69
       }
     }
   ],
@@ -112,8 +112,8 @@
       "tokens_in": 1402,
       "tokens_out": 759,
       "usd_ref": 0.000444,
-      "wall_s": 13.08,
-      "stryker_s": 8.29
+      "wall_s": 378.72,
+      "stryker_s": 10.69
     },
     "tests": {
       "n_tests": 10,

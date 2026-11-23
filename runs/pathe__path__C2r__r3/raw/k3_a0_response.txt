@@ -149,15 +149,15 @@ describe("format", () => {
     ).toBe("/home/user/dir/file.txt");
   });
 
-  it("should format with name and ext if base is missing", () => {
+  it("should format with name and ext if base is omitted", () => {
     expect(
       format({
         root: "",
-        dir: "dir",
-        name: "file",
+        dir: "foo",
+        name: "bar",
         ext: "txt",
       })
-    ).toBe("dir/file.txt");
+    ).toBe("foo/bar.txt");
   });
 });
 
@@ -165,13 +165,14 @@ describe("basename", () => {
   it("should return the last portion of a path", () => {
     expect(basename("/foo/bar/baz/asdf.html")).toBe("asdf.html");
     expect(basename("/foo/bar/baz/asdf.html", ".html")).toBe("asdf");
-    expect(basename("/foo/bar/baz/")).toBe("baz");
+    expect(basename("")).toBe("");
   });
 });
 
 describe("parse", () => {
-  it("should parse a path into an object", () => {
-    expect(parse("/home/user/dir/file.txt")).toEqual({
+  it("should parse path into an object", () => {
+    const result = parse("/home/user/dir/file.txt");
+    expect(result).toEqual({
       root: "/",
       dir: "/home/user/dir",
       base: "file.txt",
@@ -180,8 +181,9 @@ describe("parse", () => {
     });
   });
 
-  it("should parse paths without directories", () => {
-    expect(parse("file.txt")).toEqual({
+  it("should handle paths without directory", () => {
+    const result = parse("file.txt");
+    expect(result).toEqual({
       root: "",
       dir: "",
       base: "file.txt",
@@ -192,10 +194,9 @@ describe("parse", () => {
 });
 
 describe("matchesGlob", () => {
-  it("should match path against glob pattern", () => {
-    expect(matchesGlob("foo/bar.js", "*.js")).toBe(false);
-    expect(matchesGlob("foo/bar.js", "**/bar.js")).toBe(true);
-    expect(matchesGlob("foo/bar.js", ["*.txt", "**/*.js"])).toBe(true);
+  it("should return true if path matches glob pattern", () => {
+    expect(matchesGlob("src/index.ts", "src/*.ts")).toBe(true);
+    expect(matchesGlob("src/index.js", "src/*.ts")).toBe(false);
   });
 });
 ```

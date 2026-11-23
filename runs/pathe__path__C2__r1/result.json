@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "pathe__path__C2__r1",
-  "started_at": "2026-11-23T02:36:54.244Z",
-  "finished_at": "2026-11-23T02:37:39.167Z",
+  "started_at": "2026-11-23T13:29:52.542Z",
+  "finished_at": "2026-11-23T13:31:17.518Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -78,7 +78,7 @@
       "tests": {
         "n_tests": 22,
         "n_asserts": 34,
-        "sha256": "e9738c349bfc7888d35ea9fc64ad2d49d52c0d6454d1cda4f4c0fcb54455e29a"
+        "sha256": "289d0aa6ff4388357b4cb6c1c4df1f6f324582a8c2ca370a2853ac86293d87b7"
       },
       "prompt_file": "runs/pathe__path__C2__r1/raw/k0_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2__r1/raw/k0_a0_response.txt",
@@ -89,8 +89,8 @@
         "tokens_in": 8785,
         "tokens_out": 2643,
         "usd_ref": 0.001936,
-        "wall_s": 44.92,
-        "stryker_s": 30.06
+        "wall_s": 84.98,
+        "stryker_s": 23.62
       }
     }
   ],
@@ -112,13 +112,13 @@
       "tokens_in": 8785,
       "tokens_out": 2643,
       "usd_ref": 0.001936,
-      "wall_s": 44.92,
-      "stryker_s": 30.06
+      "wall_s": 84.98,
+      "stryker_s": 23.62
     },
     "tests": {
       "n_tests": 22,
       "n_asserts": 34,
-      "sha256": "e9738c349bfc7888d35ea9fc64ad2d49d52c0d6454d1cda4f4c0fcb54455e29a"
+      "sha256": "289d0aa6ff4388357b4cb6c1c4df1f6f324582a8c2ca370a2853ac86293d87b7"
     },
     "gap_cov_ms": 28.6906,
     "valid_rate": 1,

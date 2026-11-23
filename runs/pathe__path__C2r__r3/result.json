@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "pathe__path__C2r__r3",
-  "started_at": "2026-11-23T02:42:57.250Z",
-  "finished_at": "2026-11-23T02:47:10.610Z",
+  "started_at": "2026-11-23T13:37:36.162Z",
+  "finished_at": "2026-11-23T13:47:52.900Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -46,28 +46,28 @@
       "discard_reason": null,
       "repair_attempts": 0,
       "scores": {
-        "ms_eval": 63.0769,
-        "ms_feedback": 55.9406,
-        "ms_all": 59.4458,
-        "ms_covered": 69.8225
+        "ms_eval": 67.6923,
+        "ms_feedback": 64.3564,
+        "ms_all": 65.995,
+        "ms_covered": 72.5762
       },
       "coverage": {
-        "line_cov": 87.82,
-        "branch_cov": 71.09
+        "line_cov": 90.38,
+        "branch_cov": 81.25
       },
       "mutants_eval": {
-        "killed": 121,
+        "killed": 130,
         "survived": 43,
-        "no_coverage": 29,
+        "no_coverage": 20,
         "timeout": 2,
         "compile_error": 0,
         "runtime_error": 0,
         "ignored": 0
       },
       "mutants_feedback": {
-        "killed": 112,
-        "survived": 59,
-        "no_coverage": 30,
+        "killed": 129,
+        "survived": 56,
+        "no_coverage": 16,
         "timeout": 1,
         "compile_error": 0,
         "runtime_error": 0,
@@ -76,9 +76,9 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 22,
-        "n_asserts": 23,
-        "sha256": "e9a13d6dcb6452708eb55fcaa719dfd4ce99ead7fc24fd937d184053f34fd43f"
+        "n_tests": 25,
+        "n_asserts": 26,
+        "sha256": "420b208941559685126bfd3db63737dc7a19dfd256e6cd62f3c00787dcdd0723"
       },
       "prompt_file": "runs/pathe__path__C2r__r3/raw/k0_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2r__r3/raw/k0_a0_response.txt",
@@ -87,10 +87,10 @@
         "calls": 1,
         "repair_calls": 0,
         "tokens_in": 3610,
-        "tokens_out": 1394,
-        "usd_ref": 0.000919,
-        "wall_s": 38.75,
-        "stryker_s": 32.72
+        "tokens_out": 1554,
+        "usd_ref": 0.000983,
+        "wall_s": 44.42,
+        "stryker_s": 27.31
       }
     },
     {
@@ -99,18 +99,18 @@
       "discard_reason": null,
       "repair_attempts": 1,
       "scores": {
-        "ms_eval": 71.7949,
-        "ms_feedback": 66.3366,
-        "ms_all": 69.0176,
-        "ms_covered": 74.4565
+        "ms_eval": 72.3077,
+        "ms_feedback": 64.8515,
+        "ms_all": 68.5139,
+        "ms_covered": 74.3169
       },
       "coverage": {
-        "line_cov": 91.66,
+        "line_cov": 90.38,
         "branch_cov": 83.59
       },
       "mutants_eval": {
-        "killed": 138,
-        "survived": 42,
+        "killed": 139,
+        "survived": 41,
         "no_coverage": 13,
         "timeout": 2,
         "compile_error": 0,
@@ -118,9 +118,9 @@
         "ignored": 0
       },
       "mutants_feedback": {
-        "killed": 133,
-        "survived": 52,
-        "no_coverage": 16,
+        "killed": 130,
+        "survived": 53,
+        "no_coverage": 18,
         "timeout": 1,
         "compile_error": 0,
         "runtime_error": 0,
@@ -129,9 +129,9 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 33,
+        "n_tests": 34,
         "n_asserts": 36,
-        "sha256": "e44b553bbc3ca17bbdcc6afd74e7a3b03e626662b8155a39b4ca7d848155324e"
+        "sha256": "1c6f446d65f5e70ca84414d0dc13a2db473db4d511f67b305fce7d7823e2c115"
       },
       "prompt_file": "runs/pathe__path__C2r__r3/raw/k1_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2r__r3/raw/k1_a0_response.txt",
@@ -139,41 +139,41 @@
       "cost_cumulative": {
         "calls": 3,
         "repair_calls": 1,
-        "tokens_in": 13535,
-        "tokens_out": 5455,
-        "usd_ref": 0.003536,
-        "wall_s": 87.25,
-        "stryker_s": 66.23
+        "tokens_in": 13722,
+        "tokens_out": 5929,
+        "usd_ref": 0.003744,
+        "wall_s": 164.73,
+        "stryker_s": 54.75
       }
     },
     {
       "k": 2,
       "valid": true,
       "discard_reason": null,
-      "repair_attempts": 0,
+      "repair_attempts": 1,
       "scores": {
-        "ms_eval": 70.7692,
-        "ms_feedback": 65.3465,
-        "ms_all": 68.0101,
-        "ms_covered": 74.1758
+        "ms_eval": 66.1538,
+        "ms_feedback": 61.8812,
+        "ms_all": 63.9798,
+        "ms_covered": 72.1591
       },
       "coverage": {
-        "line_cov": 90.38,
+        "line_cov": 89.1,
         "branch_cov": 80.46
       },
       "mutants_eval": {
-        "killed": 136,
+        "killed": 127,
         "survived": 41,
-        "no_coverage": 16,
+        "no_coverage": 25,
         "timeout": 2,
         "compile_error": 0,
         "runtime_error": 0,
         "ignored": 0
       },
       "mutants_feedback": {
-        "killed": 131,
-        "survived": 53,
-        "no_coverage": 17,
+        "killed": 124,
+        "survived": 57,
+        "no_coverage": 20,
         "timeout": 1,
         "compile_error": 0,
         "runtime_error": 0,
@@ -182,21 +182,21 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 27,
-        "n_asserts": 28,
-        "sha256": "b0544de9ef115ac168565cc9fa9fa4aa88840f096c3cb74c31728a850731ba2f"
+        "n_tests": 16,
+        "n_asserts": 18,
+        "sha256": "090def1ee4ffe1171ce0066f072d63095e0b95cfea7a49c7e0846174ae766afd"
       },
       "prompt_file": "runs/pathe__path__C2r__r3/raw/k2_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2r__r3/raw/k2_a0_response.txt",
       "best_k_so_far": 1,
       "cost_cumulative": {
-        "calls": 4,
-        "repair_calls": 1,
-        "tokens_in": 17145,
-        "tokens_out": 7133,
-        "usd_ref": 0.004568,
-        "wall_s": 126.55,
-        "stryker_s": 98.36
+        "calls": 5,
+        "repair_calls": 2,
+        "tokens_in": 22989,
+        "tokens_out": 8961,
+        "usd_ref": 0.005883,
+        "wall_s": 205.91,
+        "stryker_s": 80.94
       }
     },
     {
@@ -236,51 +236,51 @@
       "survivor_ids": [],
       "tests": {
         "n_tests": 27,
-        "n_asserts": 46,
-        "sha256": "8f5d657ab973b08230f72e699faf522658fe53fd26234e31c663ab70a8a2dc08"
+        "n_asserts": 45,
+        "sha256": "dbc074766a65fe94d1d59da07c2c1b16b1617deb07cd38074b4d3eaad711b7d1"
       },
       "prompt_file": "runs/pathe__path__C2r__r3/raw/k3_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2r__r3/raw/k3_a0_response.txt",
-      "best_k_so_far": 1,
+      "best_k_so_far": 3,
       "cost_cumulative": {
-        "calls": 5,
-        "repair_calls": 1,
-        "tokens_in": 20755,
-        "tokens_out": 8800,
-        "usd_ref": 0.005596,
-        "wall_s": 164.41,
-        "stryker_s": 129.87
+        "calls": 6,
+        "repair_calls": 2,
+        "tokens_in": 26599,
+        "tokens_out": 10610,
+        "usd_ref": 0.006904,
+        "wall_s": 248.53,
+        "stryker_s": 107.53
       }
     },
     {
       "k": 4,
       "valid": true,
       "discard_reason": null,
-      "repair_attempts": 0,
+      "repair_attempts": 1,
       "scores": {
-        "ms_eval": 60.5128,
-        "ms_feedback": 57.4257,
-        "ms_all": 58.9421,
-        "ms_covered": 69.6429
+        "ms_eval": 64.1026,
+        "ms_feedback": 61.8812,
+        "ms_all": 62.9723,
+        "ms_covered": 71.2251
       },
       "coverage": {
-        "line_cov": 87.82,
-        "branch_cov": 69.53
+        "line_cov": 89.1,
+        "branch_cov": 76.56
       },
       "mutants_eval": {
-        "killed": 116,
-        "survived": 46,
-        "no_coverage": 31,
+        "killed": 123,
+        "survived": 47,
+        "no_coverage": 23,
         "timeout": 2,
         "compile_error": 0,
         "runtime_error": 0,
         "ignored": 0
       },
       "mutants_feedback": {
-        "killed": 115,
-        "survived": 56,
-        "no_coverage": 30,
-        "timeout": 1,
+        "killed": 125,
+        "survived": 54,
+        "no_coverage": 23,
+        "timeout": 0,
         "compile_error": 0,
         "runtime_error": 0,
         "ignored": 0
@@ -288,21 +288,21 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 23,
-        "n_asserts": 25,
-        "sha256": "e79117d51de495c341a343bbd9ec19dc474248f764efd7c85c2769877b9d0759"
+        "n_tests": 26,
+        "n_asserts": 27,
+        "sha256": "a20a0e35bfe6743def9479893fa3577cfcce2192b7d77970c6a1f02977145323"
       },
       "prompt_file": "runs/pathe__path__C2r__r3/raw/k4_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2r__r3/raw/k4_a0_response.txt",
-      "best_k_so_far": 1,
+      "best_k_so_far": 3,
       "cost_cumulative": {
-        "calls": 6,
-        "repair_calls": 1,
-        "tokens_in": 24365,
-        "tokens_out": 10265,
-        "usd_ref": 0.006543,
-        "wall_s": 208.44,
-        "stryker_s": 167.42
+        "calls": 8,
+        "repair_calls": 3,
+        "tokens_in": 35773,
+        "tokens_out": 13689,
+        "usd_ref": 0.009053,
+        "wall_s": 585.06,
+        "stryker_s": 133.8
       }
     },
     {
@@ -312,27 +312,27 @@
       "repair_attempts": 0,
       "scores": {
         "ms_eval": 63.5897,
-        "ms_feedback": 59.901,
-        "ms_all": 61.7128,
-        "ms_covered": 69.4051
+        "ms_feedback": 54.9505,
+        "ms_all": 59.194,
+        "ms_covered": 69.1176
       },
       "coverage": {
-        "line_cov": 89.74,
-        "branch_cov": 78.12
+        "line_cov": 88.46,
+        "branch_cov": 71.09
       },
       "mutants_eval": {
         "killed": 122,
-        "survived": 49,
-        "no_coverage": 22,
+        "survived": 43,
+        "no_coverage": 28,
         "timeout": 2,
         "compile_error": 0,
         "runtime_error": 0,
         "ignored": 0
       },
       "mutants_feedback": {
-        "killed": 121,
-        "survived": 59,
-        "no_coverage": 22,
+        "killed": 111,
+        "survived": 62,
+        "no_coverage": 29,
         "timeout": 0,
         "compile_error": 0,
         "runtime_error": 0,
@@ -341,53 +341,53 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 30,
-        "n_asserts": 31,
-        "sha256": "95cb7217da3fc2c66123f1f450b957a437c3d96b045c950a41084f856b866038"
+        "n_tests": 23,
+        "n_asserts": 24,
+        "sha256": "b541b7b44e583efbb5cd1670bae28d823a3a85e00f4f404215b9b1aa0a8ad2bc"
       },
       "prompt_file": "runs/pathe__path__C2r__r3/raw/k5_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2r__r3/raw/k5_a0_response.txt",
-      "best_k_so_far": 1,
+      "best_k_so_far": 3,
       "cost_cumulative": {
-        "calls": 7,
-        "repair_calls": 1,
-        "tokens_in": 27975,
-        "tokens_out": 11637,
-        "usd_ref": 0.007452,
-        "wall_s": 253.36,
-        "stryker_s": 205.81
+        "calls": 9,
+        "repair_calls": 3,
+        "tokens_in": 39383,
+        "tokens_out": 15106,
+        "usd_ref": 0.009981,
+        "wall_s": 616.74,
+        "stryker_s": 158.91
       }
     }
   ],
-  "selected_iteration": 1,
+  "selected_iteration": 3,
   "final": {
     "scores": {
-      "ms_eval": 71.7949,
-      "ms_feedback": 66.3366,
+      "ms_eval": 72.3077,
+      "ms_feedback": 65.8416,
       "ms_all": 69.0176,
-      "ms_covered": 74.4565
+      "ms_covered": 73.8544
     },
     "coverage": {
-      "line_cov": 91.66,
-      "branch_cov": 83.59
+      "line_cov": 92.94,
+      "branch_cov": 84.37
     },
     "cost": {
-      "calls": 7,
-      "repair_calls": 1,
-      "tokens_in": 27975,
-      "tokens_out": 11637,
-      "usd_ref": 0.007452,
-      "wall_s": 253.36,
-      "stryker_s": 205.81
+      "calls": 9,
+      "repair_calls": 3,
+      "tokens_in": 39383,
+      "tokens_out": 15106,
+      "usd_ref": 0.009981,
+      "wall_s": 616.74,
+      "stryker_s": 158.91
     },
     "tests": {
-      "n_tests": 33,
-      "n_asserts": 36,
-      "sha256": "e44b553bbc3ca17bbdcc6afd74e7a3b03e626662b8155a39b4ca7d848155324e"
+      "n_tests": 27,
+      "n_asserts": 45,
+      "sha256": "dbc074766a65fe94d1d59da07c2c1b16b1617deb07cd38074b4d3eaad711b7d1"
     },
-    "gap_cov_ms": 22.6424,
+    "gap_cov_ms": 23.9224,
     "valid_rate": 1,
-    "tokens_per_pp": 4543.7
+    "tokens_per_pp": 11805.91
   },
   "guardrails": {
     "src_diff_empty": true,

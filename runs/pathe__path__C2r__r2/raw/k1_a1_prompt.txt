@@ -522,7 +522,7 @@ Problems:
 
  RUN  v4.1.9 /home/runner/work/_temp/pathe
 
- ❯ test/__generated__/path.gen.test.ts (42 tests | 1 failed) 13ms
+ ❯ test/__generated__/path.gen.test.ts (42 tests | 1 failed) 11ms
      ✓ should be a forward slash 1ms
      ✓ should normalize simple paths 0ms
      ✓ should handle empty string as current directory 0ms
@@ -538,7 +538,7 @@ Problems:
      ✓ should resolve absolute path sequence 0ms
      ✓ should resolve with parent directory references 0ms
      ✓ should fall back to cwd if no arguments are provided 0ms
-     × should normalize path strings allowing above root 4ms
+     × should normalize path strings allowing above root 3ms
      ✓ should normalize path strings disallowing above root 0ms
      ✓ should correctly identify absolute path '/foo/bar' 0ms
      ✓ should correctly identify absolute path 'C:/foo/bar' 0ms
@@ -568,8 +568,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  1 failed | 41 passed (42)
-   Start at  02:39:54
-   Duration  191ms (transform 55ms, setup 0ms, import 70ms, tests 13ms, environment 0ms)
+   Start at  13:36:22
+   Duration  171ms (transform 56ms, setup 0ms, import 69ms, tests 11ms, environment 0ms)
 
 
 

@@ -229,12 +229,12 @@ Problems:
 
  RUN  v4.1.9 /home/runner/work/_temp/pathe
 
- ❯ test/__generated__/utils.gen.test.ts (13 tests | 1 failed) 10ms
-     ✓ should sort aliases by specificity and resolve nested aliases 1ms
+ ❯ test/__generated__/utils.gen.test.ts (13 tests | 1 failed) 13ms
+     ✓ should sort aliases by specificity and resolve nested aliases 2ms
      ✓ should return the same object if already normalized 0ms
-     ✓ should resolve a matching alias path 0ms
+     ✓ should resolve a matching alias path 1ms
      ✓ should return the original path if no alias matches 0ms
-     × should return possible alias resolutions sorted by length 5ms
+     × should return possible alias resolutions sorted by length 7ms
      ✓ should return an empty array if path does not match any alias target 0ms
      ✓ should extract filename from "/path/to/file.ts" 0ms
      ✓ should extract filename from "file.min.js" 0ms
@@ -246,8 +246,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  1 failed | 12 passed (13)
-   Start at  02:54:50
-   Duration  186ms (transform 60ms, setup 0ms, import 74ms, tests 10ms, environment 0ms)
+   Start at  14:04:25
+   Duration  245ms (transform 79ms, setup 0ms, import 97ms, tests 13ms, environment 0ms)
 
 
 

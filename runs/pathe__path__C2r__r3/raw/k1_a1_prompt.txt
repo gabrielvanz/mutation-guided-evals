@@ -414,36 +414,41 @@ describe("resolve", () => {
     expect(resolve("/foo", "", "bar")).toBe("/foo/bar");
   });
 
-  it("should handle Windows drive letters and UNC in resolve", () => {
+  it("should handle Windows drive paths in resolve", () => {
     expect(resolve("C:\\foo", "bar")).toBe("C:/foo/bar");
   });
 });
 
 describe("normalizeString", () => {
-  it("should normalize string segments without allowing above root", () => {
-    expect(normalizeString("/foo/../bar", false)).toBe("bar");
+  it("should normalize string path without above root when false", () => {
+    expect(normalizeString("foo/bar/../baz", false)).toBe("foo/baz");
   });
 
   it("should allow above root when specified", () => {
-    expect(normalizeString("/foo/../../bar", true)).toBe("../bar");
+    expect(normalizeString("../foo", true)).toBe("../foo");
   });
 
-  it("should handle empty string", () => {
+  it("should handle empty string in normalizeString", () => {
     expect(normalizeString("", false)).toBe("");
   });
 });
 
 describe("isAbsolute", () => {
-  it.each([
+  const cases = [
     { input: "/foo/bar", expected: true },
     { input: "C:/foo/bar", expected: true },
     { input: "C:\\foo\\bar", expected: true },
     { input: "//server/share", expected: true },
     { input: "foo/bar", expected: false },
+    { input: "./foo", expected: false },
     { input: "", expected: false }
-  ])("should correctly identify absolute path $input as $expected", ({ input, expected }) => {
-    expect(isAbsolute(input)).toBe(expected);
-  });
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for ${input || "empty string"}`, () => {
+      expect(isAbsolute(input)).toBe(expected);
+    });
+  }
 });
 
 describe("toNamespacedPath", () => {
@@ -453,81 +458,97 @@ describe("toNamespacedPath", () => {
 });
 
 describe("extname", () => {
-  it.each([
+  const cases = [
     { input: "index.html", expected: ".html" },
     { input: "index.coffee.md", expected: ".md" },
     { input: "index.", expected: "." },
     { input: "index", expected: "" },
     { input: ".gitignore", expected: "" },
-    { input: "foo/bar..txt", expected: ".txt" },
     { input: "..", expected: "" }
-  ])("should return extension for $input", ({ input, expected }) => {
-    expect(extname(input)).toBe(expected);
-  });
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should extract extension ${JSON.stringify(expected)} from ${JSON.stringify(input)}`, () => {
+      expect(extname(input)).toBe(expected);
+    });
+  }
 });
 
 describe("relative", () => {
   it("should compute relative path between two paths", () => {
-    expect(relative("/var/lib", "/var/lib/air")).toBe("air");
-    expect(relative("/var/lib/air", "/var/lib")).toBe("..");
+    expect(relative("/data/orandea/test/aaa", "/data/orandea/impl/bbb")).toBe("../../impl/bbb");
   });
 
-  it("should return absolute path if drive letters differ on Windows", () => {
-    expect(relative("C:/foo/bar", "D:/foo/bar")).toBe("D:/foo/bar");
+  it("should return absolute path if drive letters differ", () => {
+    expect(relative("C:/foo", "D:/bar")).toBe("D:/bar");
+  });
+
+  it("should handle identical paths", () => {
+    expect(relative("/foo/bar", "/foo/bar")).toBe("");
   });
 });
 
 describe("dirname", () => {
-  it.each([
-    { input: "/foo/bar/baz.txt", expected: "/foo/bar" },
-    { input: "/foo/bar/", expected: "/foo" },
+  const cases = [
+    { input: "/foo/bar/baz", expected: "/foo/bar" },
+    { input: "/foo/bar", expected: "/foo" },
+    { input: "/foo", expected: "/" },
+    { input: "/", expected: "/" },
     { input: "foo/bar", expected: "foo" },
-    { input: "bar", expected: "." },
-    { input: "/bar", expected: "/" },
+    { input: "foo", expected: "." },
     { input: "C:\\foo\\bar", expected: "C:/foo" },
     { input: "C:\\", expected: "C:/" }
-  ])("should return dirname for $input", ({ input, expected }) => {
-    expect(dirname(input)).toBe(expected);
-  });
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${JSON.stringify(expected)} for dirname(${JSON.stringify(input)})`, () => {
+      expect(dirname(input)).toBe(expected);
+    });
+  }
 });
 
 describe("format", () => {
-  it("should format a path object into a string", () => {
-    expect(
-      format({
-        root: "/",
-        dir: "/path/to",
-        base: "file.txt"
-      })
-    ).toBe("/path/to/file.txt");
+  it("should format path object into a string path", () => {
+    const formatted = format({
+      root: "/",
+      dir: "/foo/bar",
+      base: "baz.html",
+      ext: ".html",
+      name: "baz"
+    });
+    expect(formatted).toBe("/foo/bar/baz.html");
   });
 
-  it("should format a path object using name and ext", () => {
-    expect(
-      format({
-        root: "/",
-        dir: "/path/to",
-        name: "file",
-        ext: "txt"
-      })
-    ).toBe("/path/to/file.txt");
+  it("should format path object without root", () => {
+    const formatted = format({
+      dir: "foo/bar",
+      name: "baz",
+      ext: "txt"
+    });
+    expect(formatted).toBe("foo/bar/baz.txt");
   });
 });
 
 describe("basename", () => {
-  it.each([
-    { input: "/foo/bar/baz.txt", extension: undefined, expected: "baz.txt" },
-    { input: "/foo/bar/baz.txt", extension: ".txt", expected: "baz" },
-    { input: "/foo/bar/", extension: undefined, expected: "bar" },
-    { input: "", extension: undefined, expected: "" }
-  ])("should return basename for $input with extension $extension", ({ input, extension, expected }) => {
-    expect(basename(input, extension)).toBe(expected);
-  });
+  const cases = [
+    { input: "/foo/bar/baz.html", expected: "baz.html" },
+    { input: "/foo/bar/baz.html", extension: ".html", expected: "baz" },
+    { input: "/foo/bar/", expected: "bar" },
+    { input: "/", expected: "" },
+    { input: "", expected: "" }
+  ];
+
+  for (const { input, extension, expected } of cases) {
+    it(`should return basename for ${JSON.stringify(input)}${extension ? ` with ext ${JSON.stringify(extension)}` : ""}`, () => {
+      expect(basename(input, extension)).toBe(expected);
+    });
+  }
 });
 
 describe("parse", () => {
-  it("should parse path into components", () => {
-    expect(parse("/home/user/dir/file.txt")).toEqual({
+  it("should parse a file path into its components", () => {
+    const parsed = parse("/home/user/dir/file.txt");
+    expect(parsed).toEqual({
       root: "/",
       dir: "/home/user/dir",
       base: "file.txt",
@@ -536,8 +557,9 @@ describe("parse", () => {
     });
   });
 
-  it("should handle paths without directories", () => {
-    expect(parse("file.txt")).toEqual({
+  it("should handle paths without directory", () => {
+    const parsed = parse("file.txt");
+    expect(parsed).toEqual({
       root: "",
       dir: "",
       base: "file.txt",
@@ -549,12 +571,12 @@ describe("parse", () => {
 
 describe("matchesGlob", () => {
   it("should match path against glob pattern", () => {
-    expect(matchesGlob("/foo/bar/baz.ts", "*.ts")).toBe(false);
     expect(matchesGlob("/foo/bar/baz.ts", "**/*.ts")).toBe(true);
+    expect(matchesGlob("/foo/bar/baz.js", "**/*.ts")).toBe(false);
   });
 
-  it("should match path against array of patterns", () => {
-    expect(matchesGlob("/foo/bar/baz.ts", ["*.js", "**/*.ts"])).toBe(true);
+  it("should match path against array of glob patterns", () => {
+    expect(matchesGlob("/foo/bar/baz.js", ["**/*.ts", "**/*.js"])).toBe(true);
   });
 });
 
@@ -565,7 +587,7 @@ Problems:
 
  RUN  v4.1.9 /home/runner/work/_temp/pathe
 
- ❯ test/__generated__/path.gen.test.ts (53 tests | 1 failed) 15ms
+ ❯ test/__generated__/path.gen.test.ts (56 tests | 1 failed) 12ms
      ✓ should equal a POSIX slash 1ms
      ✓ should handle empty path string 0ms
      ✓ should normalize Windows paths and backslashes 0ms
@@ -582,66 +604,69 @@ Problems:
      ✓ should resolve relative paths to an absolute path 0ms
      ✓ should handle absolute path segments during resolution 0ms
      ✓ should handle empty path segments 0ms
-     ✓ should handle Windows drive letters and UNC in resolve 0ms
-     ✓ should normalize string segments without allowing above root 0ms
+     ✓ should handle Windows drive paths in resolve 0ms
+     ✓ should normalize string path without above root when false 0ms
      ✓ should allow above root when specified 0ms
-     ✓ should handle empty string 0ms
-     ✓ should correctly identify absolute path '/foo/bar' as true 0ms
-     ✓ should correctly identify absolute path 'C:/foo/bar' as true 0ms
-     ✓ should correctly identify absolute path 'C:\foo\bar' as true 0ms
-     ✓ should correctly identify absolute path '//server/share' as true 0ms
-     ✓ should correctly identify absolute path 'foo/bar' as false 0ms
-     ✓ should correctly identify absolute path '' as false 0ms
+     ✓ should handle empty string in normalizeString 0ms
+     ✓ should return true for /foo/bar 0ms
+     ✓ should return true for C:/foo/bar 0ms
+     ✓ should return true for C:\foo\bar 0ms
+     ✓ should return true for //server/share 0ms
+     ✓ should return false for foo/bar 0ms
+     ✓ should return false for ./foo 0ms
+     ✓ should return false for empty string 0ms
      ✓ should normalize windows path for namespaced path 0ms
-     ✓ should return extension for 'index.html' 0ms
-     ✓ should return extension for 'index.coffee.md' 0ms
-     ✓ should return extension for 'index.' 0ms
-     ✓ should return extension for 'index' 0ms
-     ✓ should return extension for '.gitignore' 0ms
-     ✓ should return extension for 'foo/bar..txt' 0ms
-     ✓ should return extension for '..' 0ms
+     ✓ should extract extension ".html" from "index.html" 0ms
+     ✓ should extract extension ".md" from "index.coffee.md" 0ms
+     ✓ should extract extension "." from "index." 0ms
+     ✓ should extract extension "" from "index" 0ms
+     ✓ should extract extension "" from ".gitignore" 0ms
+     ✓ should extract extension "" from ".." 0ms
      ✓ should compute relative path between two paths 0ms
-     ✓ should return absolute path if drive letters differ on Windows 0ms
-     ✓ should return dirname for '/foo/bar/baz.txt' 0ms
-     ✓ should return dirname for '/foo/bar/' 0ms
-     ✓ should return dirname for 'foo/bar' 0ms
-     ✓ should return dirname for 'bar' 0ms
-     ✓ should return dirname for '/bar' 0ms
-     ✓ should return dirname for 'C:\foo\bar' 0ms
-     × should return dirname for 'C:\' 4ms
-     ✓ should format a path object into a string 0ms
-     ✓ should format a path object using name and ext 0ms
-     ✓ should return basename for '/foo/bar/baz.txt' with extension undefined 0ms
-     ✓ should return basename for '/foo/bar/baz.txt' with extension '.txt' 0ms
-     ✓ should return basename for '/foo/bar/' with extension undefined 0ms
-     ✓ should return basename for '' with extension undefined 0ms
-     ✓ should parse path into components 0ms
-     ✓ should handle paths without directories 0ms
+     ✓ should return absolute path if drive letters differ 0ms
+     ✓ should handle identical paths 0ms
+     ✓ should return "/foo/bar" for dirname("/foo/bar/baz") 0ms
+     ✓ should return "/foo" for dirname("/foo/bar") 0ms
+     ✓ should return "/" for dirname("/foo") 0ms
+     ✓ should return "/" for dirname("/") 0ms
+     ✓ should return "foo" for dirname("foo/bar") 0ms
+     ✓ should return "." for dirname("foo") 0ms
+     ✓ should return "C:/foo" for dirname("C:\\foo\\bar") 0ms
+     × should return "C:/" for dirname("C:\\") 4ms
+     ✓ should format path object into a string path 0ms
+     ✓ should format path object without root 0ms
+     ✓ should return basename for "/foo/bar/baz.html" 0ms
+     ✓ should return basename for "/foo/bar/baz.html" with ext ".html" 0ms
+     ✓ should return basename for "/foo/bar/" 0ms
+     ✓ should return basename for "/" 0ms
+     ✓ should return basename for "" 0ms
+     ✓ should parse a file path into its components 0ms
+     ✓ should handle paths without directory 0ms
      ✓ should match path against glob pattern 1ms
-     ✓ should match path against array of patterns 0ms
+     ✓ should match path against array of glob patterns 0ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 52 passed (53)
-   Start at  02:43:40
-   Duration  208ms (transform 61ms, setup 0ms, import 77ms, tests 15ms, environment 0ms)
+      Tests  1 failed | 55 passed (56)
+   Start at  13:39:43
+   Duration  171ms (transform 52ms, setup 0ms, import 66ms, tests 12ms, environment 0ms)
 
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  test/__generated__/path.gen.test.ts > dirname > should return dirname for 'C:\'
+ FAIL  test/__generated__/path.gen.test.ts > dirname > should return "C:/" for dirname("C:\\")
 AssertionError: expected '/' to be 'C:/' // Object.is equality
 
 Expected: "C:/"
 Received: "/"
 
- ❯ test/__generated__/path.gen.test.ts:165:28
-    163|     { input: "C:\\", expected: "C:/" }
-    164|   ])("should return dirname for $input", ({ input, expected }) => {
-    165|     expect(dirname(input)).toBe(expected);
-       |                            ^
-    166|   });
-    167| });
+ ❯ test/__generated__/path.gen.test.ts:180:30
+    178|   for (const { input, expected } of cases) {
+    179|     it(`should return ${JSON.stringify(expected)} for dirname(${JSON.s…
+    180|       expect(dirname(input)).toBe(expected);
+       |                              ^
+    181|     });
+    182|   }
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 

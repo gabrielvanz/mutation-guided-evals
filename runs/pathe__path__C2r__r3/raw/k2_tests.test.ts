@@ -17,48 +17,34 @@ import {
 } from "../../src/_path";
 
 describe("sep", () => {
-  it("should be a forward slash", () => {
+  it("should be equal to '/'", () => {
     expect(sep).toBe("/");
   });
 });
 
 describe("normalize", () => {
-  it("should normalize simple paths", () => {
-    expect(normalize("foo/bar//baz/..")).toBe("foo/bar");
-  });
-
-  it("should handle empty string", () => {
-    expect(normalize("")).toBe(".");
-  });
-
-  it("should normalize Windows paths with backslashes", () => {
-    expect(normalize("foo\\bar\\baz")).toBe("foo/bar/baz");
-  });
-
-  it("should preserve absolute paths", () => {
-    expect(normalize("/foo/bar/..")).toBe("/foo");
-  });
-
-  it("should handle drive letters", () => {
-    expect(normalize("C:\\foo\\bar")).toBe("C:/foo/bar");
-  });
-
-  it("should handle UNC paths", () => {
-    expect(normalize("\\\\server\\share\\foo")).toBe("//server/share/foo");
+  it.each([
+    { input: "", expected: "." },
+    { input: "foo/bar//baz", expected: "foo/bar/baz" },
+    { input: "foo/./bar", expected: "foo/bar" },
+    { input: "foo/../bar", expected: "bar" },
+    { input: "C:\\foo\\bar", expected: "C:/foo/bar" },
+    { input: "C:", expected: "C:/" },
+    { input: "/foo/bar/", expected: "/foo/bar/" },
+    { input: "", expected: "." }
+  ])("should normalize $input to $expected", ({ input, expected }) => {
+    expect(normalize(input)).toBe(expected);
   });
 });
 
 describe("join", () => {
-  it("should join multiple segments", () => {
-    expect(join("foo", "bar", "baz")).toBe("foo/bar/baz");
-  });
-
-  it("should handle empty segments", () => {
-    expect(join("foo", "", "bar")).toBe("foo/bar");
-  });
-
-  it("should handle slashes correctly", () => {
-    expect(join("/foo", "bar/")).toBe("/foo/bar/");
+  it.each([
+    { input: ["foo", "bar", "baz"], expected: "foo/bar/baz" },
+    { input: ["/foo", "bar"], expected: "/foo/bar" },
+    { input: ["foo/", "/bar"], expected: "foo/bar" },
+    { input: ["", "foo"], expected: "foo" }
+  ])("should join segments correctly", ({ input, expected }) => {
+    expect(join(...input)).toBe(expected);
   });
 });
 
@@ -67,18 +53,18 @@ describe("resolve", () => {
     expect(resolve("/foo/bar", "./baz")).toBe("/foo/bar/baz");
   });
 
-  it("should resolve relative paths against cwd", () => {
-    expect(isAbsolute(resolve("foo"))).toBe(true);
+  it("should handle empty or omitted segments", () => {
+    expect(resolve()).not.toBe("");
   });
 });
 
 describe("normalizeString", () => {
-  it("should normalize relative path string without allowing above root", () => {
-    expect(normalizeString("foo/../bar", false)).toBe("bar");
-  });
-
-  it("should allow above root when specified", () => {
-    expect(normalizeString("../foo", true)).toBe("../foo");
+  it.each([
+    { path: "foo/../bar", allowAboveRoot: false, expected: "bar" },
+    { path: "../foo", allowAboveRoot: true, expected: "../foo" },
+    { path: "../foo", allowAboveRoot: false, expected: "foo" }
+  ])("should normalize string path for $path", ({ path, allowAboveRoot, expected }) => {
+    expect(normalizeString(path, allowAboveRoot)).toBe(expected);
   });
 });
 
@@ -87,17 +73,16 @@ describe("isAbsolute", () => {
     { input: "/foo/bar", expected: true },
     { input: "C:/foo/bar", expected: true },
     { input: "C:\\foo\\bar", expected: true },
-    { input: "//server/share", expected: true },
     { input: "foo/bar", expected: false },
-    { input: "", expected: false }
-  ])("should return $expected for $input", ({ input, expected }) => {
+    { input: "//server/share", expected: true }
+  ])("should determine if $input is absolute", ({ input, expected }) => {
     expect(isAbsolute(input)).toBe(expected);
   });
 });
 
 describe("toNamespacedPath", () => {
-  it("should normalize windows paths", () => {
-    expect(toNamespacedPath("C:\\dir\\file")).toBe("C:/dir/file");
+  it("should normalize windows path for namespaced path", () => {
+    expect(toNamespacedPath("C:\\foo\\bar")).toBe("C:/foo/bar");
   });
 });
 
@@ -107,15 +92,14 @@ describe("extname", () => {
     { input: "index.coffee.md", expected: ".md" },
     { input: "index.", expected: "." },
     { input: "index", expected: "" },
-    { input: ".gitignore", expected: "" },
     { input: "..", expected: "" }
-  ])("should return $expected for $input", ({ input, expected }) => {
+  ])("should return extension for $input", ({ input, expected }) => {
     expect(extname(input)).toBe(expected);
   });
 });
 
 describe("relative", () => {
-  it("should calculate relative path between two paths", () => {
+  it("should compute relative path between two paths", () => {
     expect(relative("/data/orandea/test/aaa", "/data/orandea/impl/bbb")).toBe("../../impl/bbb");
   });
 
@@ -129,59 +113,34 @@ describe("dirname", () => {
     { input: "/foo/bar/baz", expected: "/foo/bar" },
     { input: "/foo/bar/", expected: "/foo" },
     { input: "foo", expected: "." },
-    { input: "C:/foo/bar", expected: "C:/foo" }
-  ])("should return $expected for $input", ({ input, expected }) => {
+    { input: "C:/foo", expected: "C:/" }
+  ])("should return dirname for $input", ({ input, expected }) => {
     expect(dirname(input)).toBe(expected);
   });
 });
 
 describe("format", () => {
-  it("should format path object", () => {
-    expect(
-      format({
-        root: "/",
-        dir: "/path/to",
-        base: "file.txt"
-      })
-    ).toBe("/path/to/file.txt");
-  });
-
-  it("should format with name and ext", () => {
-    expect(
-      format({
-        dir: "path/to",
-        name: "file",
-        ext: "txt"
-      })
-    ).toBe("path/to/file.txt");
+  it("should format path object into a path string", () => {
+    expect(format({ root: "/", dir: "/foo/bar", base: "baz.html" })).toBe("/foo/bar/baz.html");
+    expect(format({ name: "baz", ext: ".html" })).toBe("baz.html");
   });
 });
 
 describe("basename", () => {
   it.each([
-    { input: "/foo/bar/baz.txt", extension: undefined, expected: "baz.txt" },
-    { input: "/foo/bar/baz.txt", extension: ".txt", expected: "baz" },
+    { input: "/foo/bar/baz.html", extension: undefined, expected: "baz.html" },
+    { input: "/foo/bar/baz.html", extension: ".html", expected: "baz" },
     { input: "/foo/bar/", extension: undefined, expected: "bar" }
-  ])("should return $expected for $input with ext $extension", ({ input, extension, expected }) => {
+  ])("should return basename for $input", ({ input, extension, expected }) => {
     expect(basename(input, extension)).toBe(expected);
   });
 });
 
 describe("parse", () => {
-  it("should parse path into components", () => {
+  it("should parse path into an object", () => {
     expect(parse("/home/user/dir/file.txt")).toEqual({
       root: "/",
       dir: "/home/user/dir",
-      base: "file.txt",
-      ext: ".txt",
-      name: "file"
-    });
-  });
-
-  it("should handle paths without directories", () => {
-    expect(parse("file.txt")).toEqual({
-      root: "",
-      dir: "",
       base: "file.txt",
       ext: ".txt",
       name: "file"
@@ -191,11 +150,7 @@ describe("parse", () => {
 
 describe("matchesGlob", () => {
   it("should match path against glob pattern", () => {
-    expect(matchesGlob("src/index.ts", "src/*.ts")).toBe(true);
-    expect(matchesGlob("src/index.js", "src/*.ts")).toBe(false);
-  });
-
-  it("should accept array of patterns", () => {
-    expect(matchesGlob("src/index.ts", ["*.js", "src/*.ts"])).toBe(true);
+    expect(matchesGlob("/foo/bar.js", "*.js")).toBe(false);
+    expect(matchesGlob("/foo/bar.js", "**/bar.js")).toBe(true);
   });
 });

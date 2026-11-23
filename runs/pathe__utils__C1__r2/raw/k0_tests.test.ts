@@ -47,12 +47,12 @@ describe("filename", () => {
     expect(filename("file.js")).toBe("file");
   });
 
-  it("should return undefined for empty paths or roots", () => {
-    expect(filename("")).toBeUndefined();
-    expect(filename("/")).toBeUndefined();
+  it("should return undefined for empty path segments", () => {
+    expect(filename("")).toBe(undefined);
   });
 
-  it("should handle files starting with a dot correctly", () => {
-    expect(filename(".gitignore")).toBe(".gitignore");
+  it("should handle files starting with a dot or no extension", () => {
+    expect(filename("/path/to/.gitignore")).toBe(".gitignore");
+    expect(filename("/path/to/README")).toBe("README");
   });
 });

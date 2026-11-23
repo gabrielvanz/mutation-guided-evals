@@ -153,7 +153,7 @@ describe("parse", () => {
 
 describe("matchesGlob", () => {
   it("should match path against glob pattern", () => {
-    expect(matchesGlob("/foo/bar.js", "*.js")).toBe(false);
-    expect(matchesGlob("/foo/bar.js", "**/bar.js")).toBe(true);
+    expect(matchesGlob("foo/bar.js", "*.js")).toBe(false);
+    expect(matchesGlob("foo/bar.js", "**/bar.js")).toBe(true);
   });
 });

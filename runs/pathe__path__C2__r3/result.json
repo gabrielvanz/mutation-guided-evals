@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "pathe__path__C2__r3",
-  "started_at": "2026-11-23T02:38:03.831Z",
-  "finished_at": "2026-11-23T02:38:52.528Z",
+  "started_at": "2026-11-23T13:31:41.042Z",
+  "finished_at": "2026-11-23T13:32:35.537Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -44,31 +44,31 @@
       "k": 0,
       "valid": true,
       "discard_reason": null,
-      "repair_attempts": 0,
+      "repair_attempts": 1,
       "scores": {
         "ms_eval": 68.7179,
-        "ms_feedback": 63.3663,
-        "ms_all": 65.995,
-        "ms_covered": 72.5762
+        "ms_feedback": 59.4059,
+        "ms_all": 63.9798,
+        "ms_covered": 72.1591
       },
       "coverage": {
-        "line_cov": 89.74,
-        "branch_cov": 82.03
+        "line_cov": 88.46,
+        "branch_cov": 79.68
       },
       "mutants_eval": {
         "killed": 132,
-        "survived": 44,
-        "no_coverage": 17,
+        "survived": 41,
+        "no_coverage": 20,
         "timeout": 2,
         "compile_error": 0,
         "runtime_error": 0,
         "ignored": 0
       },
       "mutants_feedback": {
-        "killed": 128,
-        "survived": 55,
-        "no_coverage": 19,
-        "timeout": 0,
+        "killed": 119,
+        "survived": 57,
+        "no_coverage": 25,
+        "timeout": 1,
         "compile_error": 0,
         "runtime_error": 0,
         "ignored": 0
@@ -76,21 +76,21 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 36,
-        "n_asserts": 49,
-        "sha256": "d7e2519a7b062e53b11c99344ba2fa06f9d67372f43480ca58af0b614ca01bd1"
+        "n_tests": 37,
+        "n_asserts": 48,
+        "sha256": "40bbb9cd4bbd98ec2949e977ba746f2556525c55293cb2730277b260937d23d6"
       },
       "prompt_file": "runs/pathe__path__C2__r3/raw/k0_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2__r3/raw/k0_a0_response.txt",
       "best_k_so_far": 0,
       "cost_cumulative": {
-        "calls": 1,
-        "repair_calls": 0,
-        "tokens_in": 3610,
-        "tokens_out": 1833,
-        "usd_ref": 0.001094,
-        "wall_s": 48.7,
-        "stryker_s": 41.34
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 9413,
+        "tokens_out": 3687,
+        "usd_ref": 0.002416,
+        "wall_s": 54.5,
+        "stryker_s": 35.83
       }
     }
   ],
@@ -98,29 +98,29 @@
   "final": {
     "scores": {
       "ms_eval": 68.7179,
-      "ms_feedback": 63.3663,
-      "ms_all": 65.995,
-      "ms_covered": 72.5762
+      "ms_feedback": 59.4059,
+      "ms_all": 63.9798,
+      "ms_covered": 72.1591
     },
     "coverage": {
-      "line_cov": 89.74,
-      "branch_cov": 82.03
+      "line_cov": 88.46,
+      "branch_cov": 79.68
     },
     "cost": {
-      "calls": 1,
-      "repair_calls": 0,
-      "tokens_in": 3610,
-      "tokens_out": 1833,
-      "usd_ref": 0.001094,
-      "wall_s": 48.7,
-      "stryker_s": 41.34
+      "calls": 2,
+      "repair_calls": 1,
+      "tokens_in": 9413,
+      "tokens_out": 3687,
+      "usd_ref": 0.002416,
+      "wall_s": 54.5,
+      "stryker_s": 35.83
     },
     "tests": {
-      "n_tests": 36,
-      "n_asserts": 49,
-      "sha256": "d7e2519a7b062e53b11c99344ba2fa06f9d67372f43480ca58af0b614ca01bd1"
+      "n_tests": 37,
+      "n_asserts": 48,
+      "sha256": "40bbb9cd4bbd98ec2949e977ba746f2556525c55293cb2730277b260937d23d6"
     },
-    "gap_cov_ms": 23.745,
+    "gap_cov_ms": 24.4802,
     "valid_rate": 1,
     "tokens_per_pp": null
   },

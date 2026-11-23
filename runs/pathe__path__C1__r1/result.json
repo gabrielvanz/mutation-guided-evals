@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "pathe__path__C1__r1",
-  "started_at": "2026-11-23T02:35:27.037Z",
-  "finished_at": "2026-11-23T02:36:16.927Z",
+  "started_at": "2026-11-23T13:27:14.620Z",
+  "finished_at": "2026-11-23T13:29:25.423Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -78,7 +78,7 @@
       "tests": {
         "n_tests": 19,
         "n_asserts": 28,
-        "sha256": "674f0b4ec72be4522fe202dff0bd43ec2ca08dfecf67de6aa2a9a17455961c59"
+        "sha256": "851365e28b8c02f21ab52701b9e8dfdba567578d874a6a5e038ca01b5effab24"
       },
       "prompt_file": "runs/pathe__path__C1__r1/raw/k0_a0_prompt.txt",
       "response_file": "runs/pathe__path__C1__r1/raw/k0_a0_response.txt",
@@ -86,11 +86,11 @@
       "cost_cumulative": {
         "calls": 2,
         "repair_calls": 1,
-        "tokens_in": 8292,
-        "tokens_out": 2308,
-        "usd_ref": 0.001752,
-        "wall_s": 49.89,
-        "stryker_s": 35.51
+        "tokens_in": 8473,
+        "tokens_out": 2283,
+        "usd_ref": 0.001761,
+        "wall_s": 130.8,
+        "stryker_s": 23.75
       }
     }
   ],
@@ -109,16 +109,16 @@
     "cost": {
       "calls": 2,
       "repair_calls": 1,
-      "tokens_in": 8292,
-      "tokens_out": 2308,
-      "usd_ref": 0.001752,
-      "wall_s": 49.89,
-      "stryker_s": 35.51
+      "tokens_in": 8473,
+      "tokens_out": 2283,
+      "usd_ref": 0.001761,
+      "wall_s": 130.8,
+      "stryker_s": 23.75
     },
     "tests": {
       "n_tests": 19,
       "n_asserts": 28,
-      "sha256": "674f0b4ec72be4522fe202dff0bd43ec2ca08dfecf67de6aa2a9a17455961c59"
+      "sha256": "851365e28b8c02f21ab52701b9e8dfdba567578d874a6a5e038ca01b5effab24"
     },
     "gap_cov_ms": 30.9987,
     "valid_rate": 1,

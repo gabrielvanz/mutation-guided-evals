@@ -114,25 +114,28 @@ describe("isAbsolute", () => {
 });
 
 describe("toNamespacedPath", () => {
-  it("should normalize windows paths", () => {
-    expect(toNamespacedPath("foo\\bar")).toBe("foo/bar");
+  it("should normalize windows path separators", () => {
+    expect(toNamespacedPath("C:\\foo\\bar")).toBe("C:/foo/bar");
   });
 });
 
 describe("extname", () => {
   it("should return the extension of a file", () => {
-    expect(extname("index.html")).toBe(".html");
-    expect(extname("index.coffee.md")).toBe(".md");
+    expect(extname("index.ts")).toBe(".ts");
+    expect(extname("archive.tar.gz")).toBe(".gz");
   });
 
   it("should return empty string if no extension", () => {
-    expect(extname("index")).toBe("");
+    expect(extname("README")).toBe("");
     expect(extname(".gitignore")).toBe("");
   });
 
-  it("should handle special cases", () => {
+  it("should handle paths", () => {
+    expect(extname("src/components/Button.tsx")).toBe(".tsx");
+  });
+
+  it("should handle special cases like ..", () => {
     expect(extname("..")).toBe("");
-    expect(extname("dir/file.txt")).toBe(".txt");
   });
 });
 
@@ -141,23 +144,19 @@ describe("relative", () => {
     expect(relative("/data/orandea/test/aaa", "/data/orandea/impl/bbb")).toBe("../../impl/bbb");
   });
 
-  it("should return absolute path if drive letters differ", () => {
-    expect(relative("C:/foo", "D:/bar")).toBe("D:/bar");
+  it("should return empty string or same when paths are identical", () => {
+    expect(relative("/foo/bar", "/foo/bar")).toBe("");
   });
 });
 
 describe("dirname", () => {
   it("should return the directory name of a path", () => {
-    expect(dirname("/foo/bar/baz/asdf")).toBe("/foo/bar/baz");
-    expect(dirname("foo/bar")).toBe("foo");
+    expect(dirname("/foo/bar/baz.txt")).toBe("/foo/bar");
+  });
+
+  it("should handle root and relative cases", () => {
     expect(dirname("/foo")).toBe("/");
-  });
-
-  it("should handle trailing slashes", () => {
-    expect(dirname("/foo/bar/")).toBe("/foo");
-  });
-
-  it("should return dot for simple filenames", () => {
+    expect(dirname("foo/bar")).toBe("foo");
     expect(dirname("foo")).toBe(".");
   });
 });
@@ -168,35 +167,40 @@ describe("format", () => {
       format({
         root: "/",
         dir: "/home/user/dir",
-        base: "file.txt"
+        base: "file.txt",
+        ext: ".txt",
+        name: "file"
       })
     ).toBe("/home/user/dir/file.txt");
   });
 
-  it("should handle name and ext when base is missing", () => {
+  it("should format without root", () => {
     expect(
       format({
-        root: "/",
+        dir: "home/user",
         name: "file",
-        ext: ".txt"
+        ext: "txt"
       })
-    ).toBe("/file.txt");
+    ).toBe("home/user/file.txt");
   });
 });
 
 describe("basename", () => {
   it("should return the last portion of a path", () => {
-    expect(basename("/foo/bar/baz/asdf.html")).toBe("asdf.html");
-    expect(basename("/foo/bar/baz/asdf")).toBe("asdf");
+    expect(basename("/foo/bar/baz.asdf")).toBe("baz.asdf");
   });
 
   it("should strip extension if provided", () => {
-    expect(basename("/foo/bar/baz/asdf.html", ".html")).toBe("asdf");
+    expect(basename("/foo/bar/baz.asdf", ".asdf")).toBe("baz");
+  });
+
+  it("should handle trailing slashes", () => {
+    expect(basename("/foo/bar/")).toBe("bar");
   });
 });
 
 describe("parse", () => {
-  it("should parse a path into an object", () => {
+  it("should parse a path into its components", () => {
     expect(parse("/home/user/dir/file.txt")).toEqual({
       root: "/",
       dir: "/home/user/dir",
@@ -220,11 +224,11 @@ describe("parse", () => {
 describe("matchesGlob", () => {
   it("should match path against glob pattern", () => {
     expect(matchesGlob("src/index.ts", "src/*.ts")).toBe(true);
-    expect(matchesGlob("src/index.js", "src/*.ts")).toBe(false);
+    expect(matchesGlob("test/index.spec.ts", "src/*.ts")).toBe(false);
   });
 
-  it("should match against array of patterns", () => {
-    expect(matchesGlob("src/index.ts", ["src/*.js", "src/*.ts"])).toBe(true);
+  it("should support array of patterns", () => {
+    expect(matchesGlob("src/index.js", ["*.ts", "*.js"])).toBe(true);
   });
 });
 ```

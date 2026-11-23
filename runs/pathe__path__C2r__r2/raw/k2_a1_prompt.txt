@@ -487,7 +487,8 @@ describe("parse", () => {
 describe("matchesGlob", () => {
   it("should match path against glob pattern", () => {
     expect(matchesGlob("/foo/bar.js", "*.js")).toBe(false);
-    expect(matchesGlob("/foo/bar.js", "**/bar.js")).toBe(true);
+    expect(matchesGlob("bar.js", "*.js")).toBe(true);
+    expect(matchesGlob("/foo/bar.js", "/foo/*.js")).toBe(true);
   });
 });
 
@@ -498,7 +499,7 @@ Problems:
 
  RUN  v4.1.9 /home/runner/work/_temp/pathe
 
- ❯ test/__generated__/path.gen.test.ts (25 tests | 1 failed) 12ms
+ ❯ test/__generated__/path.gen.test.ts (25 tests | 1 failed) 10ms
      ✓ should be a forward slash 1ms
      ✓ should normalize empty string to dot 0ms
      ✓ should handle simple paths 0ms
@@ -512,7 +513,7 @@ Problems:
      ✓ should resolve absolute paths 0ms
      ✓ should resolve relative paths using cwd 0ms
      ✓ should handle multiple arguments 0ms
-     × should normalize string allowing above root 4ms
+     × should normalize string allowing above root 3ms
      ✓ should normalize string not allowing above root 0ms
      ✓ should identify absolute paths 0ms
      ✓ should normalize windows paths for namespacing 0ms
@@ -527,8 +528,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  1 failed | 24 passed (25)
-   Start at  02:40:38
-   Duration  186ms (transform 59ms, setup 0ms, import 73ms, tests 12ms, environment 0ms)
+   Start at  13:39:27
+   Duration  162ms (transform 53ms, setup 0ms, import 66ms, tests 10ms, environment 0ms)
 
 
 

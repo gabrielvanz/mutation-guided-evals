@@ -1,0 +1,136 @@
+{
+  "schema_version": "0.1",
+  "run_id": "pathe__utils__C2__r3",
+  "started_at": "2026-11-23T14:05:46.387Z",
+  "finished_at": "2026-11-23T14:06:24.144Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "pathe",
+    "repo": "unjs/pathe",
+    "commit": "bc7477a01f0bd60ada017add8142c9f9d69ccdc5",
+    "license": "MIT",
+    "module_path": "src/utils.ts",
+    "module_loc": 134,
+    "mutants_total": 89,
+    "human_test_files": [
+      "test/utils.spec.ts"
+    ]
+  },
+  "condition": "C2",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.9",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "5ebb2f98a932ff8147664dc21a859a82e30b5551489d4908c9bd4f1133a478d1",
+    "git_sha_agent": "32c8d631b74d76e817e62a515fa5460f680b102f"
+  },
+  "memorization": {
+    "probe_similarity": 0.0791,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 40,
+        "ms_feedback": 61.2245,
+        "ms_all": 51.6854,
+        "ms_covered": 56.7901
+      },
+      "coverage": {
+        "line_cov": 97.72,
+        "branch_cov": 86.2
+      },
+      "mutants_eval": {
+        "killed": 16,
+        "survived": 19,
+        "no_coverage": 5,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 30,
+        "survived": 16,
+        "no_coverage": 3,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 8,
+        "n_asserts": 8,
+        "sha256": "32d37f68ebc314a19077ca0b6be59c8002df2cb935cb4bee7c5e2cc20f492f5f"
+      },
+      "prompt_file": "runs/pathe__utils__C2__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs/pathe__utils__C2__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 4669,
+        "tokens_out": 1628,
+        "usd_ref": 0.001118,
+        "wall_s": 37.76,
+        "stryker_s": 6.66
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 40,
+      "ms_feedback": 61.2245,
+      "ms_all": 51.6854,
+      "ms_covered": 56.7901
+    },
+    "coverage": {
+      "line_cov": 97.72,
+      "branch_cov": 86.2
+    },
+    "cost": {
+      "calls": 2,
+      "repair_calls": 1,
+      "tokens_in": 4669,
+      "tokens_out": 1628,
+      "usd_ref": 0.001118,
+      "wall_s": 37.76,
+      "stryker_s": 6.66
+    },
+    "tests": {
+      "n_tests": 8,
+      "n_asserts": 8,
+      "sha256": "32d37f68ebc314a19077ca0b6be59c8002df2cb935cb4bee7c5e2cc20f492f5f"
+    },
+    "gap_cov_ms": 46.0346,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/pathe__utils__C2__r3/raw"
+  }
+}

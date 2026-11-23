@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "pathe__utils__C1__r1",
-  "started_at": "2026-11-23T02:52:52.626Z",
-  "finished_at": "2026-11-23T02:53:14.962Z",
+  "started_at": "2026-11-23T13:57:22.503Z",
+  "finished_at": "2026-11-23T13:57:48.089Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -86,11 +86,11 @@
       "cost_cumulative": {
         "calls": 2,
         "repair_calls": 1,
-        "tokens_in": 4165,
+        "tokens_in": 4167,
         "tokens_out": 1682,
-        "usd_ref": 0.001089,
-        "wall_s": 22.34,
-        "stryker_s": 8.96
+        "usd_ref": 0.00109,
+        "wall_s": 25.59,
+        "stryker_s": 11.4
       }
     }
   ],
@@ -109,11 +109,11 @@
     "cost": {
       "calls": 2,
       "repair_calls": 1,
-      "tokens_in": 4165,
+      "tokens_in": 4167,
       "tokens_out": 1682,
-      "usd_ref": 0.001089,
-      "wall_s": 22.34,
-      "stryker_s": 8.96
+      "usd_ref": 0.00109,
+      "wall_s": 25.59,
+      "stryker_s": 11.4
     },
     "tests": {
       "n_tests": 11,

@@ -238,23 +238,23 @@ Problems:
 
  RUN  v4.1.9 /home/runner/work/_temp/pathe
 
- ❯ test/__generated__/utils.gen.test.ts (11 tests | 1 failed) 9ms
-       ✓ should return the same object if already normalized 1ms
+ ❯ test/__generated__/utils.gen.test.ts (11 tests | 1 failed) 13ms
+       ✓ should return the same object if already normalized 2ms
        ✓ should sort aliases by specificity (longest parts first) 0ms
        ✓ should resolve alias values in relation to each other recursively 0ms
-       ✓ should resolve matching alias with trailing slash boundaries 0ms
+       ✓ should resolve matching alias with trailing slash boundaries 1ms
        ✓ should return normalized path if no alias matches 0ms
        ✓ should not match partial alias segments without slash boundary 0ms
-       × should return matching reversed alias resolutions sorted by length 4ms
+       × should return matching reversed alias resolutions sorted by length 6ms
        ✓ should return an empty array if path does not match any alias target 1ms
-       ✓ should extract filename without extension 0ms
+       ✓ should extract filename without extension 1ms
        ✓ should handle files without extension 0ms
        ✓ should return undefined or handle empty/dotfiles appropriately 0ms
 
  Test Files  1 failed (1)
       Tests  1 failed | 10 passed (11)
-   Start at  02:52:55
-   Duration  185ms (transform 60ms, setup 0ms, import 74ms, tests 9ms, environment 0ms)
+   Start at  13:57:25
+   Duration  245ms (transform 75ms, setup 0ms, import 96ms, tests 13ms, environment 0ms)
 
 
 

@@ -342,124 +342,121 @@ import {
 } from "../../src/_path";
 
 describe("_path module", () => {
-  it("should have correct sep constant", () => {
+  it("should have sep equal to '/'", () => {
     expect(sep).toBe("/");
   });
 
   describe("normalize", () => {
-    it("should normalize empty string to .", () => {
+    it("should handle empty paths", () => {
       expect(normalize("")).toBe(".");
     });
 
-    it("should normalize simple paths", () => {
-      expect(normalize("foo/bar//baz/..")).toBe("foo/bar");
+    it("should normalize regular paths", () => {
+      expect(normalize("/foo/bar//baz/..")).toBe("/foo/bar");
+      expect(normalize("foo/bar/")).toBe("foo/bar/");
     });
 
-    it("should handle absolute paths and trailing slashes", () => {
-      expect(normalize("/foo/bar/")).toBe("/foo/bar/");
-    });
-
-    it("should handle windows drive letters", () => {
-      expect(normalize("C:\\foo\\bar")).toBe("C:/foo/bar");
-      expect(normalize("C:")).toBe("C:/");
+    it("should normalize windows paths", () => {
+      expect(normalize("C:\\foo\\bar\\..\\baz")).toBe("C:/baz/");
     });
 
     it("should handle UNC paths", () => {
       expect(normalize("\\\\server\\share\\foo")).toBe("//server/share/foo");
-      expect(normalize("\\\\server\\share")).toBe("//server/share");
     });
   });
 
   describe("join", () => {
     it("should join path segments", () => {
-      expect(join("foo", "bar", "baz")).toBe("foo/bar/baz");
-      expect(join("", "foo", "", "bar")).toBe("foo/bar");
-    });
-
-    it("should handle slashes when joining", () => {
-      expect(join("/foo", "bar")).toBe("/foo/bar");
-      expect(join("foo/", "/bar")).toBe("foo/bar");
+      expect(join("/foo", "bar", "baz/asdf")).toBe("/foo/bar/baz/asdf");
+      expect(join("")).toBe(".");
+      expect(join("/foo", "", "bar")).toBe("/foo/bar");
     });
   });
 
   describe("resolve", () => {
-    it("should resolve paths", () => {
+    it("should resolve absolute paths", () => {
       expect(resolve("/foo/bar", "./baz")).toBe("/foo/bar/baz");
-      expect(resolve("")).toBeDefined();
+      expect(resolve("/foo/bar", "/tmp/file")).toBe("/tmp/file");
     });
   });
 
   describe("normalizeString", () => {
-    it("should normalize string path without above root", () => {
-      expect(normalizeString("foo/bar/../baz", false)).toBe("foo/baz");
+    it("should normalize string paths with allowAboveRoot true", () => {
+      expect(normalizeString("/foo/../bar", true)).toBe("/bar");
+      expect(normalizeString("..", true)).toBe("..");
     });
 
-    it("should normalize string path allowing above root", () => {
-      expect(normalizeString("../foo", true)).toBe("../foo");
+    it("should normalize string paths with allowAboveRoot false", () => {
+      expect(normalizeString("/foo/../../bar", false)).toBe("/bar");
     });
   });
 
   describe("isAbsolute", () => {
     it("should correctly identify absolute paths", () => {
       expect(isAbsolute("/foo/bar")).toBe(true);
-      expect(isAbsolute("C:/foo/bar")).toBe(true);
+      expect(isAbsolute("C:/foo")).toBe(true);
       expect(isAbsolute("foo/bar")).toBe(false);
+      expect(isAbsolute("//server/share")).toBe(true);
     });
   });
 
   describe("toNamespacedPath", () => {
-    it("should normalize windows paths for namespacing", () => {
-      expect(toNamespacedPath("C:\\foo\\bar")).toBe("C:/foo/bar");
+    it("should normalize windows path for namespacing", () => {
+      expect(toNamespacedPath("foo\\bar")).toBe("foo/bar");
     });
   });
 
   describe("extname", () => {
-    it("should return correct file extension", () => {
+    it("should extract file extensions", () => {
       expect(extname("index.html")).toBe(".html");
       expect(extname("index.coffee.md")).toBe(".md");
+      expect(extname("index.")).toBe(".");
       expect(extname("index")).toBe("");
       expect(extname("..")).toBe("");
     });
   });
 
   describe("relative", () => {
-    it("should compute relative path between from and to", () => {
-      expect(relative("/data/orandea/test/aaa", "/data/orandea/impl/bbb")).toBe("../../impl/bbb");
+    it("should compute relative path between two paths", () => {
+      expect(relative("/data/orandea/test/aaa", "/data/orandea/impl/bbb")).toBe(
+        "../../impl/bbb"
+      );
       expect(relative("C:/foo/bar", "D:/foo/bar")).toBe("D:/foo/bar");
     });
   });
 
   describe("dirname", () => {
     it("should return the directory name", () => {
-      expect(dirname("/foo/bar/baz.js")).toBe("/foo/bar");
-      expect(dirname("/foo/")).toBe("/");
-      expect(dirname("bar.js")).toBe(".");
+      expect(dirname("/foo/bar/baz/asdf")).toBe("/foo/bar/baz");
+      expect(dirname("/foo")).toBe("/");
+      expect(dirname("bar")).toBe(".");
     });
   });
 
   describe("format", () => {
-    it("should format path object to string", () => {
+    it("should format a path object into a path string", () => {
       expect(
         format({
           root: "/",
           dir: "/foo/bar",
-          base: "baz.js",
+          base: "baz.html",
+          ext: ".html",
+          name: "baz",
         })
-      ).toBe("/foo/bar/baz.js");
+      ).toBe("/foo/bar/baz.html");
     });
   });
 
   describe("basename", () => {
     it("should return the last portion of a path", () => {
-      expect(basename("/foo/bar/baz.js")).toBe("baz.js");
-      expect(basename("/foo/bar/baz.js", ".js")).toBe("baz");
+      expect(basename("/foo/bar/baz/asdf.html")).toBe("asdf.html");
+      expect(basename("/foo/bar/baz/asdf.html", ".html")).toBe("asdf");
     });
   });
 
   describe("parse", () => {
-    it("should parse path into an object", () => {
-      const parsed = parse("/home/user/dir/file.txt");
-      expect(parsed).toEqual({
+    it("should parse a path into an object", () => {
+      expect(parse("/home/user/dir/file.txt")).toEqual({
         root: "/",
         dir: "/home/user/dir",
         base: "file.txt",
@@ -470,9 +467,9 @@ describe("_path module", () => {
   });
 
   describe("matchesGlob", () => {
-    it("should match path against glob pattern", () => {
+    it("should match path against glob patterns", () => {
       expect(matchesGlob("/foo/bar.js", "*.js")).toBe(false);
-      expect(matchesGlob("foo/bar.js", "*.js")).toBe(true);
+      expect(matchesGlob("/foo/bar.js", "**/bar.js")).toBe(true);
     });
   });
 });
@@ -484,55 +481,82 @@ Problems:
 
  RUN  v4.1.9 /home/runner/work/_temp/pathe
 
- ❯ test/__generated__/path.gen.test.ts (20 tests | 1 failed) 16ms
-     ✓ should have correct sep constant 2ms
-       ✓ should normalize empty string to . 0ms
-       ✓ should normalize simple paths 0ms
-       ✓ should handle absolute paths and trailing slashes 0ms
-       ✓ should handle windows drive letters 0ms
+ ❯ test/__generated__/path.gen.test.ts (18 tests | 3 failed) 17ms
+     ✓ should have sep equal to '/' 2ms
+       ✓ should handle empty paths 0ms
+       ✓ should normalize regular paths 0ms
+       × should normalize windows paths 6ms
        ✓ should handle UNC paths 0ms
        ✓ should join path segments 0ms
-       ✓ should handle slashes when joining 0ms
-       ✓ should resolve paths 1ms
-       ✓ should normalize string path without above root 0ms
-       ✓ should normalize string path allowing above root 0ms
+       ✓ should resolve absolute paths 0ms
+       × should normalize string paths with allowAboveRoot true 1ms
+       × should normalize string paths with allowAboveRoot false 1ms
        ✓ should correctly identify absolute paths 0ms
-       ✓ should normalize windows paths for namespacing 0ms
-       ✓ should return correct file extension 0ms
-       ✓ should compute relative path between from and to 0ms
+       ✓ should normalize windows path for namespacing 0ms
+       ✓ should extract file extensions 0ms
+       ✓ should compute relative path between two paths 0ms
        ✓ should return the directory name 0ms
-       ✓ should format path object to string 0ms
+       ✓ should format a path object into a path string 0ms
        ✓ should return the last portion of a path 0ms
-       ✓ should parse path into an object 1ms
-       × should match path against glob pattern 6ms
+       ✓ should parse a path into an object 0ms
+       ✓ should match path against glob patterns 1ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 19 passed (20)
-   Start at  02:35:33
-   Duration  249ms (transform 78ms, setup 0ms, import 99ms, tests 16ms, environment 0ms)
+      Tests  3 failed | 15 passed (18)
+   Start at  13:27:13
+   Duration  255ms (transform 78ms, setup 0ms, import 98ms, tests 17ms, environment 0ms)
 
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  test/__generated__/path.gen.test.ts > _path module > matchesGlob > should match path against glob pattern
-AssertionError: expected false to be true // Object.is equality
+ FAIL  test/__generated__/path.gen.test.ts > _path module > normalize > should normalize windows paths
+AssertionError: expected 'C:/foo/baz' to be 'C:/baz/' // Object.is equality
 
-- Expected
-+ Received
+Expected: "C:/baz/"
+Received: "C:/foo/baz"
 
-- true
-+ false
+ ❯ test/__generated__/path.gen.test.ts:35:50
+     33|
+     34|     it("should normalize windows paths", () => {
+     35|       expect(normalize("C:\\foo\\bar\\..\\baz")).toBe("C:/baz/");
+       |                                                  ^
+     36|     });
+     37|
 
- ❯ test/__generated__/path.gen.test.ts:150:49
-    148|     it("should match path against glob pattern", () => {
-    149|       expect(matchesGlob("/foo/bar.js", "*.js")).toBe(false);
-    150|       expect(matchesGlob("foo/bar.js", "*.js")).toBe(true);
-       |                                                 ^
-    151|     });
-    152|   });
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+ FAIL  test/__generated__/path.gen.test.ts > _path module > normalizeString > should normalize string paths with allowAboveRoot true
+AssertionError: expected 'bar' to be '/bar' // Object.is equality
+
+Expected: "/bar"
+Received: "bar"
+
+ ❯ test/__generated__/path.gen.test.ts:60:52
+     58|   describe("normalizeString", () => {
+     59|     it("should normalize string paths with allowAboveRoot true", () =>…
+     60|       expect(normalizeString("/foo/../bar", true)).toBe("/bar");
+       |                                                    ^
+     61|       expect(normalizeString("..", true)).toBe("..");
+     62|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/__generated__/path.gen.test.ts > _path module > normalizeString > should normalize string paths with allowAboveRoot false
+AssertionError: expected 'bar' to be '/bar' // Object.is equality
+
+Expected: "/bar"
+Received: "bar"
+
+ ❯ test/__generated__/path.gen.test.ts:65:56
+     63|
+     64|     it("should normalize string paths with allowAboveRoot false", () =…
+     65|       expect(normalizeString("/foo/../../bar", false)).toBe("/bar");
+       |                                                        ^
+     66|     });
+     67|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 
 
 ```

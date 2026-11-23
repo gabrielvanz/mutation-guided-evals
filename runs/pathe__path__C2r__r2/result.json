@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "pathe__path__C2r__r2",
-  "started_at": "2026-11-23T02:39:12.052Z",
-  "finished_at": "2026-11-23T02:43:15.091Z",
+  "started_at": "2026-11-23T13:35:06.411Z",
+  "finished_at": "2026-11-23T13:44:35.498Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -76,9 +76,9 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 28,
-        "n_asserts": 29,
-        "sha256": "7edf8037056f7cb2e1742f611c455d9e2da5483d40bc8b65c1690b96b6c51e74"
+        "n_tests": 29,
+        "n_asserts": 30,
+        "sha256": "8b7a215c5fafa1b5f7fe7182ea70fa2c8a7f3e0400eaffdae8ca170951025e77"
       },
       "prompt_file": "runs/pathe__path__C2r__r2/raw/k0_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2r__r2/raw/k0_a0_response.txt",
@@ -87,10 +87,10 @@
         "calls": 1,
         "repair_calls": 0,
         "tokens_in": 3610,
-        "tokens_out": 1760,
-        "usd_ref": 0.001065,
-        "wall_s": 38.43,
-        "stryker_s": 30.87
+        "tokens_out": 1815,
+        "usd_ref": 0.001087,
+        "wall_s": 48.92,
+        "stryker_s": 26.77
       }
     },
     {
@@ -140,10 +140,10 @@
         "calls": 3,
         "repair_calls": 1,
         "tokens_in": 13049,
-        "tokens_out": 5142,
-        "usd_ref": 0.003362,
-        "wall_s": 83.53,
-        "stryker_s": 61.09
+        "tokens_out": 5197,
+        "usd_ref": 0.003384,
+        "wall_s": 171.78,
+        "stryker_s": 52.74
       }
     },
     {
@@ -183,8 +183,8 @@
       "survivor_ids": [],
       "tests": {
         "n_tests": 25,
-        "n_asserts": 35,
-        "sha256": "5d4028933ad8c843ea6772d940ef39541c37799860a87cb9507f1a689793e5ab"
+        "n_asserts": 36,
+        "sha256": "05daf0235014ebb5de0727c7a72a19eda7c1c78e5f0efcf8c8572159516b48e8"
       },
       "prompt_file": "runs/pathe__path__C2r__r2/raw/k2_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2r__r2/raw/k2_a0_response.txt",
@@ -192,64 +192,46 @@
       "cost_cumulative": {
         "calls": 5,
         "repair_calls": 2,
-        "tokens_in": 21818,
-        "tokens_out": 7811,
-        "usd_ref": 0.005306,
-        "wall_s": 126.56,
-        "stryker_s": 88.91
+        "tokens_in": 21835,
+        "tokens_out": 7900,
+        "usd_ref": 0.005344,
+        "wall_s": 295.25,
+        "stryker_s": 76.7
       }
     },
     {
       "k": 3,
-      "valid": true,
-      "discard_reason": null,
-      "repair_attempts": 0,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
       "scores": {
-        "ms_eval": 65.641,
-        "ms_feedback": 60.8911,
-        "ms_all": 63.2242,
-        "ms_covered": 72.9651
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
       },
       "coverage": {
-        "line_cov": 89.1,
-        "branch_cov": 74.21
-      },
-      "mutants_eval": {
-        "killed": 126,
-        "survived": 42,
-        "no_coverage": 25,
-        "timeout": 2,
-        "compile_error": 0,
-        "runtime_error": 0,
-        "ignored": 0
-      },
-      "mutants_feedback": {
-        "killed": 122,
-        "survived": 51,
-        "no_coverage": 28,
-        "timeout": 1,
-        "compile_error": 0,
-        "runtime_error": 0,
-        "ignored": 0
+        "line_cov": null,
+        "branch_cov": null
       },
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 15,
-        "n_asserts": 40,
-        "sha256": "01993bf1db2df4388f28c808522d6cebb636362533e06635d55d82b32dae67b8"
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
       },
       "prompt_file": "runs/pathe__path__C2r__r2/raw/k3_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2r__r2/raw/k3_a0_response.txt",
       "best_k_so_far": 0,
       "cost_cumulative": {
-        "calls": 6,
-        "repair_calls": 2,
-        "tokens_in": 25428,
-        "tokens_out": 9091,
-        "usd_ref": 0.006179,
-        "wall_s": 159.37,
-        "stryker_s": 116.26
+        "calls": 8,
+        "repair_calls": 4,
+        "tokens_in": 36135,
+        "tokens_out": 12853,
+        "usd_ref": 0.008755,
+        "wall_s": 326.77,
+        "stryker_s": 76.7
       }
     },
     {
@@ -258,28 +240,28 @@
       "discard_reason": null,
       "repair_attempts": 1,
       "scores": {
-        "ms_eval": 69.7436,
-        "ms_feedback": 63.8614,
-        "ms_all": 66.7506,
-        "ms_covered": 72.8022
+        "ms_eval": 67.1795,
+        "ms_feedback": 62.3762,
+        "ms_all": 64.7355,
+        "ms_covered": 71.1911
       },
       "coverage": {
         "line_cov": 91.02,
-        "branch_cov": 82.81
+        "branch_cov": 82.03
       },
       "mutants_eval": {
-        "killed": 134,
-        "survived": 43,
-        "no_coverage": 16,
+        "killed": 129,
+        "survived": 47,
+        "no_coverage": 17,
         "timeout": 2,
         "compile_error": 0,
         "runtime_error": 0,
         "ignored": 0
       },
       "mutants_feedback": {
-        "killed": 128,
-        "survived": 56,
-        "no_coverage": 17,
+        "killed": 125,
+        "survived": 57,
+        "no_coverage": 19,
         "timeout": 1,
         "compile_error": 0,
         "runtime_error": 0,
@@ -288,21 +270,21 @@
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 29,
-        "n_asserts": 33,
-        "sha256": "c5873f00222a7a05e55b77866c901eb3f0e252a424264e934d5772edfe3805a8"
+        "n_tests": 14,
+        "n_asserts": 24,
+        "sha256": "719a1cb27c6546474f9c306fa5fa27c70823dfb6972cdd4745e61ba9e92e86c9"
       },
       "prompt_file": "runs/pathe__path__C2r__r2/raw/k4_a0_prompt.txt",
       "response_file": "runs/pathe__path__C2r__r2/raw/k4_a0_response.txt",
       "best_k_so_far": 0,
       "cost_cumulative": {
-        "calls": 8,
-        "repair_calls": 3,
-        "tokens_in": 35082,
-        "tokens_out": 12869,
-        "usd_ref": 0.008656,
-        "wall_s": 205.24,
-        "stryker_s": 147.02
+        "calls": 10,
+        "repair_calls": 5,
+        "tokens_in": 44962,
+        "tokens_out": 15892,
+        "usd_ref": 0.010853,
+        "wall_s": 375.39,
+        "stryker_s": 102.09
       }
     },
     {
@@ -349,13 +331,13 @@
       "response_file": "runs/pathe__path__C2r__r2/raw/k5_a0_response.txt",
       "best_k_so_far": 0,
       "cost_cumulative": {
-        "calls": 9,
-        "repair_calls": 3,
-        "tokens_in": 38692,
-        "tokens_out": 14596,
-        "usd_ref": 0.009708,
-        "wall_s": 243.04,
-        "stryker_s": 178.11
+        "calls": 11,
+        "repair_calls": 5,
+        "tokens_in": 48572,
+        "tokens_out": 17619,
+        "usd_ref": 0.011905,
+        "wall_s": 569.09,
+        "stryker_s": 128.93
       }
     }
   ],
@@ -372,21 +354,21 @@
       "branch_cov": 78.9
     },
     "cost": {
-      "calls": 9,
-      "repair_calls": 3,
-      "tokens_in": 38692,
-      "tokens_out": 14596,
-      "usd_ref": 0.009708,
-      "wall_s": 243.04,
-      "stryker_s": 178.11
+      "calls": 11,
+      "repair_calls": 5,
+      "tokens_in": 48572,
+      "tokens_out": 17619,
+      "usd_ref": 0.011905,
+      "wall_s": 569.09,
+      "stryker_s": 128.93
     },
     "tests": {
-      "n_tests": 28,
-      "n_asserts": 29,
-      "sha256": "7edf8037056f7cb2e1742f611c455d9e2da5483d40bc8b65c1690b96b6c51e74"
+      "n_tests": 29,
+      "n_asserts": 30,
+      "sha256": "8b7a215c5fafa1b5f7fe7182ea70fa2c8a7f3e0400eaffdae8ca170951025e77"
     },
     "gap_cov_ms": 23.3569,
-    "valid_rate": 1,
+    "valid_rate": 0.8333,
     "tokens_per_pp": null
   },
   "guardrails": {

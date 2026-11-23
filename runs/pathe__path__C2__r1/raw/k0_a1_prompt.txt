@@ -478,8 +478,8 @@ describe("parse", () => {
 
 describe("matchesGlob", () => {
   it("should match path against glob pattern", () => {
-    expect(matchesGlob("/foo/bar.js", "*.js")).toBe(false);
-    expect(matchesGlob("/foo/bar.js", "**/bar.js")).toBe(true);
+    expect(matchesGlob("foo/bar.js", "*.js")).toBe(false);
+    expect(matchesGlob("foo/bar.js", "**/bar.js")).toBe(true);
   });
 });
 
@@ -494,8 +494,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  no tests
-   Start at  02:36:58
-   Duration  145ms (transform 0ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)
+   Start at  13:30:44
+   Duration  121ms (transform 0ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)
 
 
 
