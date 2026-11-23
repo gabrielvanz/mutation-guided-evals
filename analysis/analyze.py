@@ -241,6 +241,56 @@ def h3(its: pd.DataFrame) -> dict:
     return res
 
 
+# --------------------------------------------------------------------------- validade (viés de sobrevivência)
+# Desfechos atribuíveis ao modelo. provider_error / stryker_error / timeout são falhas de infraestrutura
+# (refeitas pelo pipeline) e não entram nos denominadores.
+MODEL_STATUSES = ("ok", "invalid_all_iterations")
+LLM_CONDS = ["C1", "C2", "C2r", "C3"]
+
+
+def _model_runs(df_all: pd.DataFrame, include_flaky: bool) -> pd.DataFrame:
+    d = df_all[df_all.status.isin(MODEL_STATUSES)]
+    return d if include_flaky else d[~d.flaky]
+
+
+def validity(df_all: pd.DataFrame, its_all: pd.DataFrame, include_flaky: bool) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Taxa de validade por condição e por módulo×condição.
+
+    A análise principal só usa runs `ok`; um módulo em que o LLM não gera nenhum teste válido some das
+    comparações, e isso favorece a condição que falha. Reportar a taxa torna esse viés visível.
+    """
+    d = _model_runs(df_all, include_flaky)
+    d = d[d.cond.isin(LLM_CONDS)]
+    it = its_all[its_all.run_id.isin(d.run_id)] if not its_all.empty else its_all
+    rows = []
+    for cond in LLM_CONDS:
+        g = d[d.cond == cond]
+        gi = it[it.cond == cond] if not it.empty else it
+        n_runs, n_ok = len(g), int(g.status.eq("ok").sum())
+        n_it, n_it_ok = len(gi), int(gi.valid.sum()) if len(gi) else 0
+        rows.append(dict(
+            cond=cond, n_runs=n_runs, n_runs_ok=n_ok, n_runs_invalid=n_runs - n_ok,
+            run_valid_pct=100 * n_ok / n_runs if n_runs else np.nan,
+            n_iter=n_it, n_iter_valid=n_it_ok, iter_valid_pct=100 * n_it_ok / n_it if n_it else np.nan,
+        ))
+    by_cond = pd.DataFrame(rows)
+    by_mod = (
+        d.assign(ok=d.status.eq("ok"))
+        .groupby(["module", "cond"])
+        .agg(n_runs=("run_id", "count"), n_runs_ok=("ok", "sum"))
+        .reset_index()
+    )
+    by_mod["run_valid_pct"] = 100 * by_mod.n_runs_ok / by_mod.n_runs
+    return by_cond, by_mod
+
+
+def sensitivity_invalid_as_zero(df_all: pd.DataFrame, include_flaky: bool) -> pd.DataFrame:
+    """Sensibilidade: run sem nenhum teste válido conta como mutation score 0 (em vez de ser descartado)."""
+    d = _model_runs(df_all, include_flaky).copy()
+    d.loc[d.status.eq("invalid_all_iterations"), "ms_eval"] = 0.0
+    return d
+
+
 # --------------------------------------------------------------------------- saída
 def fmt(x, nd=1):
     return "n/d" if x is None or (isinstance(x, float) and math.isnan(x)) else f"{x:.{nd}f}"
@@ -303,6 +353,55 @@ def write_tables(df: pd.DataFrame, h1r: pd.DataFrame, paper: Path, out: Path) ->
         lines.append(f"{r['comparison'].replace('>', '$>$')} & {int(r['n'])} & {fmt(r['median_diff'])} & {ci} & {fmt(r['cliff'], 2)} & {fmt(r['p'], 4)} & {fmt(r.get('p_holm', np.nan), 4)} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     (tdir / "tab_h1.tex").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_validity_table(by_cond: pd.DataFrame, tdir: Path) -> None:
+    tdir.mkdir(parents=True, exist_ok=True)
+    lines = [r"\begin{tabular}{lrrrrr}", r"\toprule",
+             r"Cond. & Runs & Runs v\'alidos & Taxa de runs (\%) & Itera\c{c}\~oes v\'alidas/tentadas & Taxa de itera\c{c}\~oes (\%) \\", r"\midrule"]
+    for _, r in by_cond.iterrows():
+        lines.append(f"{r['cond']} & {int(r['n_runs'])} & {int(r['n_runs_ok'])} & {fmt(r['run_valid_pct'])} & "
+                     f"{int(r['n_iter_valid'])}/{int(r['n_iter'])} & {fmt(r['iter_valid_pct'])} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    (tdir / "tab_valid.tex").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_valid_text(by_cond: pd.DataFrame, by_mod: pd.DataFrame, h1r: pd.DataFrame, h1s: pd.DataFrame, tdir: Path) -> None:
+    """Parágrafo do artigo sobre validade e viés de sobrevivência; todos os números vêm dos dados."""
+    tdir.mkdir(parents=True, exist_ok=True)
+    got = by_cond[by_cond.n_runs > 0]
+    if got.empty:
+        (tdir / "valid_text.tex").write_text("\\pendente{executar as condições com LLM para reportar a validade dos testes gerados}\n", encoding="utf-8")
+        return
+    pc = lambda x: "n/d" if x is None or (isinstance(x, float) and math.isnan(x)) else f"{x:.1f}".replace(".", ",")
+    runs = ", ".join(f"{r.cond}: {pc(r.run_valid_pct)}\\% ({int(r.n_runs_ok)}/{int(r.n_runs)})" for r in got.itertuples())
+    its = ", ".join(f"{r.cond}: {pc(r.iter_valid_pct)}\\%" for r in got.itertuples())
+    s = (f"A fração de \\textit{{runs}} em que o modelo produziu ao menos um teste válido foi, por condição, {runs}. "
+         f"Contando cada iteração, a fração de testes gerados que passam nos guardrails e no código original foi {its}. ")
+    zero = by_mod[(by_mod.n_runs > 0) & (by_mod.n_runs_ok == 0)]
+    if not zero.empty:
+        def _join(xs: list[str]) -> str:
+            return xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " e " + xs[-1]
+
+        items = []
+        for mod, g in zero.groupby("module", sort=True):
+            conds = [c for c in LLM_CONDS if c in set(g.cond)]
+            items.append(f"\\texttt{{{tex_escape(mod)}}} ({'condição' if len(conds) == 1 else 'condições'} {_join(conds)})")
+        plural = len(items) > 1
+        s += (f"Em nenhum \\textit{{run}} de {_join(items)} o modelo gerou um teste válido; como a análise principal só considera "
+              f"\\textit{{runs}} válidos, {'esses módulos saem' if plural else 'esse módulo sai'} das comparações da condição correspondente. ")
+    main_by = h1r.set_index("comparison")
+    parts = []
+    for r in h1s.itertuples():
+        if r.comparison in main_by.index:
+            m = main_by.loc[r.comparison]
+            parts.append(f"{r.comparison.replace('>', '$>$')}: $n$ de {int(m['n'])} para {int(r.n)} módulos e diferença mediana de "
+                         f"{pc(float(m['median_diff']))} para {pc(float(r.median_diff))} pontos percentuais")
+    if parts:
+        s += ("Em uma análise de sensibilidade exploratória, definida depois de observadas as primeiras execuções, em que um "
+              "\\textit{run} sem nenhum teste válido conta como \\textit{score} zero em vez de ser descartado, as comparações de H1 passam, "
+              "da análise principal para a de sensibilidade, a: " + "; ".join(parts) + ".")
+    (tdir / "valid_text.tex").write_text(s + "\n", encoding="utf-8")
 
 
 def write_figures(df: pd.DataFrame, h2r: dict, h3r: dict, fdir: Path) -> None:
@@ -372,6 +471,12 @@ def main() -> None:
 
     h1r = h1(df)
     h1r.to_csv(out / "h1.csv", index=False)
+    # Viés de sobrevivência: taxa de validade + H1 com run inválido contado como score 0
+    valid_c, valid_m = validity(df_all, its_all, a.include_flaky)
+    valid_c.to_csv(out / "valid_rate_by_condition.csv", index=False)
+    valid_m.to_csv(out / "valid_rate_by_module.csv", index=False)
+    h1s = h1(sensitivity_invalid_as_zero(df_all, a.include_flaky))
+    h1s.to_csv(out / "h1_sensitivity_invalid_as_zero.csv", index=False)
     h2r = h2(df, its)
     h3r = h3(its)
     for k, v in h3r.items():
@@ -383,13 +488,22 @@ def main() -> None:
         h2r["deltas"].to_csv(out / "h2_deltas.csv")
     summary = {
         "H1": h1r.to_dict(orient="records"),
+        "H1_sensitivity_invalid_as_zero": h1s.to_dict(orient="records"),
+        "validity_by_condition": valid_c.to_dict(orient="records"),
         "H2": {k: (v if not isinstance(v, (pd.DataFrame, pd.Series)) else v.to_dict()) for k, v in h2r.items() if k not in ("gap_table", "deltas")},
         "H3": {k: v for k, v in h3r.items() if k in ("friedman", "page")},
     }
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=lambda o: None if (isinstance(o, float) and math.isnan(o)) else str(o)), encoding="utf-8")
     write_tables(df, h1r, Path(a.paper), out)
+    write_validity_table(valid_c, Path(a.paper) / "tables")
+    write_valid_text(valid_c, valid_m, h1r, h1s, Path(a.paper) / "tables")
     write_figures(df, h2r, h3r, Path(a.paper) / "figs")
+    print("\nValidade dos testes gerados (só desfechos do modelo; erros de infraestrutura excluídos):")
+    print(valid_c.to_string(index=False, float_format=lambda x: f"{x:.1f}"))
+    print("\nH1 (principal: só runs ok)")
     print(h1r.to_string(index=False))
+    print("\nH1 (sensibilidade: run inválido = score 0)")
+    print(h1s.to_string(index=False))
     print("análise concluída ->", out)
 
 

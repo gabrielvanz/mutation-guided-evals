@@ -193,6 +193,13 @@ tendência de Page e os tokens por ponto percentual. O \textit{score} é também
 mortos por qualquer condição ($\text{MS}_{\text{killable}}$), um limite inferior prático para o teto atingível dado que
 equivalência é indecidível.
 
+Como a análise principal só considera \textit{runs} em que o modelo produziu ao menos um teste válido, reportamos
+também a taxa de validade por condição (de \textit{runs} e de iterações), contando apenas desfechos atribuíveis ao modelo:
+falhas de infraestrutura, como limite de cota da API ou \textit{timeout}, são refeitas e não entram nos denominadores.
+Para expor o viés de sobrevivência, repetimos as comparações de H1 em uma análise de sensibilidade exploratória, definida
+depois de observadas as primeiras execuções e, portanto, não prevista no protocolo original, em que um \textit{run} sem
+nenhum teste válido conta como \textit{score} zero.
+
 \subsection{Modelo, reprodutibilidade e uso de IA}
 
 O modelo é acessado por API de camada gratuita (Google AI Studio), com ID exato registrado em cada \textit{run}
@@ -254,6 +261,17 @@ são geradas automaticamente por \texttt{analysis/analyze.py} e, até a coleta, 
 \label{tab:h1}
 \end{table}
 
+\textbf{Validade dos testes gerados.} A Tabela~\ref{tab:valid} mostra quanto do que o modelo gera é aproveitável.
+\input{tables/valid_text}
+
+\begin{table}[t]
+\centering\small
+\input{tables/tab_valid}
+\caption{Validade dos testes gerados por condição. ``Runs válidos'': ao menos uma iteração aprovada nos guardrails e no código original.
+Falhas de infraestrutura (cota, \textit{timeout}) não são contadas.}
+\label{tab:valid}
+\end{table}
+
 \section{Discussão e ameaças à validade}
 \label{sec:ameacas}
 
@@ -266,6 +284,12 @@ mas atual passa e ``mata'' mutantes; não medimos corretude semântica das expec
 modelos gratuitos, com ID fixo e janela de coleta curta; o \textit{overfitting} ao Stryker, com o \textit{split} (mitigação
 parcial, pois a ferramenta é a mesma nos dois grupos; planejamos reavaliar com outros operadores); e a comparação
 injusta entre C1/C2 e C3, com C2r. Ainda assim C1 e C2 usam menos orçamento por construção.
+
+\textbf{Viés de sobrevivência.} Runs em que nenhum teste gerado é válido não têm \textit{score} e saem da análise principal,
+o que pode favorecer a condição que mais falha em módulos difíceis. Mitigamos reportando a taxa de validade por condição e
+uma análise de sensibilidade em que esses \textit{runs} contam como \textit{score} zero, uma convenção conservadora (um conjunto
+de testes que falha no código original equivale, na prática, a não ter testes) que não é a única possível; ela foi definida
+depois de observadas as primeiras execuções.
 
 \textbf{Validade externa.} Nove módulos de quatro bibliotecas de funções puras em TypeScript, de um mesmo ecossistema e com
 um único modelo, não generalizam para código com estado, I/O ou outras linguagens.
