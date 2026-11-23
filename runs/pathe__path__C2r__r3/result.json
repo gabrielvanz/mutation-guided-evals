@@ -1,0 +1,401 @@
+{
+  "schema_version": "0.1",
+  "run_id": "pathe__path__C2r__r3",
+  "started_at": "2026-11-23T02:42:57.250Z",
+  "finished_at": "2026-11-23T02:47:10.610Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "pathe",
+    "repo": "unjs/pathe",
+    "commit": "bc7477a01f0bd60ada017add8142c9f9d69ccdc5",
+    "license": "MIT",
+    "module_path": "src/_path.ts",
+    "module_loc": 314,
+    "mutants_total": 397,
+    "human_test_files": [
+      "test/index.spec.ts"
+    ]
+  },
+  "condition": "C2r",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.9",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "5ebb2f98a932ff8147664dc21a859a82e30b5551489d4908c9bd4f1133a478d1",
+    "git_sha_agent": "32c8d631b74d76e817e62a515fa5460f680b102f"
+  },
+  "memorization": {
+    "probe_similarity": 0.1257,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 63.0769,
+        "ms_feedback": 55.9406,
+        "ms_all": 59.4458,
+        "ms_covered": 69.8225
+      },
+      "coverage": {
+        "line_cov": 87.82,
+        "branch_cov": 71.09
+      },
+      "mutants_eval": {
+        "killed": 121,
+        "survived": 43,
+        "no_coverage": 29,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 112,
+        "survived": 59,
+        "no_coverage": 30,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 22,
+        "n_asserts": 23,
+        "sha256": "e9a13d6dcb6452708eb55fcaa719dfd4ce99ead7fc24fd937d184053f34fd43f"
+      },
+      "prompt_file": "runs/pathe__path__C2r__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C2r__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 1,
+        "repair_calls": 0,
+        "tokens_in": 3610,
+        "tokens_out": 1394,
+        "usd_ref": 0.000919,
+        "wall_s": 38.75,
+        "stryker_s": 32.72
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 71.7949,
+        "ms_feedback": 66.3366,
+        "ms_all": 69.0176,
+        "ms_covered": 74.4565
+      },
+      "coverage": {
+        "line_cov": 91.66,
+        "branch_cov": 83.59
+      },
+      "mutants_eval": {
+        "killed": 138,
+        "survived": 42,
+        "no_coverage": 13,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 133,
+        "survived": 52,
+        "no_coverage": 16,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 33,
+        "n_asserts": 36,
+        "sha256": "e44b553bbc3ca17bbdcc6afd74e7a3b03e626662b8155a39b4ca7d848155324e"
+      },
+      "prompt_file": "runs/pathe__path__C2r__r3/raw/k1_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C2r__r3/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 1,
+        "tokens_in": 13535,
+        "tokens_out": 5455,
+        "usd_ref": 0.003536,
+        "wall_s": 87.25,
+        "stryker_s": 66.23
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 70.7692,
+        "ms_feedback": 65.3465,
+        "ms_all": 68.0101,
+        "ms_covered": 74.1758
+      },
+      "coverage": {
+        "line_cov": 90.38,
+        "branch_cov": 80.46
+      },
+      "mutants_eval": {
+        "killed": 136,
+        "survived": 41,
+        "no_coverage": 16,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 131,
+        "survived": 53,
+        "no_coverage": 17,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 27,
+        "n_asserts": 28,
+        "sha256": "b0544de9ef115ac168565cc9fa9fa4aa88840f096c3cb74c31728a850731ba2f"
+      },
+      "prompt_file": "runs/pathe__path__C2r__r3/raw/k2_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C2r__r3/raw/k2_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 1,
+        "tokens_in": 17145,
+        "tokens_out": 7133,
+        "usd_ref": 0.004568,
+        "wall_s": 126.55,
+        "stryker_s": 98.36
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 72.3077,
+        "ms_feedback": 65.8416,
+        "ms_all": 69.0176,
+        "ms_covered": 73.8544
+      },
+      "coverage": {
+        "line_cov": 92.94,
+        "branch_cov": 84.37
+      },
+      "mutants_eval": {
+        "killed": 139,
+        "survived": 42,
+        "no_coverage": 12,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 132,
+        "survived": 55,
+        "no_coverage": 14,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 27,
+        "n_asserts": 46,
+        "sha256": "8f5d657ab973b08230f72e699faf522658fe53fd26234e31c663ab70a8a2dc08"
+      },
+      "prompt_file": "runs/pathe__path__C2r__r3/raw/k3_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C2r__r3/raw/k3_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 5,
+        "repair_calls": 1,
+        "tokens_in": 20755,
+        "tokens_out": 8800,
+        "usd_ref": 0.005596,
+        "wall_s": 164.41,
+        "stryker_s": 129.87
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 60.5128,
+        "ms_feedback": 57.4257,
+        "ms_all": 58.9421,
+        "ms_covered": 69.6429
+      },
+      "coverage": {
+        "line_cov": 87.82,
+        "branch_cov": 69.53
+      },
+      "mutants_eval": {
+        "killed": 116,
+        "survived": 46,
+        "no_coverage": 31,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 115,
+        "survived": 56,
+        "no_coverage": 30,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 23,
+        "n_asserts": 25,
+        "sha256": "e79117d51de495c341a343bbd9ec19dc474248f764efd7c85c2769877b9d0759"
+      },
+      "prompt_file": "runs/pathe__path__C2r__r3/raw/k4_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C2r__r3/raw/k4_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 1,
+        "tokens_in": 24365,
+        "tokens_out": 10265,
+        "usd_ref": 0.006543,
+        "wall_s": 208.44,
+        "stryker_s": 167.42
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 63.5897,
+        "ms_feedback": 59.901,
+        "ms_all": 61.7128,
+        "ms_covered": 69.4051
+      },
+      "coverage": {
+        "line_cov": 89.74,
+        "branch_cov": 78.12
+      },
+      "mutants_eval": {
+        "killed": 122,
+        "survived": 49,
+        "no_coverage": 22,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 121,
+        "survived": 59,
+        "no_coverage": 22,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 30,
+        "n_asserts": 31,
+        "sha256": "95cb7217da3fc2c66123f1f450b957a437c3d96b045c950a41084f856b866038"
+      },
+      "prompt_file": "runs/pathe__path__C2r__r3/raw/k5_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C2r__r3/raw/k5_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 7,
+        "repair_calls": 1,
+        "tokens_in": 27975,
+        "tokens_out": 11637,
+        "usd_ref": 0.007452,
+        "wall_s": 253.36,
+        "stryker_s": 205.81
+      }
+    }
+  ],
+  "selected_iteration": 1,
+  "final": {
+    "scores": {
+      "ms_eval": 71.7949,
+      "ms_feedback": 66.3366,
+      "ms_all": 69.0176,
+      "ms_covered": 74.4565
+    },
+    "coverage": {
+      "line_cov": 91.66,
+      "branch_cov": 83.59
+    },
+    "cost": {
+      "calls": 7,
+      "repair_calls": 1,
+      "tokens_in": 27975,
+      "tokens_out": 11637,
+      "usd_ref": 0.007452,
+      "wall_s": 253.36,
+      "stryker_s": 205.81
+    },
+    "tests": {
+      "n_tests": 33,
+      "n_asserts": 36,
+      "sha256": "e44b553bbc3ca17bbdcc6afd74e7a3b03e626662b8155a39b4ca7d848155324e"
+    },
+    "gap_cov_ms": 22.6424,
+    "valid_rate": 1,
+    "tokens_per_pp": 4543.7
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/pathe__path__C2r__r3/raw"
+  }
+}

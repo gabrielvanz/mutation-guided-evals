@@ -1,0 +1,91 @@
+import { describe, it, expect } from "vitest";
+import {
+  normalizeAliases,
+  resolveAlias,
+  reverseResolveAlias,
+  filename,
+} from "../../src/utils";
+
+describe("utils", () => {
+  describe("normalizeAliases", () => {
+    it("sorts aliases by specificity (more specific first)", () => {
+      const aliases = {
+        "fs": "./lib/fs",
+        "fs/promises": "./lib/fs-promises",
+      };
+      const normalized = normalizeAliases(aliases);
+      const keys = Object.keys(normalized);
+      expect(keys[0]).toBe("fs/promises");
+      expect(keys[1]).toBe("fs");
+    });
+
+    it("returns already normalized aliases as-is", () => {
+      const aliases = { "foo": "./foo" };
+      const normalized1 = normalizeAliases(aliases);
+      const normalized2 = normalizeAliases(normalized1);
+      expect(normalized1).toBe(normalized2);
+    });
+
+    it("resolves nested alias chains", () => {
+      const aliases = {
+        "#base": "/src",
+        "#components": "#base/components",
+      };
+      const normalized = normalizeAliases(aliases);
+      expect(normalized["#components"]).toBe("/src/components");
+    });
+  });
+
+  describe("resolveAlias", () => {
+    it("resolves matching path to alias target", () => {
+      const aliases = {
+        "~": "/root",
+      };
+      const resolved = resolveAlias("~/file.ts", aliases);
+      expect(resolved).toBe("/root/file.ts");
+    });
+
+    it("returns original path if no alias matches", () => {
+      const aliases = {
+        "~": "/root",
+      };
+      const resolved = resolveAlias("/other/file.ts", aliases);
+      expect(resolved).toBe("/other/file.ts");
+    });
+  });
+
+  describe("reverseResolveAlias", () => {
+    it("reverse resolves path matching alias target values", () => {
+      const aliases = {
+        "alias-key": "/target-dir",
+      };
+      const resolved = reverseResolveAlias("/target-dir/file.ts", aliases);
+      expect(resolved).toContain("alias-key/file.ts");
+    });
+
+    it("returns empty array if target does not match", () => {
+      const aliases = {
+        "alias-key": "/target-dir",
+      };
+      const resolved = reverseResolveAlias("/other-dir/file.ts", aliases);
+      expect(resolved).toEqual([]);
+    });
+  });
+
+  describe("filename", () => {
+    it("extracts filename without extension", () => {
+      expect(filename("/path/to/file.ts")).toBe("file");
+      expect(filename("C:\\path\\to\\image.png")).toBe("image");
+    });
+
+    it("handles files without extension or leading dot files", () => {
+      expect(filename("/path/to/README")).toBe("README");
+      expect(filename("/path/to/.gitignore")).toBe(".gitignore");
+    });
+
+    it("returns undefined for empty or slash-only paths", () => {
+      expect(filename("")).toBeUndefined();
+      expect(filename("/")).toBeUndefined();
+    });
+  });
+});

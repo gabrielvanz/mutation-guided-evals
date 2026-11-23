@@ -1,0 +1,426 @@
+Improve the Vitest test file for the module `src/utils.ts` (import path: `../../src/utils`).
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: pathe (utilitários de caminho multiplataforma)
+
+- A biblioteca normaliza caminhos para separadores POSIX (`/`), inclusive para entradas estilo Windows (`C:\\dir\\file`).
+- Os testes originais comparam strings completas de saída com `toBe`/`toEqual`.
+- Cubra: caminhos absolutos e relativos, `.` e `..`, barras duplicadas, caminhos Windows com letra de unidade, string vazia, extensões e nomes de arquivo.
+</conventions>
+
+Source of `src/utils.ts`:
+```ts
+import { join } from "./_path";
+import { normalizeWindowsPath } from "./_internal";
+
+const pathSeparators = new Set(["/", "\\", undefined]);
+
+const normalizedAliasSymbol = Symbol.for("pathe:normalizedAlias");
+
+const SLASH_RE = /[/\\]/;
+
+/**
+ * Normalises alias mappings, ensuring that more specific aliases are resolved before less specific ones.
+ * This function also ensures that aliases do not resolve to themselves cyclically.
+ *
+ * @param _aliases - A set of alias mappings where each key is an alias and its value is the actual path it points to.
+ * @returns a set of normalised alias mappings.
+ */
+export function normalizeAliases(_aliases: Record<string, string>) {
+  if ((_aliases as any)[normalizedAliasSymbol]) {
+    return _aliases;
+  }
+
+  // Sort aliases from specific to general (ie. fs/promises before fs)
+  const aliases = Object.fromEntries(
+    Object.entries(_aliases).sort(([a], [b]) => _compareAliases(a, b)),
+  );
+
+  // Resolve alias values in relation to each other
+  for (const key in aliases) {
+    for (const alias in aliases) {
+      // don't resolve a more specific alias with regard to a less specific one
+      if (alias === key || key.startsWith(alias)) {
+        continue;
+      }
+
+      if (aliases[key]?.startsWith(alias) && pathSeparators.has(aliases[key][alias.length])) {
+        aliases[key] = aliases[alias] + aliases[key].slice(alias.length);
+      }
+    }
+  }
+
+  Object.defineProperty(aliases, normalizedAliasSymbol, {
+    value: true,
+    enumerable: false,
+  });
+  return aliases;
+}
+
+/**
+ * Resolves a path string to its alias if applicable, otherwise returns the original path.
+ * This function normalises the path, resolves the alias and then joins it to the alias target if necessary.
+ *
+ * @param path - The path string to resolve.
+ * @param aliases - A set of alias mappings to use for resolution.
+ * @returns the resolved path as a string.
+ */
+export function resolveAlias(path: string, aliases: Record<string, string>) {
+  const _path = normalizeWindowsPath(path);
+  aliases = normalizeAliases(aliases);
+  for (const [alias, to] of Object.entries(aliases)) {
+    if (!_path.startsWith(alias)) {
+      continue;
+    }
+
+    // Strip trailing slash from alias for check
+    const _alias = hasTrailingSlash(alias) ? alias.slice(0, -1) : alias;
+
+    if (hasTrailingSlash(_path[_alias.length])) {
+      return join(to, _path.slice(alias.length));
+    }
+  }
+  return _path;
+}
+
+/**
+ * Resolves a path string to its possible alias.
+ *
+ * Returns an array of possible alias resolutions (could be empty), sorted by specificity (longest first).
+ */
+export function reverseResolveAlias(path: string, aliases: Record<string, string>): string[] {
+  const _path = normalizeWindowsPath(path);
+  aliases = normalizeAliases(aliases);
+
+  const matches: string[] = [];
+
+  for (const [to, alias] of Object.entries(aliases)) {
+    if (!_path.startsWith(alias)) {
+      continue;
+    }
+
+    // Strip trailing slash from alias for check
+    const _alias = hasTrailingSlash(alias) ? alias.slice(0, -1) : alias;
+
+    if (hasTrailingSlash(_path[_alias.length])) {
+      matches.push(join(to, _path.slice(alias.length)));
+    }
+  }
+
+  // Sort by length, longest (more specific) first
+  return matches.sort((a, b) => b.length - a.length);
+}
+
+/**
+ * Extracts the filename from a given path, excluding any directory paths and the file extension.
+ *
+ * @param path - The full path of the file from which to extract the filename.
+ * @returns the filename without the extension, or `undefined` if the filename cannot be extracted.
+ */
+export function filename(path: string) {
+  const base = path.split(SLASH_RE).pop();
+
+  if (!base) {
+    return undefined;
+  }
+
+  const separatorIndex = base.lastIndexOf(".");
+
+  if (separatorIndex <= 0) {
+    return base;
+  }
+
+  return base.slice(0, separatorIndex);
+}
+
+// --- internals ---
+
+function _compareAliases(a: string, b: string) {
+  return b.split("/").length - a.split("/").length;
+}
+
+// Returns true if path ends with a slash or **is empty**
+function hasTrailingSlash(path = "/") {
+  const lastChar = path[path.length - 1];
+  return lastChar === "/" || lastChar === "\\";
+}
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  normalizeAliases,
+  resolveAlias,
+  reverseResolveAlias,
+  filename
+} from "../../src/utils";
+
+describe("normalizeAliases", () => {
+  it("should sort aliases from specific to general and resolve nested aliases", () => {
+    const input = {
+      "~/": "/root/",
+      "~/components": "/root/src/components"
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "~/components": "/root/src/components",
+      "~/": "/root/"
+    });
+  });
+
+  it("should return the same object if already normalized", () => {
+    const input = {
+      "~/": "/root/"
+    };
+    const normalized = normalizeAliases(input);
+    const reNormalized = normalizeAliases(normalized);
+    expect(reNormalized).toBe(normalized);
+  });
+
+  it("should resolve nested aliases when one alias points to another", () => {
+    const input = {
+      "@lib": "@core/lib",
+      "@core": "/app/core"
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "@core": "/app/core",
+      "@lib": "/app/core/lib"
+    });
+  });
+
+  it("should not affect an alias when key equals alias or starts with another alias incorrectly", () => {
+    const input = {
+      "@core": "/app/core",
+      "@core-extra": "/app/extra"
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "@core-extra": "/app/extra",
+      "@core": "/app/core"
+    });
+  });
+
+  it("should not resolve an alias against itself and handle same key correctly", () => {
+    const input = {
+      "@core": "/app/core"
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "@core": "/app/core"
+    });
+  });
+
+  it("should not resolve when key starts with another alias suffix (endsWith mutation guard)", () => {
+    const input = {
+      "core": "/path/core",
+      "mycore": "/path/mycore"
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "mycore": "/path/mycore",
+      "core": "/path/core"
+    });
+  });
+
+  it("should handle undefined or safe property access when values are processed", () => {
+    const input = {
+      "@a": "/a",
+      "@b": "/b"
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "@b": "/b",
+      "@a": "/a"
+    });
+  });
+
+  it("should sort aliases correctly using segment counts via _compareAliases", () => {
+    const input = {
+      "a": "/a",
+      "a/b/c": "/c",
+      "a/b": "/b"
+    };
+    const result = normalizeAliases(input);
+    expect(Object.keys(result)).toEqual(["a/b/c", "a/b", "a"]);
+  });
+});
+
+describe("resolveAlias", () => {
+  const aliases = {
+    "@": "/app/src",
+    "@components": "/app/src/components"
+  };
+
+  const testCases = [
+    { path: "@components/Button.ts", expected: "/app/src/components/Button.ts" },
+    { path: "@/utils/index.ts", expected: "/app/src/utils/index.ts" },
+    { path: "C:\\app\\src\\components\\Button.ts", expected: "C:/app/src/components/Button.ts" },
+    { path: "@unmatched/file.ts", expected: "@unmatched/file.ts" }
+  ];
+
+  for (const { path, expected } of testCases) {
+    it(`should resolve ${path} to ${expected}`, () => {
+      expect(resolveAlias(path, aliases)).toBe(expected);
+    });
+  }
+
+  it("should not resolve alias when character after alias is not a separator", () => {
+    const simpleAliases = {
+      "@app": "/path/to/app"
+    };
+    expect(resolveAlias("@apples/file.ts", simpleAliases)).toBe("@apples/file.ts");
+  });
+
+  it("should ignore non-matching aliases and continue processing other aliases", () => {
+    const multiAliases = {
+      "@missing": "/missing",
+      "@": "/app/src"
+    };
+    expect(resolveAlias("@/file.ts", multiAliases)).toBe("/app/src/file.ts");
+  });
+
+  it("should handle aliases correctly when using normal paths", () => {
+    const winAliases = {
+      "@components": "/app/src/components"
+    };
+    expect(resolveAlias("@components/Button.ts", winAliases)).toBe("/app/src/components/Button.ts");
+  });
+
+  it("should correctly handle trailing slashes in alias definition during resolution", () => {
+    const aliasesWithTrailingSlash = {
+      "@components/": "/app/src/components"
+    };
+    expect(resolveAlias("@components/Button.ts", aliasesWithTrailingSlash)).toBe("/app/src/components/Button.ts");
+  });
+});
+
+describe("reverseResolveAlias", () => {
+  const aliases = {
+    "@": "/app/src",
+    "@components": "/app/src/components"
+  };
+
+  it("should return sorted possible alias resolutions ordered by length descending", () => {
+    const customAliases = {
+      "@": "/app/src",
+      "@sub": "/app/src/sub",
+      "@nested": "/app/src/sub/nested"
+    };
+    const result = reverseResolveAlias("/app/src/sub/nested/file.ts", customAliases);
+    expect(result).toEqual([
+      "@/sub/nested/file.ts",
+      "@sub/nested/file.ts",
+      "@nested/file.ts"
+    ]);
+  });
+
+  it("should return empty array when no alias matches", () => {
+    const result = reverseResolveAlias("/other/path/file.ts", aliases);
+    expect(result).toEqual([]);
+  });
+
+  it("should correctly handle trailing slashes and path boundaries during reverse resolution", () => {
+    const result = reverseResolveAlias("/app/src/components/Button.ts", aliases);
+    expect(result).toEqual([
+      "@/components/Button.ts",
+      "@components/Button.ts"
+    ]);
+  });
+
+  it("should skip non-matching paths in reverse resolve", () => {
+    const multiAliases = {
+      "@other": "/other/path",
+      "@": "/app/src"
+    };
+    const result = reverseResolveAlias("/app/src/file.ts", multiAliases);
+    expect(result).toEqual(["@/file.ts"]);
+  });
+
+  it("should correctly handle alias target with trailing slash in reverse resolution", () => {
+    const trailingSlashAliases = {
+      "@components": "/app/src/components/"
+    };
+    const result = reverseResolveAlias("/app/src/components/Button.ts", trailingSlashAliases);
+    expect(result).toEqual(["@components/Button.ts"]);
+  });
+});
+
+describe("filename", () => {
+  const testCases = [
+    { input: "/path/to/file.ts", expected: "file" },
+    { input: "C:\\path\\to\\file.d.ts", expected: "file.d" },
+    { input: "/path/to/.gitignore", expected: ".gitignore" },
+    { input: "file-only.js", expected: "file-only" },
+    { input: "/path/to/", expected: undefined },
+    { input: "", expected: undefined }
+  ];
+
+  for (const { input, expected } of testCases) {
+    it(`should extract filename for ${JSON.stringify(input)}`, () => {
+      expect(filename(input)).toBe(expected);
+    });
+  }
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 10 changes below (10 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. line 31, operator ConditionalExpression
+   line: if (alias === key || key.startsWith(alias)) {
+   original fragment: "alias === key"
+   mutated fragment:  "false"
+2. line 31, operator ConditionalExpression
+   line: if (alias === key || key.startsWith(alias)) {
+   original fragment: "alias === key || key.startsWith(alias)"
+   mutated fragment:  "false"
+3. line 31, operator MethodExpression
+   line: if (alias === key || key.startsWith(alias)) {
+   original fragment: "key.startsWith(alias)"
+   mutated fragment:  "key.endsWith(alias)"
+4. line 35, operator OptionalChaining
+   line: if (aliases[key]?.startsWith(alias) && pathSeparators.has(aliases[key][alias.length])) {
+   original fragment: "aliases[key]?.startsWith"
+   mutated fragment:  "aliases[key].startsWith"
+5. line 60, operator BlockStatement
+   line: if (!_path.startsWith(alias)) {
+   original fragment: "{\n      continue;\n    }"
+   mutated fragment:  "{}"
+6. line 60, operator ConditionalExpression
+   line: if (!_path.startsWith(alias)) {
+   original fragment: "!_path.startsWith(alias)"
+   mutated fragment:  "false"
+7. line 99, operator ArrowFunction
+   line: return matches.sort((a, b) => b.length - a.length);
+   original fragment: "(a, b) => b.length - a.length"
+   mutated fragment:  "() => undefined"
+8. line 99, operator ArithmeticOperator
+   line: return matches.sort((a, b) => b.length - a.length);
+   original fragment: "b.length - a.length"
+   mutated fragment:  "b.length + a.length"
+9. line 127, operator StringLiteral
+   line: return b.split("/").length - a.split("/").length;
+   original fragment: "\"/\""
+   mutated fragment:  "\"\""
+10. line 133, operator StringLiteral
+   line: return lastChar === "/" || lastChar === "\\";
+   original fragment: "\"\\\\\""
+   mutated fragment:  "\"\""
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.

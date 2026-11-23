@@ -1,0 +1,99 @@
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  normalizeAliases,
+  resolveAlias,
+  reverseResolveAlias,
+  filename
+} from "../../src/utils";
+
+describe("normalizeAliases", () => {
+  it("should sort aliases by specificity and resolve nested aliases", () => {
+    const input = {
+      "~/": "/root/",
+      "~/components": "~/src/components"
+    };
+    const result = normalizeAliases(input);
+    expect(result["~/components"]).toBe("/root/src/components");
+  });
+
+  it("should return the same object if already normalized", () => {
+    const input = { "~/": "/root/" };
+    const normalized = normalizeAliases(input);
+    const resultAgain = normalizeAliases(normalized);
+    expect(resultAgain).toBe(normalized);
+  });
+
+  it("should handle empty aliases object", () => {
+    const result = normalizeAliases({});
+    expect(result).toEqual({});
+  });
+});
+
+describe("resolveAlias", () => {
+  it("should resolve a matching alias path", () => {
+    const aliases = {
+      "@": "/app/src"
+    };
+    const result = resolveAlias("@/components/Button.ts", aliases);
+    expect(result).toBe("/app/src/components/Button.ts");
+  });
+
+  it("should normalize Windows paths in alias resolution", () => {
+    const aliases = {
+      "@": "/app/src"
+    };
+    const result = resolveAlias("@\\components\\Button.ts", aliases);
+    expect(result).toBe("/app/src/components/Button.ts");
+  });
+
+  it("should return original path if no alias matches", () => {
+    const aliases = {
+      "@": "/app/src"
+    };
+    const result = resolveAlias("/other/path.ts", aliases);
+    expect(result).toBe("/other/path.ts");
+  });
+
+  it("should handle empty path and aliases", () => {
+    const result = resolveAlias("", {});
+    expect(result).toBe("");
+  });
+});
+
+describe("reverseResolveAlias", () => {
+  it("should return possible alias resolutions sorted by specificity", () => {
+    const aliases = {
+      "@": "src"
+    };
+    const result = reverseResolveAlias("src/components/Button.ts", aliases);
+    expect(result).toEqual(["@/components/Button.ts"]);
+  });
+
+  it("should return empty array if no reverse alias matches", () => {
+    const aliases = {
+      "src": "@"
+    };
+    const result = reverseResolveAlias("/other/path.ts", aliases);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("filename", () => {
+  const cases = [
+    { input: "/path/to/file.ts", expected: "file" },
+    { input: "file.tar.gz", expected: "file.tar" },
+    { input: "file", expected: "file" },
+    { input: ".gitignore", expected: ".gitignore" },
+    { input: "/path/to/", expected: undefined },
+    { input: "", expected: undefined },
+    { input: "C:\\path\\to\\file.txt", expected: "file" }
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should extract filename from ${JSON.stringify(input)}`, () => {
+      expect(filename(input)).toBe(expected);
+    });
+  }
+});
+```

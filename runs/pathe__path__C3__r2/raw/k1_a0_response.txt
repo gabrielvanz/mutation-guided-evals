@@ -1,0 +1,260 @@
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  sep,
+  normalize,
+  join,
+  resolve,
+  normalizeString,
+  isAbsolute,
+  toNamespacedPath,
+  extname,
+  relative,
+  dirname,
+  format,
+  basename,
+  parse,
+  matchesGlob
+} from "../../src/_path";
+
+describe("sep", () => {
+  it("should be a forward slash", () => {
+    expect(sep).toBe("/");
+  });
+});
+
+describe("normalize", () => {
+  it("should normalize empty path to current directory", () => {
+    expect(normalize("")).toBe(".");
+  });
+
+  it("should normalize simple paths", () => {
+    expect(normalize("foo/bar//baz/..")).toBe("foo/bar");
+  });
+
+  it("should handle Windows paths and convert backslashes", () => {
+    expect(normalize("foo\\bar\\baz")).toBe("foo/bar/baz");
+    expect(normalize("C:\\foo\\bar")).toBe("C:/foo/bar");
+  });
+
+  it("should preserve trailing slash", () => {
+    expect(normalize("foo/bar/")).toBe("foo/bar/");
+    expect(normalize("/foo/")).toBe("/foo/");
+  });
+
+  it("should handle UNC paths", () => {
+    expect(normalize("\\\\server\\share\\dir")).toBe("//server/share/dir");
+    expect(normalize("\\\\foo")).toBe("//./foo");
+  });
+});
+
+describe("join", () => {
+  it("should join path segments", () => {
+    expect(join("foo", "bar", "baz")).toBe("foo/bar/baz");
+  });
+
+  it("should ignore empty segments", () => {
+    expect(join("foo", "", "bar")).toBe("foo/bar");
+  });
+
+  it("should handle slashes correctly", () => {
+    expect(join("/foo", "bar")).toBe("/foo/bar");
+    expect(join("foo/", "/bar")).toBe("foo/bar");
+  });
+
+  it("should return dot for empty join", () => {
+    expect(join()).toBe(".");
+  });
+
+  it("should handle trailing slash in join correctly", () => {
+    expect(join("foo/", "bar")).toBe("foo/bar");
+  });
+});
+
+describe("resolve", () => {
+  it("should resolve absolute paths", () => {
+    expect(resolve("/foo", "bar")).toBe("/foo/bar");
+  });
+
+  it("should resolve relative segments", () => {
+    expect(resolve("foo", "bar", "../baz")).toContain("baz");
+  });
+
+  it("should handle empty arguments by using cwd", () => {
+    expect(resolve("")).toBeDefined();
+    expect(resolve("")).not.toBe("");
+  });
+
+  it("should handle UNC paths in resolve", () => {
+    expect(resolve("\\\\server\\share")).toBe("//server/share");
+  });
+});
+
+describe("normalizeString", () => {
+  it("should normalize dot segments without allowing above root", () => {
+    expect(normalizeString("foo/../bar", false)).toBe("bar");
+  });
+
+  it("should allow above root when specified", () => {
+    expect(normalizeString("foo/../../bar", true)).toBe("../bar");
+  });
+
+  it("should handle empty paths", () => {
+    expect(normalizeString("", false)).toBe("");
+  });
+
+  it("should handle complex dotdot logic correctly", () => {
+    expect(normalizeString("a/b/../c", false)).toBe("a/c");
+    expect(normalizeString("..", true)).toBe("..");
+  });
+});
+
+describe("isAbsolute", () => {
+  it("should identify absolute POSIX paths", () => {
+    expect(isAbsolute("/foo/bar")).toBe(true);
+    expect(isAbsolute("foo/bar")).toBe(false);
+  });
+
+  it("should identify absolute Windows paths", () => {
+    expect(isAbsolute("C:\\foo")).toBe(true);
+    expect(isAbsolute("\\\\server\\share")).toBe(true);
+  });
+
+  it("should validate root folder expressions", () => {
+    expect(isAbsolute("/C:")).toBe(false);
+    expect(isAbsolute("/")).toBe(true);
+  });
+});
+
+describe("toNamespacedPath", () => {
+  it("should normalize windows paths for namespacing", () => {
+    expect(toNamespacedPath("C:\\foo\\bar")).toBe("C:/foo/bar");
+  });
+});
+
+describe("extname", () => {
+  it("should return the file extension", () => {
+    expect(extname("index.html")).toBe(".html");
+    expect(extname("file.spec.ts")).toBe(".ts");
+  });
+
+  it("should return empty string when no extension", () => {
+    expect(extname("README")).toBe("");
+    expect(extname(".gitignore")).toBe("");
+    expect(extname("..")).toBe("");
+  });
+});
+
+describe("relative", () => {
+  it("should compute relative path between two paths", () => {
+    expect(relative("/data/orandea/test/aaa", "/data/orandea/impl/bbb")).toBe("../../impl/bbb");
+  });
+
+  it("should handle identical paths", () => {
+    expect(relative("/foo/bar", "/foo/bar")).toBe("");
+  });
+
+  it("should handle different drive letters on Windows", () => {
+    expect(relative("C:/foo/bar", "D:/foo/bar")).toBe("D:/foo/bar");
+  });
+
+  it("should handle relative paths with drive letters and distinct roots correctly", () => {
+    expect(relative("C:/foo", "D:/bar")).toBe("D:/bar");
+    expect(relative("C:/foo", "C:/bar")).toBe("../bar");
+  });
+});
+
+describe("dirname", () => {
+  it("should return the directory name of a path", () => {
+    expect(dirname("/foo/bar/baz.js")).toBe("/foo/bar");
+    expect(dirname("/foo/bar/")).toBe("/foo");
+  });
+
+  it("should return dot or root for root-level paths", () => {
+    expect(dirname("/foo")).toBe("/");
+    expect(dirname("foo")).toBe(".");
+  });
+
+  it("should handle drive letters in dirname", () => {
+    expect(dirname("C:foo")).toBe("C:/");
+  });
+});
+
+describe("format", () => {
+  it("should format a path object into a string", () => {
+    expect(
+      format({
+        root: "/",
+        dir: "/path/to",
+        base: "file.txt"
+      })
+    ).toBe("/path/to/file.txt");
+  });
+
+  it("should format using name and ext if base is missing", () => {
+    expect(
+      format({
+        dir: "/path/to",
+        name: "file",
+        ext: ".txt"
+      })
+    ).toBe("/path/to/file.txt");
+  });
+
+  it("should handle root paths in format", () => {
+    expect(
+      format({
+        root: "C:\\",
+        base: "file.txt"
+      })
+    ).toBe("C:/file.txt");
+  });
+});
+
+describe("basename", () => {
+  it("should return the last portion of a path", () => {
+    expect(basename("/foo/bar/baz.html")).toBe("baz.html");
+  });
+
+  it("should strip extension if provided", () => {
+    expect(basename("/foo/bar/baz.html", ".html")).toBe("baz");
+  });
+
+  it("should handle trailing slashes in basename", () => {
+    expect(basename("/foo/bar/")).toBe("bar");
+  });
+});
+
+describe("parse", () => {
+  it("should parse a path into an object", () => {
+    expect(parse("/home/user/dir/file.txt")).toEqual({
+      root: "/",
+      dir: "/home/user/dir",
+      base: "file.txt",
+      ext: ".txt",
+      name: "file"
+    });
+  });
+
+  it("should parse paths without directories", () => {
+    expect(parse("file.txt")).toEqual({
+      root: "",
+      dir: "",
+      base: "file.txt",
+      ext: ".txt",
+      name: "file"
+    });
+  });
+
+  it("should parse Windows roots correctly", () => {
+    expect(parse("C:\\foo\\bar.txt").root).toBe("C:/");
+  });
+});
+
+describe("matchesGlob", () => {
+  it("should match path against glob pattern", () => {
+    expect(matchesGlob("/foo/bar.js", "*.js")).toBe(false);
+    expect(matchesGlob("/foo/bar.js", "**/bar.js")).toBe(true);
+  });
+});
+```
