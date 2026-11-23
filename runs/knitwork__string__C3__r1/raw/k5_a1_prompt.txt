@@ -1,0 +1,350 @@
+The Vitest test file below for `src/string.ts` (import path: `../../src/string`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/string.ts`:
+```ts
+import type { CodegenOptions } from "./types";
+
+/**
+ * Generate a string with double or single quotes and handle escapes.
+ *
+ * @group string
+ */
+export function genString(input: string, options: CodegenOptions = {}) {
+  const str = JSON.stringify(input);
+  if (!options.singleQuotes) {
+    return str;
+  }
+  return `'${escapeString(str).slice(1, -1)}'`;
+}
+
+// https://github.com/rollup/rollup/blob/master/src/utils/escapeId.ts
+const NEEDS_ESCAPE_RE = /[\n\r'\\\u2028\u2029]/;
+const QUOTE_NEWLINE_RE = /([\n\r'\u2028\u2029])/g;
+const BACKSLASH_RE = /\\/g;
+
+/**
+ * Escape a string for use in a javascript string.
+ *
+ * @group string
+ */
+export function escapeString(id: string): string {
+  if (!NEEDS_ESCAPE_RE.test(id)) {
+    return id;
+  }
+  return id.replace(BACKSLASH_RE, "\\\\").replace(QUOTE_NEWLINE_RE, "\\$1");
+}
+
+/**
+ * Generate a safe javascript variable name.
+ *
+ * @group string
+ */
+export function genSafeVariableName(name: string) {
+  if (reservedNames.has(name)) {
+    return `_${name}`;
+  }
+  /* eslint-disable unicorn/prefer-code-point */
+  return name
+    .replace(/^\d/, (r) => `_${r}`)
+    .replace(/\W/g, (r) => "_" + r.charCodeAt(0));
+  /* eslint-enable unicorn/prefer-code-point */
+}
+
+// -- internal --
+
+// Credit: https://mathiasbynens.be/notes/reserved-keywords
+const reservedNames = new Set([
+  "Infinity",
+  "NaN",
+  "arguments",
+  "await",
+  "break",
+  "case",
+  "catch",
+  "class",
+  "const",
+  "continue",
+  "debugger",
+  "default",
+  "delete",
+  "do",
+  "else",
+  "enum",
+  "eval",
+  "export",
+  "extends",
+  "false",
+  "finally",
+  "for",
+  "function",
+  "if",
+  "implements",
+  "import",
+  "in",
+  "instanceof",
+  "interface",
+  "let",
+  "new",
+  "null",
+  "package",
+  "private",
+  "protected",
+  "public",
+  "return",
+  "static",
+  "super",
+  "switch",
+  "this",
+  "throw",
+  "true",
+  "try",
+  "typeof",
+  "undefined",
+  "var",
+  "void",
+  "while",
+  "with",
+  "yield",
+]);
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  it("should generate a double quoted string by default", () => {
+    const cases = [
+      { input: "hello", expected: "\"hello\"" },
+      { input: "hello \"world\"", expected: "\"hello \\\"world\\\"\"" },
+      { input: "", expected: "\"\"" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genString(input)).toBe(expected);
+    }
+  });
+
+  it("should generate a single quoted string when singleQuotes option is true", () => {
+    const cases = [
+      { input: "hello", expected: "'hello'" },
+      { input: "hello 'world'", expected: "'hello \\'world\\''" },
+      { input: "hello \"world\"", expected: "'hello \"world\"'" },
+      { input: "", expected: "''" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genString(input, { singleQuotes: true })).toBe(expected);
+    }
+  });
+
+  it("should handle special characters and escapes", () => {
+    const input = "line1\nline2\r'quote'\\backslash\\\u2028\u2029";
+    const resultDouble = genString(input);
+    expect(resultDouble).toBe("\"line1\\nline2\\r'quote'\\\\backslash\\\\\\u2028\\u2029\"");
+
+    const resultSingle = genString(input, { singleQuotes: true });
+    expect(resultSingle).toBe("'line1\\nline2\\r\\'quote\\''\\\\backslash\\\\\\u2028\\u2029'");
+  });
+});
+
+describe("escapeString", () => {
+  it("should return the original string if no escape is needed", () => {
+    const cases = [
+      "hello",
+      "foo_bar",
+      "12345",
+    ];
+
+    for (const input of cases) {
+      expect(escapeString(input)).toBe(input);
+    }
+  });
+
+  it("should escape newlines, returns, quotes, backslashes, and line/paragraph separators", () => {
+    const cases = [
+      { input: "a\nb", expected: "a\\nb" },
+      { input: "a\rb", expected: "a\\rb" },
+      { input: "a'b", expected: "a\\'b" },
+      { input: "a\\b", expected: "a\\\\b" },
+      { input: "a\u2028b", expected: "a\\u2028b" },
+      { input: "a\u2029b", expected: "a\\u2029b" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(escapeString(input)).toBe(expected);
+    }
+  });
+});
+
+describe("genSafeVariableName", () => {
+  it("should return prefixed name if it is a reserved word", () => {
+    const cases = [
+      { input: "class", expected: "_class" },
+      { input: "const", expected: "_const" },
+      { input: "function", expected: "_function" },
+      { input: "return", expected: "_return" },
+      { input: "undefined", expected: "_undefined" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should prefix with underscore if name starts with a digit", () => {
+    const cases = [
+      { input: "123abc", expected: "_123_97_98_99" },
+      { input: "0foo", expected: "_0_102_111_111" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should replace non-word characters with underscore and char code", () => {
+    const cases = [
+      { input: "foo-bar", expected: "foo_45bar" },
+      { input: "foo.bar", expected: "foo_46bar" },
+      { input: "foo bar", expected: "foo_32bar" },
+      { input: "$foo", expected: "$foo" },
+      { input: "_foo", expected: "_foo" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should handle normal safe variable names without modification", () => {
+    const cases = [
+      { input: "fooBar", expected: "fooBar" },
+      { input: "myVar123", expected: "myVar123" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.0.8 /home/runner/work/_temp/knitwork
+
+ ❯ test/__generated__/string.gen.test.ts (9 tests | 5 failed) 10ms
+     ✓ should generate a double quoted string by default 1ms
+     × should generate a single quoted string when singleQuotes option is true 4ms
+     × should handle special characters and escapes 1ms
+     ✓ should return the original string if no escape is needed 0ms
+     × should escape newlines, returns, quotes, backslashes, and line/paragraph separators 1ms
+     ✓ should return prefixed name if it is a reserved word 0ms
+     × should prefix with underscore if name starts with a digit 1ms
+     × should replace non-word characters with underscore and char code 1ms
+     ✓ should handle normal safe variable names without modification 0ms
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 4 passed (9)
+   Start at  00:01:05
+   Duration  156ms (transform 29ms, setup 0ms, collect 39ms, tests 10ms, environment 0ms, prepare 3ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > genString > should generate a single quoted string when singleQuotes option is true
+AssertionError: expected '\'hello \\"world\\"\'' to be '\'hello "world"\'' // Object.is equality
+
+Expected: "'hello "world"'"
+Received: "'hello \\"world\\"'"
+
+ ❯ test/__generated__/string.gen.test.ts:26:56
+     24| 
+     25|     for (const { input, expected } of cases) {
+     26|       expect(genString(input, { singleQuotes: true })).toBe(expected);
+       |                                                        ^
+     27|     }
+     28|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > genString > should handle special characters and escapes
+AssertionError: expected '"line1\nline2\r\'quote\'\\backslash\\…' to be '"line1\nline2\r\'quote\'\\backslash\\…' // Object.is equality
+
+Expected: ""line1\nline2\r'quote'\\backslash\\\u2028\u2029""
+Received: ""line1\nline2\r'quote'\\backslash\\· ""
+
+ ❯ test/__generated__/string.gen.test.ts:33:26
+     31|     const input = "line1\nline2\r'quote'\\backslash\\\u2028\u2029";
+     32|     const resultDouble = genString(input);
+     33|     expect(resultDouble).toBe("\"line1\\nline2\\r'quote'\\\\backslash\…
+       |                          ^
+     34| 
+     35|     const resultSingle = genString(input, { singleQuotes: true });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape newlines, returns, quotes, backslashes, and line/paragraph separators
+AssertionError: expected 'a\\nb' to be 'a\nb' // Object.is equality
+
+- Expected
++ Received
+
+- a\nb
++ a\
++ b
+
+ ❯ test/__generated__/string.gen.test.ts:64:35
+     62| 
+     63|     for (const { input, expected } of cases) {
+     64|       expect(escapeString(input)).toBe(expected);
+       |                                   ^
+     65|     }
+     66|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > genSafeVariableName > should prefix with underscore if name starts with a digit
+AssertionError: expected '_123abc' to be '_123_97_98_99' // Object.is equality
+
+Expected: "_123_97_98_99"
+Received: "_123abc"
+
+ ❯ test/__generated__/string.gen.test.ts:91:42
+     89| 
+     90|     for (const { input, expected } of cases) {
+     91|       expect(genSafeVariableName(input)).toBe(expected);
+       |                                          ^
+     92|     }
+     93|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > genSafeVariableName > should replace non-word characters with underscore and char code
+AssertionError: expected '_36foo' to be '$foo' // Object.is equality
+
+Expected: "$foo"
+Received: "_36foo"
+
+ ❯ test/__generated__/string.gen.test.ts:105:42
+    103| 
+    104|     for (const { input, expected } of cases) {
+    105|       expect(genSafeVariableName(input)).toBe(expected);
+       |                                          ^
+    106|     }
+    107|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

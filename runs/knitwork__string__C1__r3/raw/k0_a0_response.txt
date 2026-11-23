@@ -1,0 +1,67 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("string module", () => {
+  describe("genString", () => {
+    it("should generate a double-quoted string by default", () => {
+      const result = genString("hello");
+      expect(result).toBe('"hello"');
+    });
+
+    it("should generate a double-quoted string when singleQuotes option is false", () => {
+      const result = genString("hello", { singleQuotes: false });
+      expect(result).toBe('"hello"');
+    });
+
+    it("should generate a single-quoted string when singleQuotes option is true", () => {
+      const result = genString("hello", { singleQuotes: true });
+      expect(result).toBe("'hello'");
+    });
+
+    it("should handle escaping properly with single quotes", () => {
+      const result = genString("it's a test", { singleQuotes: true });
+      expect(result).toBe("'it\\'s a test'");
+    });
+  });
+
+  describe("escapeString", () => {
+    it("should return the original string if no escapes are needed", () => {
+      const result = escapeString("hello");
+      expect(result).toBe("hello");
+    });
+
+    it("should escape special characters like newlines and quotes", () => {
+      const result = escapeString("hello\n'world'");
+      expect(result).toBe("hello\\n\\'world\\'");
+    });
+
+    it("should escape backslashes", () => {
+      const result = escapeString("path\\to\\file");
+      expect(result).toBe("path\\\\to\\\\file");
+    });
+  });
+
+  describe("genSafeVariableName", () => {
+    it("should prepend underscore to reserved names", () => {
+      const result = genSafeVariableName("class");
+      expect(result).toBe("_class");
+    });
+
+    it("should prepend underscore if name starts with a digit", () => {
+      const result = genSafeVariableName("123var");
+      expect(result).toBe("_123var");
+    });
+
+    it("should replace non-word characters with underscore and char code", () => {
+      const result = genSafeVariableName("foo-bar");
+      expect(result).toBe("foo_45bar");
+    });
+
+    it("should return normal variable names unchanged", () => {
+      const result = genSafeVariableName("validName");
+      expect(result).toBe("validName");
+    });
+  });
+});
+```

@@ -1,0 +1,55 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("string", () => {
+  describe("genString", () => {
+    it("generates a double quoted string by default", () => {
+      expect(genString("hello")).toBe('"hello"');
+    });
+
+    it("generates a double quoted string when singleQuotes is false", () => {
+      expect(genString("hello", { singleQuotes: false })).toBe('"hello"');
+    });
+
+    it("generates a single quoted string when singleQuotes is true", () => {
+      expect(genString("hello", { singleQuotes: true })).toBe("'hello'");
+    });
+
+    it("handles escaping appropriately with single quotes", () => {
+      expect(genString("it's a test", { singleQuotes: true })).toBe("'it\\'s a test'");
+    });
+  });
+
+  describe("escapeString", () => {
+    it("returns the input unchanged if no escape is needed", () => {
+      expect(escapeString("hello")).toBe("hello");
+    });
+
+    it("escapes special characters like newlines and quotes", () => {
+      expect(escapeString("line1\nline2")).toBe("line1\\\nline2");
+      expect(escapeString("it's")).toBe("it\\'s");
+      expect(escapeString("back\\slash")).toBe("back\\\\slash");
+    });
+  });
+
+  describe("genSafeVariableName", () => {
+    it("returns reserved names prefixed with an underscore", () => {
+      expect(genSafeVariableName("class")).toBe("_class");
+      expect(genSafeVariableName("return")).toBe("_return");
+    });
+
+    it("prefixes names starting with a digit with an underscore", () => {
+      expect(genSafeVariableName("123var")).toBe("_123var");
+    });
+
+    it("replaces non-word characters with their character codes prefixed by underscore", () => {
+      expect(genSafeVariableName("foo-bar")).toBe("foo_45bar");
+    });
+
+    it("leaves safe variable names unchanged", () => {
+      expect(genSafeVariableName("fooBar123")).toBe("fooBar123");
+    });
+  });
+});
+```

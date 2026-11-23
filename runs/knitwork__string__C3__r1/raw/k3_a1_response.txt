@@ -1,0 +1,98 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  it("should generate a double quoted string by default", () => {
+    const input = "hello world";
+    const result = genString(input);
+    expect(result).toBe("\"hello world\"");
+  });
+
+  it("should generate a single quoted string when singleQuotes option is true", () => {
+    const input = "hello world";
+    const result = genString(input, { singleQuotes: true });
+    expect(result).toBe("'hello world'");
+  });
+
+  it("should handle strings containing double quotes with double quotes", () => {
+    const input = 'hello "world"';
+    const result = genString(input);
+    expect(result).toBe("\"hello \\\"world\\\"\"");
+  });
+
+  it("should handle strings containing single quotes with single quotes option", () => {
+    const input = "hello 'world'";
+    const result = genString(input, { singleQuotes: true });
+    expect(result).toBe("'hello \\'world\\''");
+  });
+
+  it("should handle empty strings", () => {
+    const result = genString("");
+    expect(result).toBe("\"\"");
+  });
+
+  it("should handle empty strings with single quotes", () => {
+    const result = genString("", { singleQuotes: true });
+    expect(result).toBe("''");
+  });
+
+  it("should handle special characters and newlines", () => {
+    const input = "line1\nline2\r";
+    const result = genString(input, { singleQuotes: true });
+    expect(result).toBe("'line1\\nline2\\r'");
+  });
+});
+
+describe("escapeString", () => {
+  it("should return the original string if no escapes are needed", () => {
+    const input = "hello_world";
+    const result = escapeString(input);
+    expect(result).toBe("hello_world");
+  });
+
+  it("should escape backslashes", () => {
+    const input = "path\\to\\file";
+    const result = escapeString(input);
+    expect(result).toBe("path\\\\to\\\\file");
+  });
+
+  it("should escape single quotes, newlines and carriage returns", () => {
+    const input = "it's\na\rtest";
+    const result = escapeString(input);
+    expect(result).toBe("it\\'s\\na\\rtest");
+  });
+
+  it("should handle empty strings", () => {
+    const result = escapeString("");
+    expect(result).toBe("");
+  });
+});
+
+describe("genSafeVariableName", () => {
+  it("should return the name as is if it is a valid non-reserved identifier", () => {
+    const result = genSafeVariableName("myVariable");
+    expect(result).toBe("myVariable");
+  });
+
+  it("should prepend an underscore if the name is a reserved keyword", () => {
+    const result = genSafeVariableName("class");
+    expect(result).toBe("_class");
+  });
+
+  it("should prepend an underscore if the name starts with a digit", () => {
+    const result = genSafeVariableName("123var");
+    expect(result).toBe("_123var");
+  });
+
+  it("should replace non-word characters with their char code prefixed by underscore", () => {
+    const result = genSafeVariableName("foo-bar");
+    expect(result).toBe("foo_45bar");
+  });
+
+  it("should handle empty strings", () => {
+    const result = genSafeVariableName("");
+    expect(result).toBe("");
+  });
+});
+```

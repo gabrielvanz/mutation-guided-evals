@@ -1,0 +1,123 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  it("should generate a double quoted string by default", () => {
+    const cases = [
+      { input: "hello", expected: "\"hello\"" },
+      { input: "hello \"world\"", expected: "\"hello \\\"world\\\"\"" },
+      { input: "", expected: "\"\"" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genString(input)).toBe(expected);
+    }
+  });
+
+  it("should generate a single quoted string when singleQuotes option is true", () => {
+    const cases = [
+      { input: "hello", expected: "'hello'" },
+      { input: "hello 'world'", expected: "'hello \\'world\\''" },
+      { input: "hello \"world\"", expected: "'hello \"world\"'" },
+      { input: "", expected: "''" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genString(input, { singleQuotes: true })).toBe(expected);
+    }
+  });
+
+  it("should handle escaped characters and newlines correctly", () => {
+    const cases = [
+      { input: "line1\nline2", expected: "\"line1\\nline2\"" },
+      { input: "line1\nline2", options: { singleQuotes: true }, expected: "'line1\\nline2'" },
+      { input: "backslash\\test", expected: "\"backslash\\\\test\"" },
+    ];
+
+    for (const { input, options, expected } of cases) {
+      expect(genString(input, options)).toBe(expected);
+    }
+  });
+});
+
+describe("escapeString", () => {
+  it("should return the original string if no escape needed", () => {
+    const cases = [
+      { input: "hello", expected: "hello" },
+      { input: "abc123_-", expected: "abc123_-" },
+      { input: "", expected: "" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(escapeString(input)).toBe(expected);
+    }
+  });
+
+  it("should escape special characters, quotes and newlines", () => {
+    const cases = [
+      { input: "line1\nline2", expected: "line1\\nline2" },
+      { input: "line1\rline2", expected: "line1\\rline2" },
+      { input: "it's fine", expected: "it\\'s fine" },
+      { input: "path\\to\\file", expected: "path\\\\to\\\\file" },
+      { input: "line\u2028separator", expected: "line\\u2028separator" },
+      { input: "line\u2029separator", expected: "line\\u2029separator" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(escapeString(input)).toBe(expected);
+    }
+  });
+});
+
+describe("genSafeVariableName", () => {
+  it("should return the name as is if it is a valid safe variable name", () => {
+    const cases = [
+      { input: "myVar", expected: "myVar" },
+      { input: "fooBar123", expected: "fooBar123" },
+      { input: "_private", expected: "_private" },
+      { input: "$special", expected: "$_36special" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should prepend underscore if name starts with a digit", () => {
+    const cases = [
+      { input: "123var", expected: "_123var" },
+      { input: "0", expected: "_0" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should prepend underscore if name is a reserved keyword", () => {
+    const cases = [
+      { input: "class", expected: "_class" },
+      { input: "const", expected: "_const" },
+      { input: "return", expected: "_return" },
+      { input: "default", expected: "_default" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should replace non-word characters with their char code prefixed by underscore", () => {
+    const cases = [
+      { input: "foo-bar", expected: "foo_45bar" },
+      { input: "foo.bar", expected: "foo_46bar" },
+      { input: "foo bar", expected: "foo_32bar" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+});
+```

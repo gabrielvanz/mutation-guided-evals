@@ -1,0 +1,118 @@
+{
+  "schema_version": "0.1",
+  "run_id": "knitwork__string__C2__r2",
+  "started_at": "2026-11-22T23:53:15.877Z",
+  "finished_at": "2026-11-22T23:53:45.190Z",
+  "status": "invalid_all_iterations",
+  "error": null,
+  "subject": {
+    "library": "knitwork",
+    "repo": "unjs/knitwork",
+    "commit": "a95f4d421ffa602723cb5ac2606bd854e1dfc49a",
+    "license": "MIT",
+    "module_path": "src/string.ts",
+    "module_loc": 104,
+    "mutants_total": 0,
+    "human_test_files": [
+      "test/string.test.ts"
+    ]
+  },
+  "condition": "C2",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.0.8",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "a84f7597838e5837e6b6af4472a982e5faa3e69cc2d1ef3580ea36cd8df57469",
+    "git_sha_agent": "a0af579dd5a1ae811be5dc0bf2177a0829fcf62e"
+  },
+  "memorization": {
+    "probe_similarity": 0.2222,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/knitwork__string__C2__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs/knitwork__string__C2__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 6484,
+        "tokens_out": 2335,
+        "usd_ref": 0.001582,
+        "wall_s": 29.31,
+        "stryker_s": 0
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": null,
+      "ms_feedback": null,
+      "ms_all": null,
+      "ms_covered": null
+    },
+    "coverage": {
+      "line_cov": null,
+      "branch_cov": null
+    },
+    "cost": {
+      "calls": 3,
+      "repair_calls": 2,
+      "tokens_in": 6484,
+      "tokens_out": 2335,
+      "usd_ref": 0.001582,
+      "wall_s": 29.31,
+      "stryker_s": 0
+    },
+    "tests": {
+      "n_tests": 0,
+      "n_asserts": 0,
+      "sha256": ""
+    },
+    "gap_cov_ms": null,
+    "valid_rate": 0,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 0
+  },
+  "artifacts": {
+    "raw_dir": "runs/knitwork__string__C2__r2/raw"
+  }
+}

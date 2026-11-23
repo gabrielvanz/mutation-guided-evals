@@ -1,0 +1,110 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  it("should generate a double quoted string by default", () => {
+    const cases = [
+      { input: "hello", expected: "\"hello\"" },
+      { input: "", expected: "\"\"" },
+      { input: "foo \"bar\" baz", expected: "\"foo \\\"bar\\\" baz\"" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genString(input)).toBe(expected);
+    }
+  });
+
+  it("should generate a single quoted string when singleQuotes option is true", () => {
+    const cases = [
+      { input: "hello", expected: "'hello'" },
+      { input: "", expected: "''" },
+      { input: "foo 'bar' baz", expected: "'foo \\'bar\\' baz'" },
+      { input: "foo \"bar\" baz", expected: "'foo \\\"bar\\\" baz'" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genString(input, { singleQuotes: true })).toBe(expected);
+    }
+  });
+
+  it("should handle special characters and escapes", () => {
+    const cases = [
+      { input: "hello\nworld", expected: "\"hello\\nworld\"" },
+      { input: "hello\nworld", options: { singleQuotes: true }, expected: "'hello\\nworld'" },
+      { input: "line1\rline2", expected: "\"line1\\rline2\"" },
+    ];
+
+    for (const { input, options, expected } of cases) {
+      expect(genString(input, options)).toBe(expected);
+    }
+  });
+});
+
+describe("escapeString", () => {
+  it("should return the original string if no escapes are needed", () => {
+    const cases = [
+      { input: "hello", expected: "hello" },
+      { input: "foo_bar-123", expected: "foo_bar-123" },
+      { input: "", expected: "" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(escapeString(input)).toBe(expected);
+    }
+  });
+
+  it("should escape special characters correctly", () => {
+    const cases = [
+      { input: "hello\nworld", expected: "hello\\nworld" },
+      { input: "hello\rworld", expected: "hello\\rworld" },
+      { input: "it's", expected: "it\\'s" },
+      { input: "back\\slash", expected: "back\\\\slash" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(escapeString(input)).toBe(expected);
+    }
+  });
+});
+
+describe("genSafeVariableName", () => {
+  it("should return the same name if it is safe and not reserved", () => {
+    const cases = [
+      { input: "foo", expected: "foo" },
+      { input: "bar123", expected: "bar123" },
+      { input: "_private", expected: "_private" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should prefix with an underscore if the name is reserved", () => {
+    const cases = [
+      { input: "class", expected: "_class" },
+      { input: "const", expected: "_const" },
+      { input: "return", expected: "_return" },
+      { input: "function", expected: "_function" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should handle names starting with digits or containing non-word characters", () => {
+    const cases = [
+      { input: "123foo", expected: "_123foo" },
+      { input: "foo-bar", expected: "foo_45bar" },
+      { input: "foo.bar", expected: "foo_46bar" },
+      { input: "foo bar", expected: "foo_32bar" },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+});
+```

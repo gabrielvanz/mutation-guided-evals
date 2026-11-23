@@ -1,0 +1,59 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  const cases = [
+    { input: "hello", options: {}, expected: "\"hello\"" },
+    { input: "hello", options: { singleQuotes: true }, expected: "'hello'" },
+    { input: "it's fine", options: {}, expected: "\"it's fine\"" },
+    { input: "it's fine", options: { singleQuotes: true }, expected: "'it\\'s fine'" },
+    { input: "", options: {}, expected: "\"\"" },
+    { input: "", options: { singleQuotes: true }, expected: "''" },
+    { input: "line1\nline2", options: {}, expected: "\"line1\\nline2\"" },
+    { input: "line1\nline2", options: { singleQuotes: true }, expected: "'line1\\nline2'" },
+  ];
+
+  for (const { input, options, expected } of cases) {
+    it(`should generate string for ${JSON.stringify(input)} with options ${JSON.stringify(options)}`, () => {
+      expect(genString(input, options)).toBe(expected);
+    });
+  }
+});
+
+describe("escapeString", () => {
+  const cases = [
+    { input: "normal", expected: "normal" },
+    { input: "line1\nline2", expected: "line1\\\nline2" },
+    { input: "carriage\rreturn", expected: "carriage\\\rreturn" },
+    { input: "single'quote", expected: "single\\'quote" },
+    { input: "backslash\\id", expected: "backslash\\\\id" },
+    { input: "line2028\u2028separator", expected: "line2028\\\u2028separator" },
+    { input: "line2029\u2029separator", expected: "line2029\\\u2029separator" },
+    { input: "", expected: "" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should escape string ${JSON.stringify(input)}`, () => {
+      expect(escapeString(input)).toBe(expected);
+    });
+  }
+});
+
+describe("genSafeVariableName", () => {
+  const cases = [
+    { input: "foo", expected: "foo" },
+    { input: "const", expected: "_const" },
+    { input: "123var", expected: "_123var" },
+    { input: "foo-bar", expected: "foo_45bar" },
+    { input: "foo.bar", expected: "foo_46bar" },
+    { input: "", expected: "" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should generate safe variable name for ${JSON.stringify(input)}`, () => {
+      expect(genSafeVariableName(input)).toBe(expected);
+    });
+  }
+});
+```

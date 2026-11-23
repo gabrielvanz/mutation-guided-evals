@@ -1,0 +1,311 @@
+{
+  "schema_version": "0.1",
+  "run_id": "knitwork__string__C2r__r3",
+  "started_at": "2026-11-22T23:58:00.226Z",
+  "finished_at": "2026-11-23T00:01:42.205Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "knitwork",
+    "repo": "unjs/knitwork",
+    "commit": "a95f4d421ffa602723cb5ac2606bd854e1dfc49a",
+    "license": "MIT",
+    "module_path": "src/string.ts",
+    "module_loc": 104,
+    "mutants_total": 81,
+    "human_test_files": [
+      "test/string.test.ts"
+    ]
+  },
+  "condition": "C2r",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.0.8",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "a84f7597838e5837e6b6af4472a982e5faa3e69cc2d1ef3580ea36cd8df57469",
+    "git_sha_agent": "a0af579dd5a1ae811be5dc0bf2177a0829fcf62e"
+  },
+  "memorization": {
+    "probe_similarity": 0.2222,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/knitwork__string__C2r__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs/knitwork__string__C2r__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 7315,
+        "tokens_out": 3252,
+        "usd_ref": 0.002032,
+        "wall_s": 39.1,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 26.4706,
+        "ms_feedback": 27.7778,
+        "ms_all": 27.1429,
+        "ms_covered": 27.1429
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 9,
+        "survived": 25,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 10,
+        "survived": 26,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 7,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 13,
+        "n_asserts": 13,
+        "sha256": "f850d916ef4bbc3f8d580f00922780f0aeadb8450a4b97369dea52fc64459ed0"
+      },
+      "prompt_file": "runs/knitwork__string__C2r__r3/raw/k1_a0_prompt.txt",
+      "response_file": "runs/knitwork__string__C2r__r3/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 5,
+        "repair_calls": 3,
+        "tokens_in": 11009,
+        "tokens_out": 4742,
+        "usd_ref": 0.002998,
+        "wall_s": 73,
+        "stryker_s": 8.57
+      }
+    },
+    {
+      "k": 2,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/knitwork__string__C2r__r3/raw/k2_a0_prompt.txt",
+      "response_file": "runs/knitwork__string__C2r__r3/raw/k2_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 5,
+        "tokens_in": 18664,
+        "tokens_out": 8167,
+        "usd_ref": 0.005133,
+        "wall_s": 113.79,
+        "stryker_s": 8.57
+      }
+    },
+    {
+      "k": 3,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/knitwork__string__C2r__r3/raw/k3_a0_prompt.txt",
+      "response_file": "runs/knitwork__string__C2r__r3/raw/k3_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 11,
+        "repair_calls": 7,
+        "tokens_in": 25496,
+        "tokens_out": 10694,
+        "usd_ref": 0.006827,
+        "wall_s": 150.84,
+        "stryker_s": 8.57
+      }
+    },
+    {
+      "k": 4,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/knitwork__string__C2r__r3/raw/k4_a0_prompt.txt",
+      "response_file": "runs/knitwork__string__C2r__r3/raw/k4_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 14,
+        "repair_calls": 9,
+        "tokens_in": 31488,
+        "tokens_out": 12706,
+        "usd_ref": 0.008231,
+        "wall_s": 185.56,
+        "stryker_s": 8.57
+      }
+    },
+    {
+      "k": 5,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/knitwork__string__C2r__r3/raw/k5_a0_prompt.txt",
+      "response_file": "runs/knitwork__string__C2r__r3/raw/k5_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 17,
+        "repair_calls": 11,
+        "tokens_in": 38711,
+        "tokens_out": 14896,
+        "usd_ref": 0.00983,
+        "wall_s": 221.98,
+        "stryker_s": 8.57
+      }
+    }
+  ],
+  "selected_iteration": 1,
+  "final": {
+    "scores": {
+      "ms_eval": 26.4706,
+      "ms_feedback": 27.7778,
+      "ms_all": 27.1429,
+      "ms_covered": 27.1429
+    },
+    "coverage": {
+      "line_cov": 100,
+      "branch_cov": 100
+    },
+    "cost": {
+      "calls": 17,
+      "repair_calls": 11,
+      "tokens_in": 38711,
+      "tokens_out": 14896,
+      "usd_ref": 0.00983,
+      "wall_s": 221.98,
+      "stryker_s": 8.57
+    },
+    "tests": {
+      "n_tests": 13,
+      "n_asserts": 13,
+      "sha256": "f850d916ef4bbc3f8d580f00922780f0aeadb8450a4b97369dea52fc64459ed0"
+    },
+    "gap_cov_ms": 72.8571,
+    "valid_rate": 0.1667,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/knitwork__string__C2r__r3/raw"
+  }
+}

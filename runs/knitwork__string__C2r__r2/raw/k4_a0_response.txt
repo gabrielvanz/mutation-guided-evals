@@ -1,0 +1,124 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { genString, escapeString, genSafeVariableName } from "../../src/string";
+
+describe("genString", () => {
+  it("should generate a double quoted string by default", () => {
+    const cases = [
+      { input: "hello", expected: "\"hello\"" },
+      { input: "hello \"world\"", expected: "\"hello \\\"world\\\"\"" },
+      { input: "", expected: "\"\"" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genString(input)).toBe(expected);
+    }
+  });
+
+  it("should generate a single quoted string when singleQuotes option is true", () => {
+    const cases = [
+      { input: "hello", expected: "'hello'" },
+      { input: "hello 'world'", expected: "'hello \\'world\\''" },
+      { input: "hello \"world\"", expected: "'hello \"world\"'" },
+      { input: "", expected: "''" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genString(input, { singleQuotes: true })).toBe(expected);
+    }
+  });
+
+  it("should handle newlines and special characters correctly", () => {
+    const cases = [
+      { input: "line1\nline2", expected: "\"line1\\nline2\"" },
+      { input: "line1\nline2", options: { singleQuotes: true }, expected: "'line1\\nline2'" },
+      { input: "line1\rline2", expected: "\"line1\\rline2\"" },
+      { input: "line1\rline2", options: { singleQuotes: true }, expected: "'line1\\rline2'" }
+    ];
+
+    for (const { input, options, expected } of cases) {
+      expect(genString(input, options)).toBe(expected);
+    }
+  });
+});
+
+describe("escapeString", () => {
+  it("should return the original string if no escapes are needed", () => {
+    const cases = [
+      { input: "hello", expected: "hello" },
+      { input: "12345", expected: "12345" },
+      { input: "", expected: "" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(escapeString(input)).toBe(expected);
+    }
+  });
+
+  it("should escape special characters correctly", () => {
+    const cases = [
+      { input: "line1\nline2", expected: "line1\\nline2" },
+      { input: "line1\rline2", expected: "line1\\rline2" },
+      { input: "it's", expected: "it\\'s" },
+      { input: "back\\slash", expected: "back\\\\slash" },
+      { input: "line\u2028sep", expected: "line\\u2028sep" },
+      { input: "line\u2029sep", expected: "line\\u2029sep" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(escapeString(input)).toBe(expected);
+    }
+  });
+});
+
+describe("genSafeVariableName", () => {
+  it("should return normal variable names as is", () => {
+    const cases = [
+      { input: "foo", expected: "foo" },
+      { input: "fooBar", expected: "fooBar" },
+      { input: "_private", expected: "_private" },
+      { input: "$special", expected: "$_36special" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should prefix reserved names with an underscore", () => {
+    const cases = [
+      { input: "class", expected: "_class" },
+      { input: "function", expected: "_function" },
+      { input: "return", expected: "_return" },
+      { input: "const", expected: "_const" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should handle names starting with digits", () => {
+    const cases = [
+      { input: "123var", expected: "_123var" },
+      { input: "0", expected: "_0" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+
+  it("should replace non-word characters with their charCode prefixed by underscore", () => {
+    const cases = [
+      { input: "foo-bar", expected: "foo_45bar" },
+      { input: "foo.bar", expected: "foo_46bar" },
+      { input: "foo/bar", expected: "foo_47bar" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
+    }
+  });
+});
+```
