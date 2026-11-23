@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "knitwork__string__C3__r3",
-  "started_at": "2026-11-22T23:46:14.924Z",
-  "finished_at": "2026-11-22T23:49:43.133Z",
+  "started_at": "2026-11-23T00:02:03.662Z",
+  "finished_at": "2026-11-23T00:06:26.038Z",
   "status": "invalid_all_iterations",
   "error": null,
   "subject": {
@@ -68,10 +68,10 @@
       "cost_cumulative": {
         "calls": 3,
         "repair_calls": 2,
-        "tokens_in": 6346,
-        "tokens_out": 2047,
-        "usd_ref": 0.001453,
-        "wall_s": 27.77,
+        "tokens_in": 6357,
+        "tokens_out": 2051,
+        "usd_ref": 0.001456,
+        "wall_s": 39.38,
         "stryker_s": 0
       }
     },
@@ -103,10 +103,10 @@
       "cost_cumulative": {
         "calls": 6,
         "repair_calls": 4,
-        "tokens_in": 13118,
-        "tokens_out": 5166,
-        "usd_ref": 0.003378,
-        "wall_s": 62.55,
+        "tokens_in": 13971,
+        "tokens_out": 5498,
+        "usd_ref": 0.003596,
+        "wall_s": 75.78,
         "stryker_s": 0
       }
     },
@@ -138,10 +138,10 @@
       "cost_cumulative": {
         "calls": 9,
         "repair_calls": 6,
-        "tokens_in": 19765,
-        "tokens_out": 7403,
-        "usd_ref": 0.004938,
-        "wall_s": 100.19,
+        "tokens_in": 20622,
+        "tokens_out": 7737,
+        "usd_ref": 0.005157,
+        "wall_s": 112.34,
         "stryker_s": 0
       }
     },
@@ -173,10 +173,10 @@
       "cost_cumulative": {
         "calls": 12,
         "repair_calls": 8,
-        "tokens_in": 27407,
-        "tokens_out": 10895,
-        "usd_ref": 0.007099,
-        "wall_s": 136.84,
+        "tokens_in": 28268,
+        "tokens_out": 11229,
+        "usd_ref": 0.007318,
+        "wall_s": 160.71,
         "stryker_s": 0
       }
     },
@@ -208,10 +208,10 @@
       "cost_cumulative": {
         "calls": 15,
         "repair_calls": 10,
-        "tokens_in": 33487,
-        "tokens_out": 12981,
-        "usd_ref": 0.008541,
-        "wall_s": 174.61,
+        "tokens_in": 34352,
+        "tokens_out": 13315,
+        "usd_ref": 0.008761,
+        "wall_s": 194.22,
         "stryker_s": 0
       }
     },
@@ -243,10 +243,10 @@
       "cost_cumulative": {
         "calls": 18,
         "repair_calls": 12,
-        "tokens_in": 40269,
-        "tokens_out": 15023,
-        "usd_ref": 0.010036,
-        "wall_s": 208.21,
+        "tokens_in": 40743,
+        "tokens_out": 15357,
+        "usd_ref": 0.010217,
+        "wall_s": 262.38,
         "stryker_s": 0
       }
     }
@@ -266,10 +266,10 @@
     "cost": {
       "calls": 18,
       "repair_calls": 12,
-      "tokens_in": 40269,
-      "tokens_out": 15023,
-      "usd_ref": 0.010036,
-      "wall_s": 208.21,
+      "tokens_in": 40743,
+      "tokens_out": 15357,
+      "usd_ref": 0.010217,
+      "wall_s": 262.38,
       "stryker_s": 0
     },
     "tests": {

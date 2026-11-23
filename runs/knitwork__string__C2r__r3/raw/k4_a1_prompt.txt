@@ -193,15 +193,15 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (12 tests | 2 failed) 8ms
+ ❯ test/__generated__/string.gen.test.ts (12 tests | 2 failed) 11ms
      ✓ should generate a double quoted string by default 1ms
      ✓ should generate a single quoted string when singleQuotes option is true 0ms
-     × should handle double quotes inside single quoted strings 4ms
+     × should handle double quotes inside single quoted strings 5ms
      ✓ should escape single quotes inside single quoted strings 0ms
      ✓ should handle empty string 0ms
      ✓ should return the original string if no escape needed 0ms
      ✓ should escape backslashes 0ms
-     × should escape newlines and single quotes 1ms
+     × should escape newlines and single quotes 2ms
      ✓ should return the same name if it is safe 0ms
      ✓ should prepend underscore if name is a reserved keyword 0ms
      ✓ should prepend underscore if name starts with a digit 0ms
@@ -209,8 +209,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  2 failed | 10 passed (12)
-   Start at  23:44:34
-   Duration  134ms (transform 25ms, setup 0ms, collect 34ms, tests 8ms, environment 0ms, prepare 3ms)
+   Start at  00:00:41
+   Duration  190ms (transform 35ms, setup 0ms, collect 47ms, tests 11ms, environment 0ms, prepare 4ms)
 
 
 

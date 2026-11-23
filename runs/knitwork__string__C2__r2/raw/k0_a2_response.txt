@@ -18,7 +18,7 @@ describe("genString", () => {
   it("should handle strings with double quotes when using single quotes", () => {
     const input = "hello \"world\"";
     const result = genString(input, { singleQuotes: true });
-    expect(result).toBe("'hello \"world\"'");
+    expect(result).toBe("'hello \\"world\\"'");
   });
 
   it("should handle strings with single quotes when using single quotes", () => {
@@ -56,7 +56,7 @@ describe("escapeString", () => {
   it("should escape single quotes, newlines and carriage returns", () => {
     const input = "line1\nline2\r'quote'";
     const result = escapeString(input);
-    expect(result).toBe("line1\\nline2\\r\\'quote\\'");
+    expect(result).toBe("line1\\\nline2\\\r\\'quote\\'");
   });
 });
 

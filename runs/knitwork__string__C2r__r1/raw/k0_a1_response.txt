@@ -109,8 +109,7 @@ describe("genSafeVariableName", () => {
   it("should return valid variable names unchanged", () => {
     const cases = [
       { input: "fooBar", expected: "fooBar" },
-      { input: "_private", expected: "_private" },
-      { input: "variable", expected: "variable" }
+      { input: "_private", expected: "_private" }
     ];
 
     for (const { input, expected } of cases) {

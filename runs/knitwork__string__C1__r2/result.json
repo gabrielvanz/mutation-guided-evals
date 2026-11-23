@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "knitwork__string__C1__r2",
-  "started_at": "2026-11-22T23:35:59.859Z",
-  "finished_at": "2026-11-22T23:36:25.673Z",
+  "started_at": "2026-11-22T23:51:44.447Z",
+  "finished_at": "2026-11-22T23:52:10.078Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -46,31 +46,31 @@
       "discard_reason": null,
       "repair_attempts": 1,
       "scores": {
-        "ms_eval": 31.4286,
-        "ms_feedback": 27.7778,
-        "ms_all": 29.5775,
-        "ms_covered": 29.5775
+        "ms_eval": 23.3333,
+        "ms_feedback": 28.9474,
+        "ms_all": 26.4706,
+        "ms_covered": 26.4706
       },
       "coverage": {
         "line_cov": 100,
         "branch_cov": 100
       },
       "mutants_eval": {
-        "killed": 11,
-        "survived": 24,
+        "killed": 7,
+        "survived": 23,
         "no_coverage": 0,
         "timeout": 0,
         "compile_error": 0,
-        "runtime_error": 3,
+        "runtime_error": 8,
         "ignored": 0
       },
       "mutants_feedback": {
-        "killed": 10,
-        "survived": 26,
+        "killed": 11,
+        "survived": 27,
         "no_coverage": 0,
         "timeout": 0,
         "compile_error": 0,
-        "runtime_error": 7,
+        "runtime_error": 5,
         "ignored": 0
       },
       "survivors_sent": 0,
@@ -89,18 +89,18 @@
         "tokens_in": 3311,
         "tokens_out": 1194,
         "usd_ref": 0.000809,
-        "wall_s": 25.81,
-        "stryker_s": 9.15
+        "wall_s": 25.63,
+        "stryker_s": 9.32
       }
     }
   ],
   "selected_iteration": 0,
   "final": {
     "scores": {
-      "ms_eval": 31.4286,
-      "ms_feedback": 27.7778,
-      "ms_all": 29.5775,
-      "ms_covered": 29.5775
+      "ms_eval": 23.3333,
+      "ms_feedback": 28.9474,
+      "ms_all": 26.4706,
+      "ms_covered": 26.4706
     },
     "coverage": {
       "line_cov": 100,
@@ -112,15 +112,15 @@
       "tokens_in": 3311,
       "tokens_out": 1194,
       "usd_ref": 0.000809,
-      "wall_s": 25.81,
-      "stryker_s": 9.15
+      "wall_s": 25.63,
+      "stryker_s": 9.32
     },
     "tests": {
       "n_tests": 10,
       "n_asserts": 13,
       "sha256": "0d38c30a3d1243cfbba69fe65c9e50a975dcade942a7882ce75e30b57aeec445"
     },
-    "gap_cov_ms": 70.4225,
+    "gap_cov_ms": 73.5294,
     "valid_rate": 1,
     "tokens_per_pp": null
   },

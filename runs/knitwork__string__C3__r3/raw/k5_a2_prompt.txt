@@ -150,8 +150,8 @@ describe("genString", () => {
 describe("escapeString", () => {
   const cases = [
     { input: "hello", expected: "hello" },
-    { input: "hello\nworld", expected: "hello\\nworld" },
-    { input: "hello\rworld", expected: "hello\\rworld" },
+    { input: "hello\nworld", expected: "hello\\\nworld" },
+    { input: "hello\rworld", expected: "hello\\\rworld" },
     { input: "hello'world", expected: "hello\\'world" },
     { input: "hello\\world", expected: "hello\\\\world" },
     { input: "", expected: "" }
@@ -188,15 +188,15 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (17 tests | 3 failed) 8ms
+ ❯ test/__generated__/string.gen.test.ts (17 tests | 1 failed) 10ms
      ✓ should generate a double quoted string by default 1ms
      ✓ should generate a single quoted string when singleQuotes is true 0ms
-     × should handle double quotes inside single quotes option 4ms
+     × should handle double quotes inside single quotes option 5ms
      ✓ should escape single quotes inside single quotes option 0ms
      ✓ should handle empty string 0ms
      ✓ should escape "hello" correctly 0ms
-     × should escape "hello\nworld" correctly 1ms
-     × should escape "hello\rworld" correctly 0ms
+     ✓ should escape "hello\nworld" correctly 0ms
+     ✓ should escape "hello\rworld" correctly 0ms
      ✓ should escape "hello'world" correctly 0ms
      ✓ should escape "hello\\world" correctly 0ms
      ✓ should escape "" correctly 0ms
@@ -208,13 +208,13 @@ Problems:
      ✓ should convert "" to safe variable name "" 0ms
 
  Test Files  1 failed (1)
-      Tests  3 failed | 14 passed (17)
-   Start at  23:49:28
-   Duration  139ms (transform 27ms, setup 0ms, collect 36ms, tests 8ms, environment 0ms, prepare 3ms)
+      Tests  1 failed | 16 passed (17)
+   Start at  00:06:14
+   Duration  198ms (transform 36ms, setup 0ms, collect 49ms, tests 10ms, environment 0ms, prepare 4ms)
 
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  test/__generated__/string.gen.test.ts > genString > should handle double quotes inside single quotes option
 AssertionError: expected '\'hello \\"world\\"\'' to be '\'hello \"world\"\'' // Object.is equality
@@ -230,43 +230,7 @@ Received: "'hello \\"world\\"'"
      21|   });
      22| 
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
-
- FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape "hello\nworld" correctly
-AssertionError: expected 'hello\\nworld' to be 'hello\nworld' // Object.is equality
-
-- Expected
-+ Received
-
-- hello\nworld
-+ hello\
-+ world
-
- ❯ test/__generated__/string.gen.test.ts:47:35
-     45|   for (const { input, expected } of cases) {
-     46|     it(`should escape ${JSON.stringify(input)} correctly`, () => {
-     47|       expect(escapeString(input)).toBe(expected);
-       |                                   ^
-     48|     });
-     49|   }
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
-
- FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape "hello\rworld" correctly
-AssertionError: expected 'hello\\rworld' to be 'hello\rworld' // Object.is equality
-
-Expected: "hello\rworld"
-Received: "hello\world"
-
- ❯ test/__generated__/string.gen.test.ts:47:35
-     45|   for (const { input, expected } of cases) {
-     46|     it(`should escape ${JSON.stringify(input)} correctly`, () => {
-     47|       expect(escapeString(input)).toBe(expected);
-       |                                   ^
-     48|     });
-     49|   }
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 
 ```

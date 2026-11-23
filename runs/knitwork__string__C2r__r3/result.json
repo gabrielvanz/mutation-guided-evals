@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "knitwork__string__C2r__r3",
-  "started_at": "2026-11-22T23:42:17.886Z",
-  "finished_at": "2026-11-22T23:45:35.018Z",
+  "started_at": "2026-11-22T23:58:00.226Z",
+  "finished_at": "2026-11-23T00:01:42.205Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -68,10 +68,10 @@
       "cost_cumulative": {
         "calls": 3,
         "repair_calls": 2,
-        "tokens_in": 7611,
-        "tokens_out": 3222,
-        "usd_ref": 0.00205,
-        "wall_s": 26.96,
+        "tokens_in": 7315,
+        "tokens_out": 3252,
+        "usd_ref": 0.002032,
+        "wall_s": 39.1,
         "stryker_s": 0
       }
     },
@@ -82,9 +82,9 @@
       "repair_attempts": 1,
       "scores": {
         "ms_eval": 26.4706,
-        "ms_feedback": 33.3333,
-        "ms_all": 30.137,
-        "ms_covered": 30.137
+        "ms_feedback": 27.7778,
+        "ms_all": 27.1429,
+        "ms_covered": 27.1429
       },
       "coverage": {
         "line_cov": 100,
@@ -100,12 +100,12 @@
         "ignored": 0
       },
       "mutants_feedback": {
-        "killed": 13,
+        "killed": 10,
         "survived": 26,
         "no_coverage": 0,
         "timeout": 0,
         "compile_error": 0,
-        "runtime_error": 4,
+        "runtime_error": 7,
         "ignored": 0
       },
       "survivors_sent": 0,
@@ -121,11 +121,11 @@
       "cost_cumulative": {
         "calls": 5,
         "repair_calls": 3,
-        "tokens_in": 11303,
-        "tokens_out": 4713,
-        "usd_ref": 0.003016,
-        "wall_s": 58.59,
-        "stryker_s": 6.1
+        "tokens_in": 11009,
+        "tokens_out": 4742,
+        "usd_ref": 0.002998,
+        "wall_s": 73,
+        "stryker_s": 8.57
       }
     },
     {
@@ -156,11 +156,11 @@
       "cost_cumulative": {
         "calls": 8,
         "repair_calls": 5,
-        "tokens_in": 18930,
-        "tokens_out": 8119,
-        "usd_ref": 0.005141,
-        "wall_s": 86.95,
-        "stryker_s": 6.1
+        "tokens_in": 18664,
+        "tokens_out": 8167,
+        "usd_ref": 0.005133,
+        "wall_s": 113.79,
+        "stryker_s": 8.57
       }
     },
     {
@@ -191,11 +191,11 @@
       "cost_cumulative": {
         "calls": 11,
         "repair_calls": 7,
-        "tokens_in": 25758,
-        "tokens_out": 10644,
-        "usd_ref": 0.006833,
-        "wall_s": 124.78,
-        "stryker_s": 6.1
+        "tokens_in": 25496,
+        "tokens_out": 10694,
+        "usd_ref": 0.006827,
+        "wall_s": 150.84,
+        "stryker_s": 8.57
       }
     },
     {
@@ -226,11 +226,11 @@
       "cost_cumulative": {
         "calls": 14,
         "repair_calls": 9,
-        "tokens_in": 31746,
-        "tokens_out": 12656,
-        "usd_ref": 0.008237,
-        "wall_s": 164.12,
-        "stryker_s": 6.1
+        "tokens_in": 31488,
+        "tokens_out": 12706,
+        "usd_ref": 0.008231,
+        "wall_s": 185.56,
+        "stryker_s": 8.57
       }
     },
     {
@@ -261,11 +261,11 @@
       "cost_cumulative": {
         "calls": 17,
         "repair_calls": 11,
-        "tokens_in": 39370,
-        "tokens_out": 14846,
-        "usd_ref": 0.009875,
-        "wall_s": 197.13,
-        "stryker_s": 6.1
+        "tokens_in": 38711,
+        "tokens_out": 14896,
+        "usd_ref": 0.00983,
+        "wall_s": 221.98,
+        "stryker_s": 8.57
       }
     }
   ],
@@ -273,9 +273,9 @@
   "final": {
     "scores": {
       "ms_eval": 26.4706,
-      "ms_feedback": 33.3333,
-      "ms_all": 30.137,
-      "ms_covered": 30.137
+      "ms_feedback": 27.7778,
+      "ms_all": 27.1429,
+      "ms_covered": 27.1429
     },
     "coverage": {
       "line_cov": 100,
@@ -284,18 +284,18 @@
     "cost": {
       "calls": 17,
       "repair_calls": 11,
-      "tokens_in": 39370,
-      "tokens_out": 14846,
-      "usd_ref": 0.009875,
-      "wall_s": 197.13,
-      "stryker_s": 6.1
+      "tokens_in": 38711,
+      "tokens_out": 14896,
+      "usd_ref": 0.00983,
+      "wall_s": 221.98,
+      "stryker_s": 8.57
     },
     "tests": {
       "n_tests": 13,
       "n_asserts": 13,
       "sha256": "f850d916ef4bbc3f8d580f00922780f0aeadb8450a4b97369dea52fc64459ed0"
     },
-    "gap_cov_ms": 69.863,
+    "gap_cov_ms": 72.8571,
     "valid_rate": 0.1667,
     "tokens_per_pp": null
   },

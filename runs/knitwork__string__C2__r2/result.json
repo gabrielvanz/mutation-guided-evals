@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "knitwork__string__C2__r2",
-  "started_at": "2026-11-22T23:37:31.935Z",
-  "finished_at": "2026-11-22T23:38:00.053Z",
+  "started_at": "2026-11-22T23:53:15.877Z",
+  "finished_at": "2026-11-22T23:53:45.190Z",
   "status": "invalid_all_iterations",
   "error": null,
   "subject": {
@@ -68,10 +68,10 @@
       "cost_cumulative": {
         "calls": 3,
         "repair_calls": 2,
-        "tokens_in": 6480,
-        "tokens_out": 2333,
-        "usd_ref": 0.001581,
-        "wall_s": 28.12,
+        "tokens_in": 6484,
+        "tokens_out": 2335,
+        "usd_ref": 0.001582,
+        "wall_s": 29.31,
         "stryker_s": 0
       }
     }
@@ -91,10 +91,10 @@
     "cost": {
       "calls": 3,
       "repair_calls": 2,
-      "tokens_in": 6480,
-      "tokens_out": 2333,
-      "usd_ref": 0.001581,
-      "wall_s": 28.12,
+      "tokens_in": 6484,
+      "tokens_out": 2335,
+      "usd_ref": 0.001582,
+      "wall_s": 29.31,
       "stryker_s": 0
     },
     "tests": {

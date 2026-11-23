@@ -134,7 +134,8 @@ describe("genString", () => {
       { input: "hello", expected: "'hello'" },
       { input: "", expected: "''" },
       { input: "hello 'world'", expected: "'hello \\'world\\''" },
-      { input: "hello \"world\"", expected: "'\"hello \\\"world\\\"\"'".replace(/^'/, "").replace(/'$/, "") }
+      { input: "hello \"world\"", expected: "'和他吗'" ? "'hello \\\"world\\\"'" : "'hello \\\"world\\\"'" },
+      { input: "hello \"world\"", expected: "'hello \\\"world\\\"'" }
     ];
 
     for (const { input, expected } of cases) {
@@ -233,9 +234,9 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (9 tests | 3 failed) 9ms
+ ❯ test/__generated__/string.gen.test.ts (9 tests | 3 failed) 12ms
      ✓ should generate a double quoted string by default 1ms
-     × should generate a single quoted string when singleQuotes option is true 4ms
+     × should generate a single quoted string when singleQuotes option is true 6ms
      × should handle newlines and escapes 1ms
      ✓ should return the original string if no special characters need escape 0ms
      × should escape backslashes, quotes, and newlines 1ms
@@ -246,26 +247,26 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  3 failed | 6 passed (9)
-   Start at  23:43:35
-   Duration  135ms (transform 27ms, setup 0ms, collect 36ms, tests 9ms, environment 0ms, prepare 3ms)
+   Start at  23:59:43
+   Duration  193ms (transform 37ms, setup 0ms, collect 50ms, tests 12ms, environment 0ms, prepare 4ms)
 
 
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  test/__generated__/string.gen.test.ts > genString > should generate a single quoted string when singleQuotes option is true
-AssertionError: expected '\'hello \\"world\\"\'' to be '"hello \"world\""' // Object.is equality
+AssertionError: expected '\'hello \\"world\\"\'' to be '\'hello \"world\"\'' // Object.is equality
 
-Expected: ""hello \"world\"""
+Expected: "'hello \"world\"'"
 Received: "'hello \\"world\\"'"
 
- ❯ test/__generated__/string.gen.test.ts:26:56
-     24| 
-     25|     for (const { input, expected } of cases) {
-     26|       expect(genString(input, { singleQuotes: true })).toBe(expected);
+ ❯ test/__generated__/string.gen.test.ts:27:56
+     25| 
+     26|     for (const { input, expected } of cases) {
+     27|       expect(genString(input, { singleQuotes: true })).toBe(expected);
        |                                                        ^
-     27|     }
-     28|   });
+     28|     }
+     29|   });
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
 
@@ -275,13 +276,13 @@ AssertionError: expected '\'line1\\nline2\'' to be '\'line1\nline2\'' // Object.
 Expected: "'line1\nline2'"
 Received: "'line1\\nline2'"
 
- ❯ test/__generated__/string.gen.test.ts:31:63
-     29| 
-     30|   it("should handle newlines and escapes", () => {
-     31|     expect(genString("line1\nline2", { singleQuotes: true })).toBe("'l…
+ ❯ test/__generated__/string.gen.test.ts:32:63
+     30| 
+     31|   it("should handle newlines and escapes", () => {
+     32|     expect(genString("line1\nline2", { singleQuotes: true })).toBe("'l…
        |                                                               ^
-     32|     expect(genString("line1\nline2", { singleQuotes: false })).toBe("\…
-     33|   });
+     33|     expect(genString("line1\nline2", { singleQuotes: false })).toBe("\…
+     34|   });
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
 
@@ -295,13 +296,13 @@ AssertionError: expected 'line1\\nline2' to be 'line1\nline2' // Object.is equal
 + line1\
 + line2
 
- ❯ test/__generated__/string.gen.test.ts:59:35
-     57| 
-     58|     for (const { input, expected } of cases) {
-     59|       expect(escapeString(input)).toBe(expected);
+ ❯ test/__generated__/string.gen.test.ts:60:35
+     58| 
+     59|     for (const { input, expected } of cases) {
+     60|       expect(escapeString(input)).toBe(expected);
        |                                   ^
-     60|     }
-     61|   });
+     61|     }
+     62|   });
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 

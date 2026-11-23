@@ -190,19 +190,19 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (19 tests | 5 failed) 9ms
+ ❯ test/__generated__/string.gen.test.ts (19 tests | 5 failed) 14ms
      ✓ should generate a double quoted string by default 1ms
      ✓ should generate a single quoted string when singleQuotes is true 0ms
-     × should handle double quotes inside single quoted strings 4ms
+     × should handle double quotes inside single quoted strings 6ms
      ✓ should handle single quotes inside single quoted strings by escaping them 0ms
      ✓ should handle empty strings correctly 0ms
      ✓ should escape special characters in "hello" 0ms
-     × should escape special characters in "hello\nworld" 1ms
-     × should escape special characters in "hello\rworld" 0ms
+     × should escape special characters in "hello\nworld" 2ms
+     × should escape special characters in "hello\rworld" 1ms
      ✓ should escape special characters in "hello'world" 0ms
      ✓ should escape special characters in "hello\\world" 0ms
-     × should escape special characters in "hello world" 0ms
-     × should escape special characters in "hello world" 0ms
+     × should escape special characters in "hello world" 1ms
+     × should escape special characters in "hello world" 1ms
      ✓ should convert "fooBar" to a safe variable name 0ms
      ✓ should convert "const" to a safe variable name 0ms
      ✓ should convert "return" to a safe variable name 0ms
@@ -213,8 +213,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  5 failed | 14 passed (19)
-   Start at  23:39:55
-   Duration  132ms (transform 26ms, setup 0ms, collect 34ms, tests 9ms, environment 0ms, prepare 3ms)
+   Start at  23:55:22
+   Duration  197ms (transform 35ms, setup 0ms, collect 48ms, tests 14ms, environment 0ms, prepare 5ms)
 
 
 

@@ -106,6 +106,7 @@ describe("genSafeVariableName", () => {
     const cases = [
       { input: "fooBar", expected: "fooBar" },
       { input: "_private", expected: "_private" },
+      { input: "$special", expected: "_36special" },
       { input: "item1", expected: "item1" },
     ];
 

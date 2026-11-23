@@ -6,8 +6,8 @@ describe("genString", () => {
   it("should generate a double quoted string by default", () => {
     const cases = [
       { input: "hello", expected: "\"hello\"" },
+      { input: "hello \"world\"", expected: "\"hello \\\"world\\\"\"" },
       { input: "", expected: "\"\"" },
-      { input: "hello \"world\"", expected: "\"hello \\\"world\\\"\"" }
     ];
 
     for (const { input, expected } of cases) {
@@ -18,23 +18,32 @@ describe("genString", () => {
   it("should generate a single quoted string when singleQuotes option is true", () => {
     const cases = [
       { input: "hello", expected: "'hello'" },
-      { input: "", expected: "''" },
       { input: "hello 'world'", expected: "'hello \\'world\\''" },
-      { input: "hello \"world\"", expected: "'hello \\\"world\\\"'" }
+      { input: "hello \"world\"", expected: "'hello \\\"world\\\"'" },
+      { input: "", expected: "''" },
     ];
 
     for (const { input, expected } of cases) {
       expect(genString(input, { singleQuotes: true })).toBe(expected);
     }
   });
+
+  it("should handle special characters and escapes", () => {
+    const input = "line1\nline2\r'quote'\\backslash\\\u2028\u2029";
+    const resultDouble = genString(input);
+    expect(resultDouble).toBe("\"line1\\nline2\\r'quote'\\\\backslash\\\\\\u2028\\u2029\"");
+
+    const resultSingle = genString(input, { singleQuotes: true });
+    expect(resultSingle).toBe("'line1\\nline2\\r\\'quote\\'\\\\backslash\\\\\\u2028\\u2029'");
+  });
 });
 
 describe("escapeString", () => {
-  it("should return the original string if no escapes are needed", () => {
+  it("should return the original string if no escape is needed", () => {
     const cases = [
       "hello",
-      "hello_world",
-      "12345"
+      "foo_bar",
+      "12345",
     ];
 
     for (const input of cases) {
@@ -42,14 +51,14 @@ describe("escapeString", () => {
     }
   });
 
-  it("should escape special characters correctly", () => {
+  it("should escape newlines, returns, quotes, backslashes, and line/paragraph separators", () => {
     const cases = [
-      { input: "hello\nworld", expected: "hello\\nworld" },
-      { input: "hello\rworld", expected: "hello\\rworld" },
-      { input: "hello'world", expected: "hello\\'world" },
-      { input: "hello\\world", expected: "hello\\\\world" },
-      { input: "hello\u2028world", expected: "hello\\u2028world" },
-      { input: "hello\u2029world", expected: "hello\\u2029world" }
+      { input: "a\nb", expected: "a\\nb" },
+      { input: "a\rb", expected: "a\\rb" },
+      { input: "a'b", expected: "a\\'b" },
+      { input: "a\\b", expected: "a\\\\b" },
+      { input: "a\u2028b", expected: "a\\u2028b" },
+      { input: "a\u2029b", expected: "a\\u2029b" },
     ];
 
     for (const { input, expected } of cases) {
@@ -59,11 +68,13 @@ describe("escapeString", () => {
 });
 
 describe("genSafeVariableName", () => {
-  it("should prepend underscore to reserved names", () => {
+  it("should return prefixed name if it is a reserved word", () => {
     const cases = [
       { input: "class", expected: "_class" },
+      { input: "const", expected: "_const" },
+      { input: "function", expected: "_function" },
       { input: "return", expected: "_return" },
-      { input: "function", expected: "_function" }
+      { input: "undefined", expected: "_undefined" },
     ];
 
     for (const { input, expected } of cases) {
@@ -71,10 +82,10 @@ describe("genSafeVariableName", () => {
     }
   });
 
-  it("should handle names starting with digits", () => {
+  it("should prefix with underscore if name starts with a digit", () => {
     const cases = [
       { input: "123abc", expected: "_123abc" },
-      { input: "0", expected: "_0" }
+      { input: "0foo", expected: "_0foo" },
     ];
 
     for (const { input, expected } of cases) {
@@ -82,11 +93,13 @@ describe("genSafeVariableName", () => {
     }
   });
 
-  it("should replace non-word characters with their char code", () => {
+  it("should replace non-word characters with underscore and char code", () => {
     const cases = [
       { input: "foo-bar", expected: "foo_45bar" },
       { input: "foo.bar", expected: "foo_46bar" },
-      { input: "foo bar", expected: "foo_32bar" }
+      { input: "foo bar", expected: "foo_32bar" },
+      { input: "$foo", expected: "_36foo" },
+      { input: "_foo", expected: "_foo" },
     ];
 
     for (const { input, expected } of cases) {
@@ -94,15 +107,14 @@ describe("genSafeVariableName", () => {
     }
   });
 
-  it("should leave valid variable names untouched", () => {
+  it("should handle normal safe variable names without modification", () => {
     const cases = [
-      "fooBar",
-      "_fooBar",
-      "fooBar123"
+      { input: "fooBar", expected: "fooBar" },
+      { input: "myVar123", expected: "myVar123" },
     ];
 
-    for (const input of cases) {
-      expect(genSafeVariableName(input)).toBe(input);
+    for (const { input, expected } of cases) {
+      expect(genSafeVariableName(input)).toBe(expected);
     }
   });
 });

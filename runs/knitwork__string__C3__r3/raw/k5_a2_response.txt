@@ -36,8 +36,8 @@ describe("genString", () => {
 describe("escapeString", () => {
   const cases = [
     { input: "hello", expected: "hello" },
-    { input: "hello\nworld", expected: "hello\nworld" },
-    { input: "hello\rworld", expected: "hello\rworld" },
+    { input: "hello\nworld", expected: "hello\\\nworld" },
+    { input: "hello\rworld", expected: "hello\\\rworld" },
     { input: "hello'world", expected: "hello\\'world" },
     { input: "hello\\world", expected: "hello\\\\world" },
     { input: "", expected: "" }

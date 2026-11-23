@@ -233,10 +233,10 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (9 tests | 2 failed) 7ms
+ ❯ test/__generated__/string.gen.test.ts (9 tests | 2 failed) 9ms
      ✓ should generate double quoted string by default 1ms
      ✓ should generate single quoted string when singleQuotes is true 0ms
-     × should handle special characters and escapes 3ms
+     × should handle special characters and escapes 4ms
      ✓ should return the original string if no escape is needed 0ms
      × should escape special characters correctly 1ms
      ✓ should return the original name if it is safe 0ms
@@ -246,8 +246,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  2 failed | 7 passed (9)
-   Start at  23:44:50
-   Duration  121ms (transform 25ms, setup 0ms, collect 33ms, tests 7ms, environment 0ms, prepare 3ms)
+   Start at  00:00:29
+   Duration  145ms (transform 27ms, setup 0ms, collect 37ms, tests 9ms, environment 0ms, prepare 3ms)
 
 
 

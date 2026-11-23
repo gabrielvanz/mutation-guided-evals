@@ -150,7 +150,7 @@ describe("escapeString", () => {
   it("should escape backslashes, quotes, and newlines", () => {
     const input = "line1\nline2'quote'\\back";
     const expected = "line1\\nline2\\'quote\\'\\\\back";
-    expect(escapeString(input)).toBe(expected);
+    expect(escapeString(JSON.stringify(input))).toBe(expected);
   });
 
   it("should handle empty strings", () => {
@@ -192,11 +192,11 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (12 tests | 2 failed) 8ms
+ ❯ test/__generated__/string.gen.test.ts (12 tests | 2 failed) 11ms
      ✓ should generate a double quoted string by default 1ms
      ✓ should generate a single quoted string when singleQuotes is true 0ms
      ✓ should handle empty strings 0ms
-     × should handle strings containing quotes and escapes 4ms
+     × should handle strings containing quotes and escapes 6ms
      ✓ should return the original string if no escapes are needed 0ms
      × should escape backslashes, quotes, and newlines 1ms
      ✓ should handle empty strings 0ms
@@ -208,8 +208,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  2 failed | 10 passed (12)
-   Start at  23:46:30
-   Duration  130ms (transform 26ms, setup 0ms, collect 34ms, tests 8ms, environment 0ms, prepare 3ms)
+   Start at  00:02:18
+   Duration  191ms (transform 34ms, setup 0ms, collect 47ms, tests 11ms, environment 0ms, prepare 4ms)
 
 
 
@@ -232,20 +232,16 @@ Received: "'it\'s a \\"test\\"\\nline'"
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
  FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape backslashes, quotes, and newlines
-AssertionError: expected 'line1\\nline2\\'quote\\'\\back' to be 'line1\nline2\\'quote\\'\\back' // Object.is equality
+AssertionError: expected '"line1\\nline2\\'quote\\'\\\\back"' to be 'line1\nline2\\'quote\\'\\back' // Object.is equality
 
-- Expected
-+ Received
+Expected: "line1\nline2\'quote\'\\back"
+Received: ""line1\\nline2\'quote\'\\\\back""
 
-- line1\nline2\'quote\'\\back
-+ line1\
-+ line2\'quote\'\\back
-
- ❯ test/__generated__/string.gen.test.ts:38:33
+ ❯ test/__generated__/string.gen.test.ts:38:49
      36|     const input = "line1\nline2'quote'\\back";
      37|     const expected = "line1\\nline2\\'quote\\'\\\\back";
-     38|     expect(escapeString(input)).toBe(expected);
-       |                                 ^
+     38|     expect(escapeString(JSON.stringify(input))).toBe(expected);
+       |                                                 ^
      39|   });
      40| 
 

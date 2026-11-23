@@ -138,8 +138,8 @@ describe("genString", () => {
 describe("escapeString", () => {
   const cases = [
     { input: "normal", expected: "normal" },
-    { input: "line1\nline2", expected: "line1\\nline2" },
-    { input: "carriage\rreturn", expected: "carriage\\rreturn" },
+    { input: "line1\nline2", expected: "line1\\\nline2" },
+    { input: "carriage\rreturn", expected: "carriage\\\rreturn" },
     { input: "single'quote", expected: "single\\'quote" },
     { input: "backslash\\id", expected: "backslash\\\\id" },
     { input: "line2028\u2028separator", expected: "line2028\\\u2028separator" },
@@ -178,7 +178,7 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (22 tests | 3 failed) 8ms
+ ❯ test/__generated__/string.gen.test.ts (22 tests | 1 failed) 11ms
      ✓ should generate string for "hello" with options {} 1ms
      ✓ should generate string for "hello" with options {"singleQuotes":true} 0ms
      ✓ should generate string for "it's fine" with options {} 0ms
@@ -186,10 +186,10 @@ Problems:
      ✓ should generate string for "" with options {} 0ms
      ✓ should generate string for "" with options {"singleQuotes":true} 0ms
      ✓ should generate string for "line1\nline2" with options {} 0ms
-     × should generate string for "line1\nline2" with options {"singleQuotes":true} 4ms
+     × should generate string for "line1\nline2" with options {"singleQuotes":true} 5ms
      ✓ should escape string "normal" 0ms
-     × should escape string "line1\nline2" 1ms
-     × should escape string "carriage\rreturn" 0ms
+     ✓ should escape string "line1\nline2" 0ms
+     ✓ should escape string "carriage\rreturn" 0ms
      ✓ should escape string "single'quote" 0ms
      ✓ should escape string "backslash\\id" 0ms
      ✓ should escape string "line2028 separator" 0ms
@@ -203,13 +203,13 @@ Problems:
      ✓ should generate safe variable name for "" 0ms
 
  Test Files  1 failed (1)
-      Tests  3 failed | 19 passed (22)
-   Start at  23:45:21
-   Duration  135ms (transform 26ms, setup 0ms, collect 36ms, tests 8ms, environment 0ms, prepare 3ms)
+      Tests  1 failed | 21 passed (22)
+   Start at  00:01:28
+   Duration  195ms (transform 36ms, setup 0ms, collect 50ms, tests 11ms, environment 0ms, prepare 5ms)
 
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  test/__generated__/string.gen.test.ts > genString > should generate string for "line1\nline2" with options {"singleQuotes":true}
 AssertionError: expected '\'line1\\nline2\'' to be '\'line1\nline2\'' // Object.is equality
@@ -225,43 +225,7 @@ Received: "'line1\\nline2'"
      19|     });
      20|   }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
-
- FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string "line1\nline2"
-AssertionError: expected 'line1\\nline2' to be 'line1\nline2' // Object.is equality
-
-- Expected
-+ Received
-
-- line1\nline2
-+ line1\
-+ line2
-
- ❯ test/__generated__/string.gen.test.ts:37:35
-     35|   for (const { input, expected } of cases) {
-     36|     it(`should escape string ${JSON.stringify(input)}`, () => {
-     37|       expect(escapeString(input)).toBe(expected);
-       |                                   ^
-     38|     });
-     39|   }
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
-
- FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string "carriage\rreturn"
-AssertionError: expected 'carriage\\rreturn' to be 'carriage\rreturn' // Object.is equality
-
-Expected: "carriage\rreturn"
-Received: "carriage\return"
-
- ❯ test/__generated__/string.gen.test.ts:37:35
-     35|   for (const { input, expected } of cases) {
-     36|     it(`should escape string ${JSON.stringify(input)}`, () => {
-     37|       expect(escapeString(input)).toBe(expected);
-       |                                   ^
-     38|     });
-     39|   }
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 
 ```

@@ -160,7 +160,10 @@ describe("escapeString", () => {
 
   for (const { input, expected } of cases) {
     it(`should escape string: ${JSON.stringify(input)}`, () => {
-      expect(escapeString(input)).toBe(expected);
+      // escapeString expects a JSON.stringify-ed inner content or similar rollup-style escapeId
+      const jsonStr = JSON.stringify(input);
+      const inner = jsonStr.slice(1, -1);
+      expect(escapeString(inner)).toBe(expected);
     });
   }
 });
@@ -190,19 +193,19 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (19 tests | 5 failed) 14ms
+ ❯ test/__generated__/string.gen.test.ts (19 tests | 6 failed) 12ms
      ✓ should generate a double quoted string by default 1ms
      ✓ should generate a single quoted string when singleQuotes is true 0ms
      ✓ should handle empty string inputs 0ms
      ✓ should escape special characters correctly with double quotes 0ms
-     × should escape special characters correctly with single quotes 6ms
+     × should escape special characters correctly with single quotes 5ms
      ✓ should escape string: "plain" 0ms
-     × should escape string: "line1\nline2" 2ms
+     × should escape string: "line1\nline2" 1ms
      × should escape string: "carriage\rreturn" 1ms
      ✓ should escape string: "single'quote" 0ms
-     ✓ should escape string: "back\\slash" 0ms
+     × should escape string: "back\\slash" 0ms
      × should escape string: "line separator" 1ms
-     × should escape string: "paragraph separator" 1ms
+     × should escape string: "paragraph separator" 0ms
      ✓ should generate safe variable name for "normalName" 0ms
      ✓ should generate safe variable name for "class" 0ms
      ✓ should generate safe variable name for "const" 0ms
@@ -212,13 +215,13 @@ Problems:
      ✓ should generate safe variable name for "" 0ms
 
  Test Files  1 failed (1)
-      Tests  5 failed | 14 passed (19)
-   Start at  23:41:00
-   Duration  201ms (transform 36ms, setup 0ms, collect 49ms, tests 14ms, environment 0ms, prepare 4ms)
+      Tests  6 failed | 13 passed (19)
+   Start at  23:56:44
+   Duration  197ms (transform 34ms, setup 0ms, collect 46ms, tests 12ms, environment 0ms, prepare 4ms)
 
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  test/__generated__/string.gen.test.ts > genString > should escape special characters correctly with single quotes
 AssertionError: expected '\'line1\\nline2\\'quote\\'\\\\backsla…' to be '\'line1\nline2\\'quote\\'\\backslash\'' // Object.is equality
@@ -234,43 +237,55 @@ Received: "'line1\\nline2\'quote\'\\\\backslash'"
      32|   });
      33| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
 
  FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string: "line1\nline2"
 AssertionError: expected 'line1\\nline2' to be 'line1\nline2' // Object.is equality
 
-- Expected
-+ Received
+Expected: "line1\nline2"
+Received: "line1\\nline2"
 
-- line1\nline2
-+ line1\
-+ line2
-
- ❯ test/__generated__/string.gen.test.ts:48:35
-     46|   for (const { input, expected } of cases) {
-     47|     it(`should escape string: ${JSON.stringify(input)}`, () => {
-     48|       expect(escapeString(input)).toBe(expected);
+ ❯ test/__generated__/string.gen.test.ts:51:35
+     49|       const jsonStr = JSON.stringify(input);
+     50|       const inner = jsonStr.slice(1, -1);
+     51|       expect(escapeString(inner)).toBe(expected);
        |                                   ^
-     49|     });
-     50|   }
+     52|     });
+     53|   }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
 
  FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string: "carriage\rreturn"
 AssertionError: expected 'carriage\\rreturn' to be 'carriage\rreturn' // Object.is equality
 
 Expected: "carriage\rreturn"
-Received: "carriage\return"
+Received: "carriage\\rreturn"
 
- ❯ test/__generated__/string.gen.test.ts:48:35
-     46|   for (const { input, expected } of cases) {
-     47|     it(`should escape string: ${JSON.stringify(input)}`, () => {
-     48|       expect(escapeString(input)).toBe(expected);
+ ❯ test/__generated__/string.gen.test.ts:51:35
+     49|       const jsonStr = JSON.stringify(input);
+     50|       const inner = jsonStr.slice(1, -1);
+     51|       expect(escapeString(inner)).toBe(expected);
        |                                   ^
-     49|     });
-     50|   }
+     52|     });
+     53|   }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string: "back\\slash"
+AssertionError: expected 'back\\\\slash' to be 'back\\slash' // Object.is equality
+
+Expected: "back\\slash"
+Received: "back\\\\slash"
+
+ ❯ test/__generated__/string.gen.test.ts:51:35
+     49|       const jsonStr = JSON.stringify(input);
+     50|       const inner = jsonStr.slice(1, -1);
+     51|       expect(escapeString(inner)).toBe(expected);
+       |                                   ^
+     52|     });
+     53|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
 
  FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string: "line separator"
 AssertionError: expected 'line\\u2028separator' to be 'line\u2028separator' // Object.is equality
@@ -278,15 +293,15 @@ AssertionError: expected 'line\\u2028separator' to be 'line\u2028separator' // O
 Expected: "line\u2028separator"
 Received: "line\ separator"
 
- ❯ test/__generated__/string.gen.test.ts:48:35
-     46|   for (const { input, expected } of cases) {
-     47|     it(`should escape string: ${JSON.stringify(input)}`, () => {
-     48|       expect(escapeString(input)).toBe(expected);
+ ❯ test/__generated__/string.gen.test.ts:51:35
+     49|       const jsonStr = JSON.stringify(input);
+     50|       const inner = jsonStr.slice(1, -1);
+     51|       expect(escapeString(inner)).toBe(expected);
        |                                   ^
-     49|     });
-     50|   }
+     52|     });
+     53|   }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
 
  FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string: "paragraph separator"
 AssertionError: expected 'paragraph\\u2029separator' to be 'paragraph\u2029separator' // Object.is equality
@@ -294,15 +309,15 @@ AssertionError: expected 'paragraph\\u2029separator' to be 'paragraph\u2029separ
 Expected: "paragraph\u2029separator"
 Received: "paragraph\ separator"
 
- ❯ test/__generated__/string.gen.test.ts:48:35
-     46|   for (const { input, expected } of cases) {
-     47|     it(`should escape string: ${JSON.stringify(input)}`, () => {
-     48|       expect(escapeString(input)).toBe(expected);
+ ❯ test/__generated__/string.gen.test.ts:51:35
+     49|       const jsonStr = JSON.stringify(input);
+     50|       const inner = jsonStr.slice(1, -1);
+     51|       expect(escapeString(inner)).toBe(expected);
        |                                   ^
-     49|     });
-     50|   }
+     52|     });
+     53|   }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 
 
 ```

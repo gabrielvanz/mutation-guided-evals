@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "knitwork__string__C2__r1",
-  "started_at": "2026-11-22T23:36:46.199Z",
-  "finished_at": "2026-11-22T23:37:15.296Z",
+  "started_at": "2026-11-22T23:52:31.257Z",
+  "finished_at": "2026-11-22T23:52:58.077Z",
   "status": "invalid_all_iterations",
   "error": null,
   "subject": {
@@ -71,7 +71,7 @@
         "tokens_in": 7409,
         "tokens_out": 3209,
         "usd_ref": 0.002025,
-        "wall_s": 29.1,
+        "wall_s": 26.82,
         "stryker_s": 0
       }
     }
@@ -94,7 +94,7 @@
       "tokens_in": 7409,
       "tokens_out": 3209,
       "usd_ref": 0.002025,
-      "wall_s": 29.1,
+      "wall_s": 26.82,
       "stryker_s": 0
     },
     "tests": {

@@ -185,7 +185,7 @@ Problems:
      ✓ should generate string for "" with options {} 0ms
      ✓ should generate string for "" with options {"singleQuotes":true} 0ms
      ✓ should generate string for "line1\nline2" with options {} 0ms
-     × should generate string for "line1\nline2" with options {"singleQuotes":true} 4ms
+     × should generate string for "line1\nline2" with options {"singleQuotes":true} 3ms
      ✓ should escape string "hello" 0ms
      ✓ should escape string "it's" 0ms
      ✓ should escape string "line1\nline2" 0ms
@@ -202,8 +202,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  1 failed | 20 passed (21)
-   Start at  23:49:23
-   Duration  129ms (transform 26ms, setup 0ms, collect 34ms, tests 7ms, environment 0ms, prepare 3ms)
+   Start at  00:05:11
+   Duration  125ms (transform 24ms, setup 0ms, collect 32ms, tests 7ms, environment 0ms, prepare 3ms)
 
 
 

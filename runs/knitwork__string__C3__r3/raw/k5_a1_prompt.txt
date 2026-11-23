@@ -188,15 +188,15 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (17 tests | 3 failed) 9ms
+ ❯ test/__generated__/string.gen.test.ts (17 tests | 3 failed) 12ms
      ✓ should generate a double quoted string by default 1ms
      ✓ should generate a single quoted string when singleQuotes is true 0ms
-     × should handle double quotes inside single quotes option 4ms
+     × should handle double quotes inside single quotes option 5ms
      ✓ should escape single quotes inside single quotes option 0ms
      ✓ should handle empty string 0ms
      ✓ should escape "hello" correctly 0ms
-     × should escape "hello\nworld" correctly 1ms
-     × should escape "hello\rworld" correctly 0ms
+     × should escape "hello\nworld" correctly 2ms
+     × should escape "hello\rworld" correctly 1ms
      ✓ should escape "hello'world" correctly 0ms
      ✓ should escape "hello\\world" correctly 0ms
      ✓ should escape "" correctly 0ms
@@ -209,8 +209,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  3 failed | 14 passed (17)
-   Start at  23:49:16
-   Duration  134ms (transform 27ms, setup 0ms, collect 36ms, tests 9ms, environment 0ms, prepare 3ms)
+   Start at  00:05:59
+   Duration  196ms (transform 36ms, setup 0ms, collect 48ms, tests 12ms, environment 0ms, prepare 4ms)
 
 
 

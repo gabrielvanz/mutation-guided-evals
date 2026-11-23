@@ -19,7 +19,7 @@ describe("genString", () => {
     const cases = [
       { input: "hello", expected: "'hello'" },
       { input: "hello 'world'", expected: "'hello \\'world\\''" },
-      { input: "hello \"world\"", expected: "'hello \"world\"'" },
+      { input: "hello \"world\"", expected: "'hello \\\"world\\\"'" },
       { input: "", expected: "''" }
     ];
 

@@ -171,12 +171,12 @@ describe("escapeString", () => {
 
   it("should escape special characters like newlines, returns, quotes, backslashes, and unicode line/paragraph separators", () => {
     const cases = [
-      { input: "a\nb", expected: "a\\\nb" },
-      { input: "a\rb", expected: "a\\\rb" },
+      { input: "a\nb", expected: "a\\nb" },
+      { input: "a\rb", expected: "a\\rb" },
       { input: "a'b", expected: "a\\'b" },
       { input: "a\\b", expected: "a\\\\b" },
-      { input: "a\u2028b", expected: "a\\\u2028b" },
-      { input: "a\u2029b", expected: "a\\\u2029b" }
+      { input: "a\u2028b", expected: "a\\u2028b" },
+      { input: "a\u2029b", expected: "a\\u2029b" }
     ];
 
     for (const { input, expected } of cases) {
@@ -242,25 +242,25 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (9 tests | 1 failed) 7ms
+ ❯ test/__generated__/string.gen.test.ts (9 tests | 2 failed) 12ms
      ✓ should generate a double quoted string by default 1ms
      ✓ should generate a single quoted string when singleQuotes option is true 0ms
-     × should handle escapes and quotes correctly 4ms
+     × should handle escapes and quotes correctly 5ms
      ✓ should return the original string if no escapes are needed 0ms
-     ✓ should escape special characters like newlines, returns, quotes, backslashes, and unicode line/paragraph separators 0ms
+     × should escape special characters like newlines, returns, quotes, backslashes, and unicode line/paragraph separators 2ms
      ✓ should prepend an underscore to reserved JavaScript keywords 0ms
      ✓ should prepend an underscore if the name starts with a digit 0ms
      ✓ should replace non-word characters with their charCode prefixed by underscore 0ms
-     ✓ should leave valid safe variable names untouched 0ms
+     ✓ should leave valid safe variable names untouched 1ms
 
  Test Files  1 failed (1)
-      Tests  1 failed | 8 passed (9)
-   Start at  23:40:43
-   Duration  127ms (transform 29ms, setup 0ms, collect 37ms, tests 7ms, environment 0ms, prepare 3ms)
+      Tests  2 failed | 7 passed (9)
+   Start at  23:56:13
+   Duration  193ms (transform 37ms, setup 0ms, collect 50ms, tests 12ms, environment 0ms, prepare 5ms)
 
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  test/__generated__/string.gen.test.ts > genString > should handle escapes and quotes correctly
 AssertionError: expected '\'line1\\nline2\'' to be '\'line1\nline2\'' // Object.is equality
@@ -276,7 +276,27 @@ Received: "'line1\\nline2'"
      40|     }
      41|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape special characters like newlines, returns, quotes, backslashes, and unicode line/paragraph separators
+AssertionError: expected 'a\\nb' to be 'a\nb' // Object.is equality
+
+- Expected
++ Received
+
+- a\nb
++ a\
++ b
+
+ ❯ test/__generated__/string.gen.test.ts:68:35
+     66| 
+     67|     for (const { input, expected } of cases) {
+     68|       expect(escapeString(input)).toBe(expected);
+       |                                   ^
+     69|     }
+     70|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 
 
 ```

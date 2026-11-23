@@ -40,13 +40,14 @@ describe("escapeString", () => {
     { input: "hello\rworld", expected: "hello\\rworld" },
     { input: "hello'world", expected: "hello\\'world" },
     { input: "hello\\world", expected: "hello\\\\world" },
-    { input: "hello\u2028world", expected: "hello\\\u2028world" },
-    { input: "hello\u2029world", expected: "hello\\\u2029world" },
+    { input: "hello\u2028world", expected: "hello\\u2028world" },
+    { input: "hello\u2029world", expected: "hello\\u2029world" },
   ];
 
   for (const { input, expected } of cases) {
     it(`should escape special characters in ${JSON.stringify(input)}`, () => {
-      expect(escapeString(input)).toBe(expected);
+      const result = escapeString(JSON.stringify(input).slice(1, -1));
+      expect(result).toBe(expected);
     });
   }
 });

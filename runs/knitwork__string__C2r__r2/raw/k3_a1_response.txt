@@ -57,12 +57,12 @@ describe("escapeString", () => {
 
   it("should escape special characters like newlines, returns, quotes, backslashes, and unicode line/paragraph separators", () => {
     const cases = [
-      { input: "a\nb", expected: "a\\\nb" },
-      { input: "a\rb", expected: "a\\\rb" },
+      { input: "a\nb", expected: "a\\nb" },
+      { input: "a\rb", expected: "a\\rb" },
       { input: "a'b", expected: "a\\'b" },
       { input: "a\\b", expected: "a\\\\b" },
-      { input: "a\u2028b", expected: "a\\\u2028b" },
-      { input: "a\u2029b", expected: "a\\\u2029b" }
+      { input: "a\u2028b", expected: "a\\u2028b" },
+      { input: "a\u2029b", expected: "a\\u2029b" }
     ];
 
     for (const { input, expected } of cases) {

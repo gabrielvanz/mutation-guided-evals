@@ -23,7 +23,7 @@ describe("genString", () => {
   it("should escape special characters appropriately", () => {
     const input = "line1\nline2's \"quote\"";
     const expectedDouble = "\"line1\\nline2's \\\"quote\\\"\"";
-    const expectedSingle = "'line1\\nline2\\'s \"quote\"'";
+    const expectedSingle = "'line1\\nline2\\'s \\\"quote\\\"'";
 
     expect(genString(input)).toBe(expectedDouble);
     expect(genString(input, { singleQuotes: true })).toBe(expectedSingle);

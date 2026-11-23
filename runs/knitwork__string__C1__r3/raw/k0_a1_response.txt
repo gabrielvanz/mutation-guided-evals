@@ -33,7 +33,7 @@ describe("string module", () => {
 
     it("should escape special characters like newlines and quotes", () => {
       const result = escapeString("hello\n'world'");
-      expect(result).toBe("hello\n\\'world\\'");
+      expect(result).toBe("hello\\\n\\'world\\'");
     });
 
     it("should escape backslashes", () => {

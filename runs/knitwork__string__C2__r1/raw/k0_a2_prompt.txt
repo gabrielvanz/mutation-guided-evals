@@ -241,8 +241,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  3 failed | 5 passed (8)
-   Start at  23:37:04
-   Duration  198ms (transform 40ms, setup 0ms, collect 52ms, tests 12ms, environment 0ms, prepare 5ms)
+   Start at  23:52:51
+   Duration  198ms (transform 38ms, setup 0ms, collect 51ms, tests 12ms, environment 0ms, prepare 5ms)
 
 
 

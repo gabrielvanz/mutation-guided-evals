@@ -65,7 +65,7 @@ describe("escapeString", () => {
     ];
 
     for (const { input, expected } of cases) {
-      expect(escapeString(JSON.stringify(input))).toBe(expected);
+      expect(escapeString(input)).toBe(expected);
     }
   });
 });

@@ -37,7 +37,7 @@ describe("escapeString", () => {
   it("should escape special characters like newlines, carriage returns, and quotes", () => {
     const input = "line1\nline2\rcarriage'single'\\backslash";
     const result = escapeString(input);
-    expect(result).toBe("line1\\\nline2\\\rcarriage\\'single\\'\\\\backslash");
+    expect(result).toBe("line1\\nline2\\rcarriage\\'single\\'\\\\backslash");
   });
 
   it("should handle empty strings", () => {

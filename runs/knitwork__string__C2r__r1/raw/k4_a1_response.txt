@@ -46,7 +46,10 @@ describe("escapeString", () => {
 
   for (const { input, expected } of cases) {
     it(`should escape string: ${JSON.stringify(input)}`, () => {
-      expect(escapeString(input)).toBe(expected);
+      // escapeString expects a JSON.stringify-ed inner content or similar rollup-style escapeId
+      const jsonStr = JSON.stringify(input);
+      const inner = jsonStr.slice(1, -1);
+      expect(escapeString(inner)).toBe(expected);
     });
   }
 });

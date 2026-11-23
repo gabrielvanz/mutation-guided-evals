@@ -1,8 +1,8 @@
 {
   "schema_version": "0.1",
   "run_id": "knitwork__string__C1__r1",
-  "started_at": "2026-11-22T23:35:59.381Z",
-  "finished_at": "2026-11-22T23:36:24.892Z",
+  "started_at": "2026-11-22T23:51:45.375Z",
+  "finished_at": "2026-11-22T23:52:09.924Z",
   "status": "ok",
   "error": null,
   "subject": {
@@ -46,10 +46,10 @@
       "discard_reason": null,
       "repair_attempts": 1,
       "scores": {
-        "ms_eval": 30.303,
-        "ms_feedback": 33.3333,
-        "ms_all": 31.8841,
-        "ms_covered": 31.8841
+        "ms_eval": 28.5714,
+        "ms_feedback": 34.2857,
+        "ms_all": 31.4286,
+        "ms_covered": 31.4286
       },
       "coverage": {
         "line_cov": 100,
@@ -57,20 +57,20 @@
       },
       "mutants_eval": {
         "killed": 10,
-        "survived": 23,
+        "survived": 25,
         "no_coverage": 0,
         "timeout": 0,
         "compile_error": 0,
-        "runtime_error": 5,
+        "runtime_error": 3,
         "ignored": 0
       },
       "mutants_feedback": {
         "killed": 12,
-        "survived": 24,
+        "survived": 23,
         "no_coverage": 0,
         "timeout": 0,
         "compile_error": 0,
-        "runtime_error": 7,
+        "runtime_error": 8,
         "ignored": 0
       },
       "survivors_sent": 0,
@@ -86,21 +86,21 @@
       "cost_cumulative": {
         "calls": 2,
         "repair_calls": 1,
-        "tokens_in": 3035,
+        "tokens_in": 3033,
         "tokens_out": 1056,
         "usd_ref": 0.000726,
-        "wall_s": 25.51,
-        "stryker_s": 9.24
+        "wall_s": 24.55,
+        "stryker_s": 7.25
       }
     }
   ],
   "selected_iteration": 0,
   "final": {
     "scores": {
-      "ms_eval": 30.303,
-      "ms_feedback": 33.3333,
-      "ms_all": 31.8841,
-      "ms_covered": 31.8841
+      "ms_eval": 28.5714,
+      "ms_feedback": 34.2857,
+      "ms_all": 31.4286,
+      "ms_covered": 31.4286
     },
     "coverage": {
       "line_cov": 100,
@@ -109,18 +109,18 @@
     "cost": {
       "calls": 2,
       "repair_calls": 1,
-      "tokens_in": 3035,
+      "tokens_in": 3033,
       "tokens_out": 1056,
       "usd_ref": 0.000726,
-      "wall_s": 25.51,
-      "stryker_s": 9.24
+      "wall_s": 24.55,
+      "stryker_s": 7.25
     },
     "tests": {
       "n_tests": 10,
       "n_asserts": 13,
       "sha256": "c30e944bfe5fc221dd1071279eb3299bc94f5c0414e3bd610286de2c618ae721"
     },
-    "gap_cov_ms": 68.1159,
+    "gap_cov_ms": 68.5714,
     "valid_rate": 1,
     "tokens_per_pp": null
   },

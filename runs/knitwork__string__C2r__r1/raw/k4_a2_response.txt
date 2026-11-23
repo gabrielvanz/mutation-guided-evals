@@ -40,13 +40,13 @@ describe("escapeString", () => {
     { input: "carriage\rreturn", expected: "carriage\\rreturn" },
     { input: "single'quote", expected: "single\\'quote" },
     { input: "back\\slash", expected: "back\\\\slash" },
-    { input: "line\u2028separator", expected: "line\\u2028separator" },
-    { input: "paragraph\u2029separator", expected: "paragraph\\u2029separator" },
+    { input: "line\u2028separator", expected: "line\\\u2028separator" },
+    { input: "paragraph\u2029separator", expected: "paragraph\\\u2029separator" },
   ];
 
   for (const { input, expected } of cases) {
     it(`should escape string: ${JSON.stringify(input)}`, () => {
-      expect(escapeString(JSON.stringify(input))).toBe(expected);
+      expect(escapeString(input)).toBe(expected);
     });
   }
 });

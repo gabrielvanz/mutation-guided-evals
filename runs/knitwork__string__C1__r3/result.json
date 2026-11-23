@@ -1,9 +1,9 @@
 {
   "schema_version": "0.1",
   "run_id": "knitwork__string__C1__r3",
-  "started_at": "2026-11-22T23:36:53.236Z",
-  "finished_at": "2026-11-22T23:37:19.498Z",
-  "status": "invalid_all_iterations",
+  "started_at": "2026-11-22T23:52:29.533Z",
+  "finished_at": "2026-11-22T23:52:53.837Z",
+  "status": "ok",
   "error": null,
   "subject": {
     "library": "knitwork",
@@ -12,7 +12,7 @@
     "license": "MIT",
     "module_path": "src/string.ts",
     "module_loc": 104,
-    "mutants_total": 0,
+    "mutants_total": 81,
     "human_test_files": [
       "test/string.test.ts"
     ]
@@ -42,75 +42,93 @@
   "iterations": [
     {
       "k": 0,
-      "valid": false,
-      "discard_reason": "tests_fail_on_original",
-      "repair_attempts": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
       "scores": {
-        "ms_eval": null,
-        "ms_feedback": null,
-        "ms_all": null,
-        "ms_covered": null
+        "ms_eval": 27.7778,
+        "ms_feedback": 22.8571,
+        "ms_all": 25.3521,
+        "ms_covered": 25.3521
       },
       "coverage": {
-        "line_cov": null,
-        "branch_cov": null
+        "line_cov": 100,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 10,
+        "survived": 26,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 8,
+        "survived": 27,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 8,
+        "ignored": 0
       },
       "survivors_sent": 0,
       "survivor_ids": [],
       "tests": {
-        "n_tests": 0,
-        "n_asserts": 0,
-        "sha256": ""
+        "n_tests": 11,
+        "n_asserts": 11,
+        "sha256": "b20008d8f42658284ec084c80673ca334994702ebbef1a137c27a81d8fc260f6"
       },
       "prompt_file": "runs/knitwork__string__C1__r3/raw/k0_a0_prompt.txt",
       "response_file": "runs/knitwork__string__C1__r3/raw/k0_a0_response.txt",
-      "best_k_so_far": null,
+      "best_k_so_far": 0,
       "cost_cumulative": {
-        "calls": 3,
-        "repair_calls": 2,
-        "tokens_in": 5203,
-        "tokens_out": 1770,
-        "usd_ref": 0.001228,
-        "wall_s": 26.26,
-        "stryker_s": 0
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 3092,
+        "tokens_out": 1180,
+        "usd_ref": 0.000781,
+        "wall_s": 24.3,
+        "stryker_s": 6.75
       }
     }
   ],
   "selected_iteration": 0,
   "final": {
     "scores": {
-      "ms_eval": null,
-      "ms_feedback": null,
-      "ms_all": null,
-      "ms_covered": null
+      "ms_eval": 27.7778,
+      "ms_feedback": 22.8571,
+      "ms_all": 25.3521,
+      "ms_covered": 25.3521
     },
     "coverage": {
-      "line_cov": null,
-      "branch_cov": null
+      "line_cov": 100,
+      "branch_cov": 100
     },
     "cost": {
-      "calls": 3,
-      "repair_calls": 2,
-      "tokens_in": 5203,
-      "tokens_out": 1770,
-      "usd_ref": 0.001228,
-      "wall_s": 26.26,
-      "stryker_s": 0
+      "calls": 2,
+      "repair_calls": 1,
+      "tokens_in": 3092,
+      "tokens_out": 1180,
+      "usd_ref": 0.000781,
+      "wall_s": 24.3,
+      "stryker_s": 6.75
     },
     "tests": {
-      "n_tests": 0,
-      "n_asserts": 0,
-      "sha256": ""
+      "n_tests": 11,
+      "n_asserts": 11,
+      "sha256": "b20008d8f42658284ec084c80673ca334994702ebbef1a137c27a81d8fc260f6"
     },
-    "gap_cov_ms": null,
-    "valid_rate": 0,
+    "gap_cov_ms": 74.6479,
+    "valid_rate": 1,
     "tokens_per_pp": null
   },
   "guardrails": {
     "src_diff_empty": true,
     "forbidden_patterns_found": [],
     "flaky": false,
-    "reruns": 0
+    "reruns": 3
   },
   "artifacts": {
     "raw_dir": "runs/knitwork__string__C1__r3/raw"

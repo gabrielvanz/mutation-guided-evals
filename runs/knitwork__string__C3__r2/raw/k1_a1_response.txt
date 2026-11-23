@@ -54,7 +54,7 @@ describe("escapeString", () => {
   it("should escape newlines and carriage returns", () => {
     const input = "line1\nline2\rline3";
     const result = escapeString(input);
-    expect(result).toBe("line1\\\nline2\\\rline3");
+    expect(result).toBe("line1\\nline2\\rline3");
   });
 
   it("should escape single quotes", () => {
@@ -66,7 +66,7 @@ describe("escapeString", () => {
   it("should escape unicode line separators", () => {
     const input = "line\u2028separator";
     const result = escapeString(input);
-    expect(result).toBe("line\u2028separator");
+    expect(result).toBe("line\\u2028separator");
   });
 });
 

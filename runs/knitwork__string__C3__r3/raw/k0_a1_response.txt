@@ -36,7 +36,7 @@ describe("escapeString", () => {
   it("should escape backslashes, quotes, and newlines", () => {
     const input = "line1\nline2'quote'\\back";
     const expected = "line1\\nline2\\'quote\\'\\\\back";
-    expect(escapeString(input)).toBe(expected);
+    expect(escapeString(JSON.stringify(input))).toBe(expected);
   });
 
   it("should handle empty strings", () => {

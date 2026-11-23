@@ -110,6 +110,7 @@ describe("genSafeVariableName", () => {
     const cases = [
       { input: "fooBar", expected: "fooBar" },
       { input: "_private", expected: "_private" },
+      { input: "variable", expected: "variable" },
     ];
 
     for (const { input, expected } of cases) {

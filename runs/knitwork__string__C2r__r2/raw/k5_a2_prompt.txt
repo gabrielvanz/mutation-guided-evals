@@ -154,7 +154,7 @@ describe("escapeString", () => {
 
   for (const { input, expected } of cases) {
     it(`should escape string: ${JSON.stringify(input)}`, () => {
-      expect(escapeString(input)).toBe(expected);
+      expect(escapeString(JSON.stringify(input).slice(1, -1))).toBe(expected);
     });
   }
 });
@@ -186,31 +186,31 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (15 tests | 5 failed) 9ms
+ ❯ test/__generated__/string.gen.test.ts (15 tests | 6 failed) 13ms
      ✓ should generate a double quoted string by default 1ms
      ✓ should generate a single quoted string when singleQuotes is true 0ms
      ✓ should handle empty strings correctly 0ms
-     × should escape special characters and quotes 4ms
+     × should escape special characters and quotes 6ms
      ✓ should escape string: "plain" 0ms
      × should escape string: "with\nnewline" 1ms
-     × should escape string: "with\rreturn" 0ms
+     × should escape string: "with\rreturn" 1ms
      ✓ should escape string: "with'quote" 0ms
-     ✓ should escape string: "with\\backslash" 0ms
-     × should escape string: "line2028 separator" 0ms
-     × should escape string: "line2029 separator" 0ms
+     × should escape string: "with\\backslash" 1ms
+     × should escape string: "line2028 separator" 1ms
+     × should escape string: "line2029 separator" 1ms
      ✓ should return the same name if it is a safe identifier 0ms
      ✓ should prefix with underscore if name is a reserved keyword 0ms
      ✓ should prefix with underscore if name starts with a digit 0ms
      ✓ should replace non-word characters with their char code 0ms
 
  Test Files  1 failed (1)
-      Tests  5 failed | 10 passed (15)
-   Start at  23:41:52
-   Duration  130ms (transform 25ms, setup 0ms, collect 33ms, tests 9ms, environment 0ms, prepare 3ms)
+      Tests  6 failed | 9 passed (15)
+   Start at  23:57:23
+   Duration  202ms (transform 35ms, setup 0ms, collect 48ms, tests 13ms, environment 0ms, prepare 5ms)
 
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  test/__generated__/string.gen.test.ts > genString > should escape special characters and quotes
 AssertionError: expected '\'line1\\nline2 \\'quoted\\' \\\\back…' to be '\'line1\nline2 \\'quoted\\' \\backsla…' // Object.is equality
@@ -226,43 +226,55 @@ Received: "'line1\\nline2 \'quoted\' \\\\backslash'"
      26|   });
      27| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
 
  FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string: "with\nnewline"
 AssertionError: expected 'with\\nnewline' to be 'with\nnewline' // Object.is equality
 
-- Expected
-+ Received
+Expected: "with\nnewline"
+Received: "with\\nnewline"
 
-- with\nnewline
-+ with\
-+ newline
-
- ❯ test/__generated__/string.gen.test.ts:42:35
+ ❯ test/__generated__/string.gen.test.ts:42:64
      40|   for (const { input, expected } of cases) {
      41|     it(`should escape string: ${JSON.stringify(input)}`, () => {
-     42|       expect(escapeString(input)).toBe(expected);
-       |                                   ^
+     42|       expect(escapeString(JSON.stringify(input).slice(1, -1))).toBe(ex…
+       |                                                                ^
      43|     });
      44|   }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
 
  FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string: "with\rreturn"
 AssertionError: expected 'with\\rreturn' to be 'with\rreturn' // Object.is equality
 
 Expected: "with\rreturn"
-Received: "with\return"
+Received: "with\\rreturn"
 
- ❯ test/__generated__/string.gen.test.ts:42:35
+ ❯ test/__generated__/string.gen.test.ts:42:64
      40|   for (const { input, expected } of cases) {
      41|     it(`should escape string: ${JSON.stringify(input)}`, () => {
-     42|       expect(escapeString(input)).toBe(expected);
-       |                                   ^
+     42|       expect(escapeString(JSON.stringify(input).slice(1, -1))).toBe(ex…
+       |                                                                ^
      43|     });
      44|   }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string: "with\\backslash"
+AssertionError: expected 'with\\\\backslash' to be 'with\\backslash' // Object.is equality
+
+Expected: "with\\backslash"
+Received: "with\\\\backslash"
+
+ ❯ test/__generated__/string.gen.test.ts:42:64
+     40|   for (const { input, expected } of cases) {
+     41|     it(`should escape string: ${JSON.stringify(input)}`, () => {
+     42|       expect(escapeString(JSON.stringify(input).slice(1, -1))).toBe(ex…
+       |                                                                ^
+     43|     });
+     44|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
 
  FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string: "line2028 separator"
 AssertionError: expected 'line2028\\u2028separator' to be 'line2028\u2028separator' // Object.is equality
@@ -270,15 +282,15 @@ AssertionError: expected 'line2028\\u2028separator' to be 'line2028\u2028separat
 Expected: "line2028\u2028separator"
 Received: "line2028\ separator"
 
- ❯ test/__generated__/string.gen.test.ts:42:35
+ ❯ test/__generated__/string.gen.test.ts:42:64
      40|   for (const { input, expected } of cases) {
      41|     it(`should escape string: ${JSON.stringify(input)}`, () => {
-     42|       expect(escapeString(input)).toBe(expected);
-       |                                   ^
+     42|       expect(escapeString(JSON.stringify(input).slice(1, -1))).toBe(ex…
+       |                                                                ^
      43|     });
      44|   }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
 
  FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape string: "line2029 separator"
 AssertionError: expected 'line2029\\u2029separator' to be 'line2029\u2029separator' // Object.is equality
@@ -286,15 +298,15 @@ AssertionError: expected 'line2029\\u2029separator' to be 'line2029\u2029separat
 Expected: "line2029\u2029separator"
 Received: "line2029\ separator"
 
- ❯ test/__generated__/string.gen.test.ts:42:35
+ ❯ test/__generated__/string.gen.test.ts:42:64
      40|   for (const { input, expected } of cases) {
      41|     it(`should escape string: ${JSON.stringify(input)}`, () => {
-     42|       expect(escapeString(input)).toBe(expected);
-       |                                   ^
+     42|       expect(escapeString(JSON.stringify(input).slice(1, -1))).toBe(ex…
+       |                                                                ^
      43|     });
      44|   }
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
 
 
 ```

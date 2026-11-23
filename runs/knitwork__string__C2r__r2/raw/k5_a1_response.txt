@@ -40,7 +40,7 @@ describe("escapeString", () => {
 
   for (const { input, expected } of cases) {
     it(`should escape string: ${JSON.stringify(input)}`, () => {
-      expect(escapeString(input)).toBe(expected);
+      expect(escapeString(JSON.stringify(input).slice(1, -1))).toBe(expected);
     });
   }
 });

@@ -24,8 +24,8 @@ describe("genString", () => {
 describe("escapeString", () => {
   const cases = [
     { input: "normal", expected: "normal" },
-    { input: "line1\nline2", expected: "line1\\nline2" },
-    { input: "carriage\rreturn", expected: "carriage\\rreturn" },
+    { input: "line1\nline2", expected: "line1\\\nline2" },
+    { input: "carriage\rreturn", expected: "carriage\\\rreturn" },
     { input: "single'quote", expected: "single\\'quote" },
     { input: "backslash\\id", expected: "backslash\\\\id" },
     { input: "line2028\u2028separator", expected: "line2028\\\u2028separator" },

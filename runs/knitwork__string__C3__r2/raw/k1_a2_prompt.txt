@@ -168,7 +168,7 @@ describe("escapeString", () => {
   it("should escape newlines and carriage returns", () => {
     const input = "line1\nline2\rline3";
     const result = escapeString(input);
-    expect(result).toBe("line1\\\nline2\\\rline3");
+    expect(result).toBe("line1\\nline2\\rline3");
   });
 
   it("should escape single quotes", () => {
@@ -180,7 +180,7 @@ describe("escapeString", () => {
   it("should escape unicode line separators", () => {
     const input = "line\u2028separator";
     const result = escapeString(input);
-    expect(result).toBe("line\u2028separator");
+    expect(result).toBe("line\\u2028separator");
   });
 });
 
@@ -217,7 +217,7 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (15 tests | 2 failed) 8ms
+ ❯ test/__generated__/string.gen.test.ts (15 tests | 3 failed) 8ms
      ✓ should generate a double quoted string by default 1ms
      ✓ should generate a single quoted string when singleQuotes is true 0ms
      ✓ should escape double quotes when using double quotes 0ms
@@ -226,7 +226,7 @@ Problems:
      ✓ should handle empty string with single quotes 0ms
      ✓ should return the original string if no escapes are needed 0ms
      ✓ should escape backslashes 0ms
-     ✓ should escape newlines and carriage returns 0ms
+     × should escape newlines and carriage returns 1ms
      ✓ should escape single quotes 0ms
      × should escape unicode line separators 1ms
      ✓ should return the name as is if it is a normal identifier 0ms
@@ -235,13 +235,13 @@ Problems:
      ✓ should replace non-word characters with underscore and their character code 0ms
 
  Test Files  1 failed (1)
-      Tests  2 failed | 13 passed (15)
-   Start at  23:47:01
-   Duration  127ms (transform 26ms, setup 0ms, collect 34ms, tests 8ms, environment 0ms, prepare 3ms)
+      Tests  3 failed | 12 passed (15)
+   Start at  00:02:45
+   Duration  131ms (transform 25ms, setup 0ms, collect 33ms, tests 8ms, environment 0ms, prepare 3ms)
 
 
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  test/__generated__/string.gen.test.ts > genString > should escape single quotes and handle double quotes when using single quotes
 AssertionError: expected '\'hello \\'world\\' and \\"universe\\…' to be '\'hello \\'world\\' and \"universe\"\'' // Object.is equality
@@ -257,23 +257,43 @@ Received: "'hello \'world\' and \\"universe\\"'"
      27|   });
      28| 
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape newlines and carriage returns
+AssertionError: expected 'line1\\nline2\\rline3' to be 'line1\nline2\rline3' // Object.is equality
+
+- Expected
++ Received
+
+- line1\nline2\rline3
++ line1\
++ line2\line3
+
+ ❯ test/__generated__/string.gen.test.ts:56:20
+     54|     const input = "line1\nline2\rline3";
+     55|     const result = escapeString(input);
+     56|     expect(result).toBe("line1\\nline2\\rline3");
+       |                    ^
+     57|   });
+     58| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
 
  FAIL  test/__generated__/string.gen.test.ts > escapeString > should escape unicode line separators
 AssertionError: expected 'line\\u2028separator' to be 'line\u2028separator' // Object.is equality
 
-Expected: "line separator"
+Expected: "line\u2028separator"
 Received: "line\ separator"
 
  ❯ test/__generated__/string.gen.test.ts:68:20
      66|     const input = "line\u2028separator";
      67|     const result = escapeString(input);
-     68|     expect(result).toBe("line\u2028separator");
+     68|     expect(result).toBe("line\\u2028separator");
        |                    ^
      69|   });
      70| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
 
 
 ```

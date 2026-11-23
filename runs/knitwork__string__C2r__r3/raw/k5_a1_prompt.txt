@@ -178,7 +178,7 @@ Problems:
 
  RUN  v4.0.8 /home/runner/work/_temp/knitwork
 
- ❯ test/__generated__/string.gen.test.ts (22 tests | 5 failed) 9ms
+ ❯ test/__generated__/string.gen.test.ts (22 tests | 5 failed) 13ms
      ✓ should generate string for "hello" with options {} 1ms
      ✓ should generate string for "hello" with options {"singleQuotes":true} 0ms
      ✓ should generate string for "it's fine" with options {} 0ms
@@ -186,14 +186,14 @@ Problems:
      ✓ should generate string for "" with options {} 0ms
      ✓ should generate string for "" with options {"singleQuotes":true} 0ms
      ✓ should generate string for "line1\nline2" with options {} 0ms
-     × should generate string for "line1\nline2" with options {"singleQuotes":true} 4ms
+     × should generate string for "line1\nline2" with options {"singleQuotes":true} 5ms
      ✓ should escape string "normal" 0ms
-     × should escape string "line1\nline2" 1ms
-     × should escape string "carriage\rreturn" 0ms
+     × should escape string "line1\nline2" 2ms
+     × should escape string "carriage\rreturn" 1ms
      ✓ should escape string "single'quote" 0ms
      ✓ should escape string "backslash\\id" 0ms
-     × should escape string "line2028 separator" 0ms
-     × should escape string "line2029 separator" 0ms
+     × should escape string "line2028 separator" 1ms
+     × should escape string "line2029 separator" 1ms
      ✓ should escape string "" 0ms
      ✓ should generate safe variable name for "foo" 0ms
      ✓ should generate safe variable name for "const" 0ms
@@ -204,8 +204,8 @@ Problems:
 
  Test Files  1 failed (1)
       Tests  5 failed | 17 passed (22)
-   Start at  23:45:08
-   Duration  136ms (transform 25ms, setup 0ms, collect 34ms, tests 9ms, environment 0ms, prepare 3ms)
+   Start at  00:01:15
+   Duration  193ms (transform 34ms, setup 0ms, collect 47ms, tests 13ms, environment 0ms, prepare 4ms)
 
 
 
