@@ -1,0 +1,423 @@
+{
+  "schema_version": "0.1",
+  "run_id": "defu__defu__C3__r3",
+  "started_at": "2026-11-23T02:26:22.072Z",
+  "finished_at": "2026-11-23T02:28:46.611Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "defu",
+    "repo": "unjs/defu",
+    "commit": "82632b66f5914e9946edce300e10633a3d5c0cb7",
+    "license": "MIT",
+    "module_path": "src/defu.ts",
+    "module_loc": 71,
+    "mutants_total": 67,
+    "human_test_files": [
+      "test/defu.test.ts"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.6",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "9f69cf6e7e2cc5929c8426f548e3d554b3a2a3679a28ed39688cd56e2359f980",
+    "git_sha_agent": "b918481772c1b9d3b0b2241ca0b21efd01b2d355"
+  },
+  "memorization": {
+    "probe_similarity": 0.05,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 80,
+        "ms_feedback": 81.0811,
+        "ms_all": 80.597,
+        "ms_covered": 81.8182
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 24,
+        "survived": 6,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 28,
+        "survived": 6,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 13,
+        "n_asserts": 14,
+        "sha256": "dfc5f57a7b4d194690ee25a9938654e39de86b69fb8fee5f7ae55ab7412e51d6"
+      },
+      "prompt_file": "runs/defu__defu__C3__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C3__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 1,
+        "repair_calls": 0,
+        "tokens_in": 1323,
+        "tokens_out": 1210,
+        "usd_ref": 0.000616,
+        "wall_s": 14.77,
+        "stryker_s": 8.96
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 90,
+        "ms_feedback": 91.8919,
+        "ms_all": 91.0448,
+        "ms_covered": 92.4242
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 27,
+        "survived": 3,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 32,
+        "survived": 2,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 7,
+      "survivor_ids": [
+        "src/defu.ts:5:61-5:64:StringLiteral:\"\"",
+        "src/defu.ts:6:33-8:4:BlockStatement:{}",
+        "src/defu.ts:6:7-6:31:ConditionalExpression:false",
+        "src/defu.ts:13:17-13:28:StringLiteral:\"\"",
+        "src/defu.ts:33:9-33:60:ArithmeticOperator:(namespace ? `${namespace}.` : \"\") - key.toString()",
+        "src/defu.ts:48:45-48:47:StringLiteral:\"Stryker was here!\"",
+        "src/defu.ts:65:37-65:71:ConditionalExpression:true"
+      ],
+      "tests": {
+        "n_tests": 14,
+        "n_asserts": 15,
+        "sha256": "e5b67dce6a5b2a08c12a38db966bcecd2ba3f813148a069705149c3e282946af"
+      },
+      "prompt_file": "runs/defu__defu__C3__r3/raw/k1_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C3__r3/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 2,
+        "repair_calls": 0,
+        "tokens_in": 4369,
+        "tokens_out": 2578,
+        "usd_ref": 0.001468,
+        "wall_s": 29.46,
+        "stryker_s": 17.97
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 90,
+        "ms_feedback": 91.8919,
+        "ms_all": 91.0448,
+        "ms_covered": 92.4242
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 27,
+        "survived": 3,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 32,
+        "survived": 2,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 3,
+      "survivor_ids": [
+        "src/defu.ts:5:61-5:64:StringLiteral:\"\"",
+        "src/defu.ts:13:17-13:28:StringLiteral:\"\"",
+        "src/defu.ts:65:37-65:71:ConditionalExpression:true"
+      ],
+      "tests": {
+        "n_tests": 14,
+        "n_asserts": 16,
+        "sha256": "d2585fdbb27b6f1d34a8667f0c46c44451d27827e3c4f084715d2a337f4d7305"
+      },
+      "prompt_file": "runs/defu__defu__C3__r3/raw/k2_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C3__r3/raw/k2_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 1,
+        "tokens_in": 10261,
+        "tokens_out": 5450,
+        "usd_ref": 0.003206,
+        "wall_s": 53.35,
+        "stryker_s": 26.87
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 90,
+        "ms_feedback": 91.8919,
+        "ms_all": 91.0448,
+        "ms_covered": 92.4242
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 27,
+        "survived": 3,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 32,
+        "survived": 2,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 3,
+      "survivor_ids": [
+        "src/defu.ts:5:61-5:64:StringLiteral:\"\"",
+        "src/defu.ts:13:17-13:28:StringLiteral:\"\"",
+        "src/defu.ts:65:37-65:71:ConditionalExpression:true"
+      ],
+      "tests": {
+        "n_tests": 14,
+        "n_asserts": 15,
+        "sha256": "b5fcef884bc5a5b173bf4bb00f1cbb3424e053882be31b5c405d0a239cf99c44"
+      },
+      "prompt_file": "runs/defu__defu__C3__r3/raw/k3_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C3__r3/raw/k3_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 7,
+        "repair_calls": 3,
+        "tokens_in": 19063,
+        "tokens_out": 9591,
+        "usd_ref": 0.005743,
+        "wall_s": 86.8,
+        "stryker_s": 35.84
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 93.3333,
+        "ms_feedback": 97.2973,
+        "ms_all": 95.5224,
+        "ms_covered": 96.9697
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 28,
+        "survived": 2,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 34,
+        "survived": 0,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 3,
+      "survivor_ids": [
+        "src/defu.ts:5:61-5:64:StringLiteral:\"\"",
+        "src/defu.ts:13:17-13:28:StringLiteral:\"\"",
+        "src/defu.ts:65:37-65:71:ConditionalExpression:true"
+      ],
+      "tests": {
+        "n_tests": 17,
+        "n_asserts": 18,
+        "sha256": "0f8dedfc894726d6ccc04a370705d52867289dd577cc2391a91cad6dcdb8c987"
+      },
+      "prompt_file": "runs/defu__defu__C3__r3/raw/k4_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C3__r3/raw/k4_a0_response.txt",
+      "best_k_so_far": 4,
+      "cost_cumulative": {
+        "calls": 10,
+        "repair_calls": 5,
+        "tokens_in": 28411,
+        "tokens_out": 14650,
+        "usd_ref": 0.008701,
+        "wall_s": 120.14,
+        "stryker_s": 44.82
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 93.3333,
+        "ms_feedback": 97.2973,
+        "ms_all": 95.5224,
+        "ms_covered": 96.9697
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 28,
+        "survived": 2,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 34,
+        "survived": 0,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 1,
+      "survivor_ids": [
+        "src/defu.ts:5:61-5:64:StringLiteral:\"\""
+      ],
+      "tests": {
+        "n_tests": 17,
+        "n_asserts": 19,
+        "sha256": "0a960f770cf72876e48db4982985a5838cee65276d4e6eb85513603509e7f6a5"
+      },
+      "prompt_file": "runs/defu__defu__C3__r3/raw/k5_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C3__r3/raw/k5_a0_response.txt",
+      "best_k_so_far": 4,
+      "cost_cumulative": {
+        "calls": 12,
+        "repair_calls": 6,
+        "tokens_in": 34851,
+        "tokens_out": 18087,
+        "usd_ref": 0.01072,
+        "wall_s": 144.54,
+        "stryker_s": 53.85
+      }
+    }
+  ],
+  "selected_iteration": 4,
+  "final": {
+    "scores": {
+      "ms_eval": 93.3333,
+      "ms_feedback": 97.2973,
+      "ms_all": 95.5224,
+      "ms_covered": 96.9697
+    },
+    "coverage": {
+      "line_cov": 100,
+      "branch_cov": 100
+    },
+    "cost": {
+      "calls": 12,
+      "repair_calls": 6,
+      "tokens_in": 34851,
+      "tokens_out": 18087,
+      "usd_ref": 0.01072,
+      "wall_s": 144.54,
+      "stryker_s": 53.85
+    },
+    "tests": {
+      "n_tests": 17,
+      "n_asserts": 18,
+      "sha256": "0f8dedfc894726d6ccc04a370705d52867289dd577cc2391a91cad6dcdb8c987"
+    },
+    "gap_cov_ms": 4.4776,
+    "valid_rate": 1,
+    "tokens_per_pp": 3970.36
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/defu__defu__C3__r3/raw"
+  }
+}

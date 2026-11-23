@@ -1,0 +1,107 @@
+import { describe, it, expect } from "vitest";
+import { defu, createDefu, defuFn, defuArrayFn } from "../../src/defu";
+
+describe("defu", () => {
+  it("should merge basic objects", () => {
+    const base = { a: 1, b: 2 };
+    const defaults = { b: 3, c: 4 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 2, c: 4 });
+  });
+
+  it("should handle multiple arguments", () => {
+    const result = defu({ a: 1 }, { b: 2 }, { c: 3 }, { a: 10 });
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should concatenate arrays", () => {
+    const base = { arr: [3, 4] };
+    const defaults = { arr: [1, 2] };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ arr: [3, 4, 1, 2] });
+  });
+
+  it("should recursively merge nested objects", () => {
+    const base = { nested: { a: 1 } };
+    const defaults = { nested: { b: 2, a: 99 } };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ nested: { a: 1, b: 2 } });
+  });
+
+  it("should ignore null and undefined values in base", () => {
+    const base = { a: null, b: undefined, c: 3 };
+    const defaults = { a: 1, b: 2, c: 4 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should ignore __proto__ and constructor keys", () => {
+    const base = JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"prototype": {"polluted": true}}, "a": 1}');
+    const defaults = { a: 2, b: 3 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 3 });
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
+  it("should handle non-plain object defaults", () => {
+    const base = { a: 1 };
+    const defaults = null;
+    const result = defu(base, defaults as any);
+    expect(result).toEqual({ a: 1 });
+  });
+});
+
+describe("createDefu", () => {
+  it("should allow creating custom defu instances with a custom merger", () => {
+    const customDefu = createDefu((object, key, currentValue) => {
+      if (key === "special") {
+        object[key] = `custom_${currentValue}`;
+        return true;
+      }
+    });
+
+    const result = customDefu({ special: "val" }, { special: "default" });
+    expect(result).toEqual({ special: "custom_val" });
+  });
+});
+
+describe("defuFn", () => {
+  it("should invoke function values with current object value", () => {
+    const base = {
+      callback: (val: number) => val + 10,
+    };
+    const defaults = {
+      callback: 5,
+    };
+    const result = defuFn(base, defaults);
+    expect(result).toEqual({ callback: 15 });
+  });
+
+  it("should overwrite non-function values normally", () => {
+    const base = { a: 10 };
+    const defaults = { a: 5 };
+    const result = defuFn(base, defaults);
+    expect(result).toEqual({ a: 10 });
+  });
+});
+
+describe("defuArrayFn", () => {
+  it("should invoke function if default/object value is an array", () => {
+    const base = {
+      items: (arr: number[]) => [...arr, 3, 4],
+    };
+    const defaults = {
+      items: [1, 2],
+    };
+    const result = defuArrayFn(base, defaults);
+    expect(result).toEqual({ items: [1, 2, 3, 4] });
+  });
+
+  it("should not invoke function if target is not an array", () => {
+    const fn = (val: any) => val;
+    const base = { items: fn };
+    const defaults = { items: "not-an-array" };
+    const result = defuArrayFn(base, defaults);
+    expect(result).toEqual({ items: fn });
+  });
+});

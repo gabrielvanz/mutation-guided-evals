@@ -1,148 +1,84 @@
 import { describe, it, expect } from "vitest";
-import defu, {
-  createDefu,
-  defu as namedDefu,
-  defuFn,
-  defuArrayFn,
-} from "../../src/defu";
+import defu, { createDefu, defuFn, defuArrayFn } from "../../src/defu";
 
 describe("defu", () => {
-  it("exports default and named defu identically", () => {
-    expect(defu).toBe(namedDefu);
-  });
-
-  it("merges basic objects with base taking precedence over defaults", () => {
-    const result = defu({ a: 1 }, { a: 2, b: 3 });
+  it("should assign default values when properties are missing", () => {
+    const base = { a: 1 };
+    const defaults = { a: 2, b: 3 };
+    const result = defu(base, defaults);
     expect(result).toEqual({ a: 1, b: 3 });
   });
 
-  it("ignores null and undefined values in base object", () => {
-    const result = defu(
-      { a: null, b: undefined, c: 0, d: false, e: "" },
-      { a: "defaultA", b: "defaultB", c: 1, d: true, e: "defaultE" },
-    );
-    expect(result).toEqual({
-      a: "defaultA",
-      b: "defaultB",
-      c: 0,
-      d: false,
-      e: "",
-    });
+  it("should merge nested plain objects recursively", () => {
+    const base = { user: { name: "John" } };
+    const defaults = { user: { name: "Default", age: 30 } };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ user: { name: "John", age: 30 } });
   });
 
-  it("handles non-plain-object defaults by treating them as empty objects", () => {
-    expect(defu({ a: 1 }, null as any)).toEqual({ a: 1 });
-    expect(defu({ a: 1 }, undefined as any)).toEqual({ a: 1 });
-    expect(defu({ a: 1 }, "string" as any)).toEqual({ a: 1 });
+  it("should concatenate arrays", () => {
+    const base = { tags: ["b", "c"] };
+    const defaults = { tags: ["a"] };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ tags: ["b", "c", "a"] });
   });
 
-  it("recursively merges nested plain objects", () => {
-    const result = defu(
-      { nested: { a: 1, deep: { x: 10 } } },
-      { nested: { a: 2, b: 3, deep: { x: 20, y: 30 } } },
-    );
-    expect(result).toEqual({
-      nested: { a: 1, b: 3, deep: { x: 10, y: 30 } },
-    });
-  });
-
-  it("concatenates arrays with base items first", () => {
-    const result = defu({ arr: [1, 2] }, { arr: [3, 4] });
-    expect(result).toEqual({ arr: [1, 2, 3, 4] });
-  });
-
-  it("supports multiple arguments in priority order", () => {
-    const result = defu({ a: 1 }, { a: 2, b: 2 }, { a: 3, b: 3, c: 3 });
+  it("should support multiple arguments", () => {
+    const result = defu({ a: 1 }, { b: 2 }, { c: 3, a: 10 });
     expect(result).toEqual({ a: 1, b: 2, c: 3 });
   });
 
-  it("skips __proto__ and constructor keys", () => {
-    const malicious = JSON.parse('{"__proto__": {"polluted": true}}');
-    const result = defu(malicious, { safe: true });
-    expect(result).toEqual({ safe: true });
-    expect(({} as any).polluted).toBeUndefined();
-
-    const withConstructor = { constructor: { prototype: { polluted: true } } };
-    const result2 = defu(withConstructor, { safe: true });
-    expect(result2).toEqual({ safe: true });
-  });
-
-  it("does not mutate input objects", () => {
-    const base = { a: 1, nested: { x: 1 } };
-    const defaults = { a: 2, b: 3, nested: { x: 2, y: 2 } };
+  it("should ignore null and undefined values in base object", () => {
+    const base = { a: null, b: undefined, c: 2 };
+    const defaults = { a: 10, b: 20, c: 30 };
     const result = defu(base, defaults);
-
-    expect(result).toEqual({ a: 1, b: 3, nested: { x: 1, y: 2 } });
-    expect(base).toEqual({ a: 1, nested: { x: 1 } });
-    expect(defaults).toEqual({ a: 2, b: 3, nested: { x: 2, y: 2 } });
+    expect(result).toEqual({ a: 10, b: 20, c: 2 });
   });
-});
 
-describe("createDefu", () => {
-  it("uses custom merger when it returns true", () => {
-    const customDefu = createDefu((obj, key, value) => {
-      if (typeof obj[key] === "number" && typeof value === "number") {
-        obj[key] += value;
+  it("should ignore prototype pollution keys", () => {
+    const base = JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"prototype": {"polluted": true}}, "a": 1}');
+    const defaults = { a: 2, b: 3 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 3 });
+    expect({}.polluted).toBeUndefined();
+  });
+
+  it("should handle non-plain object defaults gracefully", () => {
+    const base = { a: 1 };
+    const result = defu(base, null as any);
+    expect(result).toEqual({ a: 1 });
+  });
+
+  it("should support createDefu with custom merger", () => {
+    const customDefu = createDefu((object, key, value) => {
+      if (key === "custom") {
+        object[key] = "merged-" + value;
         return true;
       }
     });
-
-    const result = customDefu({ count: 5, name: "a" }, { count: 10, name: "b" });
-    expect(result).toEqual({ count: 15, name: "a" });
+    const result = customDefu({ custom: "base" }, { custom: "default" });
+    expect(result).toEqual({ custom: "merged-base" });
   });
 
-  it("falls back to default merge when custom merger returns falsy", () => {
-    const customDefu = createDefu(() => false);
-    const result = customDefu({ a: 1 }, { a: 2, b: 3 });
-    expect(result).toEqual({ a: 1, b: 3 });
+  it("should support defuFn with function merging", () => {
+    const base = {
+      val: (existing: number) => existing + 5,
+    };
+    const defaults = {
+      val: 10,
+    };
+    const result = defuFn(base, defaults);
+    expect(result).toEqual({ val: 15 });
   });
 
-  it("passes namespace to custom merger for nested objects", () => {
-    const namespaces: string[] = [];
-    const customDefu = createDefu((_obj, key, _value, namespace) => {
-      namespaces.push(`${namespace}:${String(key)}`);
-      return false;
-    });
-
-    customDefu(
-      { top: { mid: { leaf: 1 } } },
-      { top: { mid: { leaf: 2 } } },
-    );
-
-    expect(namespaces).toContain(":top");
-    expect(namespaces).toContain("top:mid");
-    expect(namespaces).toContain("top.mid:leaf");
-  });
-});
-
-describe("defuFn", () => {
-  it("invokes function in base with default value when default is defined", () => {
-    const result = defuFn(
-      { count: (val: number) => val * 2 },
-      { count: 5 },
-    );
-    expect(result).toEqual({ count: 10 });
-  });
-
-  it("keeps function as-is when default value is undefined", () => {
-    const fn = (val: number) => val * 2;
-    const result = defuFn({ count: fn }, {});
-    expect(result.count).toBe(fn);
-  });
-});
-
-describe("defuArrayFn", () => {
-  it("invokes function in base when default value is an array", () => {
-    const result = defuArrayFn(
-      { items: (arr: string[]) => [...arr, "c"] },
-      { items: ["a", "b"] },
-    );
+  it("should support defuArrayFn with array function merging", () => {
+    const base = {
+      items: (existing: string[]) => [...existing, "c"],
+    };
+    const defaults = {
+      items: ["a", "b"],
+    };
+    const result = defuArrayFn(base, defaults);
     expect(result).toEqual({ items: ["a", "b", "c"] });
-  });
-
-  it("keeps function as-is when default value is not an array", () => {
-    const fn = (val: number) => val * 2;
-    const result = defuArrayFn({ count: fn }, { count: 5 });
-    expect(result.count).toBe(fn);
   });
 });

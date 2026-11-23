@@ -1,0 +1,401 @@
+{
+  "schema_version": "0.1",
+  "run_id": "defu__defu__C2r__r2",
+  "started_at": "2026-11-23T02:24:00.762Z",
+  "finished_at": "2026-11-23T02:25:24.981Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "defu",
+    "repo": "unjs/defu",
+    "commit": "82632b66f5914e9946edce300e10633a3d5c0cb7",
+    "license": "MIT",
+    "module_path": "src/defu.ts",
+    "module_loc": 71,
+    "mutants_total": 67,
+    "human_test_files": [
+      "test/defu.test.ts"
+    ]
+  },
+  "condition": "C2r",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.6",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "9f69cf6e7e2cc5929c8426f548e3d554b3a2a3679a28ed39688cd56e2359f980",
+    "git_sha_agent": "b918481772c1b9d3b0b2241ca0b21efd01b2d355"
+  },
+  "memorization": {
+    "probe_similarity": 0.05,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 76.6667,
+        "ms_feedback": 75.6757,
+        "ms_all": 76.1194,
+        "ms_covered": 78.4615
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 93.93
+      },
+      "mutants_eval": {
+        "killed": 23,
+        "survived": 6,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 26,
+        "survived": 8,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 11,
+        "sha256": "1b8bb10b4969c2b0e59af29ddb226910229a01b35a17235d2ecba2e0307a9f1a"
+      },
+      "prompt_file": "runs/defu__defu__C2r__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C2r__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 3740,
+        "tokens_out": 2033,
+        "usd_ref": 0.001187,
+        "wall_s": 20.29,
+        "stryker_s": 6.24
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 73.3333,
+        "ms_feedback": 72.973,
+        "ms_all": 73.1343,
+        "ms_covered": 75.3846
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 90.9
+      },
+      "mutants_eval": {
+        "killed": 22,
+        "survived": 7,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 25,
+        "survived": 9,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 11,
+        "sha256": "cd06ca2ea11b7152629dcb21768a5f38bfd7e995287d7f03478adc5c59cd5764"
+      },
+      "prompt_file": "runs/defu__defu__C2r__r2/raw/k1_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C2r__r2/raw/k1_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 1,
+        "tokens_in": 5063,
+        "tokens_out": 2895,
+        "usd_ref": 0.001664,
+        "wall_s": 31.1,
+        "stryker_s": 12.76
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 76.6667,
+        "ms_feedback": 75.6757,
+        "ms_all": 76.1194,
+        "ms_covered": 78.4615
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 93.93
+      },
+      "mutants_eval": {
+        "killed": 23,
+        "survived": 6,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 26,
+        "survived": 8,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 11,
+        "n_asserts": 12,
+        "sha256": "88d56d8028bcbc481b0a26adb5a7ebf031bda537cf063e568f61743a45eac835"
+      },
+      "prompt_file": "runs/defu__defu__C2r__r2/raw/k2_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C2r__r2/raw/k2_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 1,
+        "tokens_in": 6386,
+        "tokens_out": 3989,
+        "usd_ref": 0.002234,
+        "wall_s": 42.11,
+        "stryker_s": 18.84
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 80,
+        "ms_feedback": 81.0811,
+        "ms_all": 80.597,
+        "ms_covered": 83.0769
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 96.96
+      },
+      "mutants_eval": {
+        "killed": 24,
+        "survived": 5,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 28,
+        "survived": 6,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 11,
+        "n_asserts": 12,
+        "sha256": "b420eac0fa05cc5cb5de036a1c614029b3297d59a6cc5d0a986135e02df722e6"
+      },
+      "prompt_file": "runs/defu__defu__C2r__r2/raw/k3_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C2r__r2/raw/k3_a0_response.txt",
+      "best_k_so_far": 3,
+      "cost_cumulative": {
+        "calls": 5,
+        "repair_calls": 1,
+        "tokens_in": 7709,
+        "tokens_out": 5114,
+        "usd_ref": 0.002817,
+        "wall_s": 53.2,
+        "stryker_s": 24.97
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 80,
+        "ms_feedback": 81.0811,
+        "ms_all": 80.597,
+        "ms_covered": 83.0769
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 96.96
+      },
+      "mutants_eval": {
+        "killed": 24,
+        "survived": 5,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 28,
+        "survived": 6,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 12,
+        "n_asserts": 13,
+        "sha256": "31f499d2d61b86b607185df590102952dac3457e7994864ce4bb81fe3b9ba01e"
+      },
+      "prompt_file": "runs/defu__defu__C2r__r2/raw/k4_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C2r__r2/raw/k4_a0_response.txt",
+      "best_k_so_far": 3,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 1,
+        "tokens_in": 9032,
+        "tokens_out": 6145,
+        "usd_ref": 0.003361,
+        "wall_s": 64.12,
+        "stryker_s": 31.33
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 73.3333,
+        "ms_feedback": 72.973,
+        "ms_all": 73.1343,
+        "ms_covered": 75.3846
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 90.9
+      },
+      "mutants_eval": {
+        "killed": 22,
+        "survived": 7,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 25,
+        "survived": 9,
+        "no_coverage": 1,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 11,
+        "sha256": "644817468e2fa818726365e7dea4b079930c267033edabc32ee42946a0c3d03a"
+      },
+      "prompt_file": "runs/defu__defu__C2r__r2/raw/k5_a0_prompt.txt",
+      "response_file": "runs/defu__defu__C2r__r2/raw/k5_a0_response.txt",
+      "best_k_so_far": 3,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 2,
+        "tokens_in": 12774,
+        "tokens_out": 8123,
+        "usd_ref": 0.004527,
+        "wall_s": 84.22,
+        "stryker_s": 37.61
+      }
+    }
+  ],
+  "selected_iteration": 3,
+  "final": {
+    "scores": {
+      "ms_eval": 80,
+      "ms_feedback": 81.0811,
+      "ms_all": 80.597,
+      "ms_covered": 83.0769
+    },
+    "coverage": {
+      "line_cov": 100,
+      "branch_cov": 96.96
+    },
+    "cost": {
+      "calls": 8,
+      "repair_calls": 2,
+      "tokens_in": 12774,
+      "tokens_out": 8123,
+      "usd_ref": 0.004527,
+      "wall_s": 84.22,
+      "stryker_s": 37.61
+    },
+    "tests": {
+      "n_tests": 11,
+      "n_asserts": 12,
+      "sha256": "b420eac0fa05cc5cb5de036a1c614029b3297d59a6cc5d0a986135e02df722e6"
+    },
+    "gap_cov_ms": 19.403,
+    "valid_rate": 1,
+    "tokens_per_pp": 6269.16
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/defu__defu__C2r__r2/raw"
+  }
+}

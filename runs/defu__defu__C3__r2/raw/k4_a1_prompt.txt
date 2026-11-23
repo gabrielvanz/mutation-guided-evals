@@ -1,0 +1,387 @@
+The Vitest test file below for `src/defu.ts` (import path: `../../src/defu`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/defu.ts`:
+```ts
+import { isPlainObject } from "./_utils";
+import type { Merger, DefuFn as DefuFunction, DefuInstance } from "./types";
+
+// Base function to apply defaults
+function _defu<T>(baseObject: T, defaults: any, namespace = ".", merger?: Merger): T {
+  if (!isPlainObject(defaults)) {
+    return _defu(baseObject, {}, namespace, merger);
+  }
+
+  const object = { ...defaults };
+
+  for (const key of Object.keys(baseObject as Record<string, any>)) {
+    if (key === "__proto__" || key === "constructor") {
+      continue;
+    }
+
+    const value = (baseObject as Record<string, any>)[key];
+
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    if (merger && merger(object, key, value, namespace)) {
+      continue;
+    }
+
+    if (Array.isArray(value) && Array.isArray(object[key])) {
+      object[key] = [...value, ...object[key]];
+    } else if (isPlainObject(value) && isPlainObject(object[key])) {
+      object[key] = _defu(
+        value,
+        object[key],
+        (namespace ? `${namespace}.` : "") + key.toString(),
+        merger,
+      );
+    } else {
+      object[key] = value;
+    }
+  }
+
+  return object;
+}
+
+// Create defu wrapper with optional merger and multi arg support
+export function createDefu(merger?: Merger): DefuFunction {
+  return (...arguments_) =>
+    // eslint-disable-next-line unicorn/no-array-reduce
+    arguments_.reduce((p, c) => _defu(p, c, "", merger), {} as any);
+}
+
+// Standard version
+export const defu = createDefu() as DefuInstance;
+export default defu;
+
+// Custom version with function merge support
+export const defuFn = createDefu((object, key, currentValue) => {
+  if (object[key] !== undefined && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+// Custom version with function merge support only for defined arrays
+export const defuArrayFn = createDefu((object, key, currentValue) => {
+  if (Array.isArray(object[key]) && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+export type { Defu, DefuFn, DefuInstance } from "./types";
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import { defu, createDefu, defuFn, defuArrayFn } from "../../src/defu";
+
+describe("defu", () => {
+  it("should merge basic objects with defaults", () => {
+    const base = { a: 1, c: 3 };
+    const defaults = { a: 2, b: 2 };
+    const result = defu(base, defaults);
+
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should handle multiple arguments in correct priority order", () => {
+    const result = defu({ a: 1 }, { a: 2, b: 2 }, { b: 3, c: 3 });
+
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should ignore null and undefined values in base object", () => {
+    const base = { a: null, b: undefined, c: 1 };
+    const defaults = { a: 10, b: 20, c: 30 };
+    const result = defu(base, defaults);
+
+    expect(result).toEqual({ a: 10, b: 20, c: 1 });
+  });
+
+  it("should recursively merge plain objects", () => {
+    const base = {
+      nested: { a: 1, c: 3 }
+    };
+    const defaults = {
+      nested: { a: 2, b: 2 }
+    };
+    const result = defu(base, defaults);
+
+    expect(result).toEqual({
+      nested: { a: 1, b: 2, c: 3 }
+    });
+  });
+
+  it("should concatenate arrays", () => {
+    const base = { arr: [3, 4] };
+    const defaults = { arr: [1, 2] };
+    const result = defu(base, defaults);
+
+    expect(result).toEqual({ arr: [3, 4, 1, 2] });
+  });
+
+  it("should protect against prototype pollution", () => {
+    const base = JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"prototype": {"polluted": true}}, "a": 1}');
+    const defaults = { a: 2 };
+    const result = defu(base, defaults);
+
+    expect(result).toEqual({ a: 1 });
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
+  it("should explicitly prevent prototype pollution via __proto__ key when namespace is passed", () => {
+    const base = JSON.parse('{"__proto__": {"polluted": true}}');
+    const defaults = { a: 2 };
+    const result = defu(base, defaults, "custom.namespace");
+
+    expect(result).toEqual({ a: 2 });
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
+  it("should fallback to empty object if defaults is not a plain object", () => {
+    const base = { a: 1 };
+    const result = defu(base, null as any);
+
+    expect(result).toEqual({ a: 1 });
+  });
+
+  it("should fallback to empty object if defaults is an array or primitive", () => {
+    const base = { a: 1 };
+    const result = defu(base, [1, 2, 3] as any);
+
+    expect(result).toEqual({ a: 1 });
+  });
+
+  it("should pass the correct namespace path to custom merger during nested merges", () => {
+    const paths: string[] = [];
+    const custom = createDefu((_object, _key, _value, namespace) => {
+      paths.push(namespace);
+    });
+
+    const base = {
+      level1: {
+        level2: {
+          a: 1
+        }
+      }
+    };
+    const defaults = {
+      level1: {
+        level2: {
+          a: 2
+        }
+      }
+    };
+
+    custom(base, defaults);
+
+    expect(paths).toContain("level1.level2");
+  });
+
+  it("should default namespace to dot in internal recursive calls when namespace parameter is omitted", () => {
+    const namespaces: string[] = [];
+    const custom = createDefu((_object, _key, _value, namespace) => {
+      namespaces.push(namespace);
+    });
+
+    const base = {
+      sub: {
+        val: 1
+      }
+    };
+    const defaults = {
+      sub: {
+        val: 2
+      }
+    };
+
+    // Triggering internal _defu call indirectly with nested objects starting from default namespace
+    custom(base, defaults);
+
+    expect(namespaces).toContain(".sub");
+  });
+});
+
+describe("createDefu", () => {
+  it("should allow custom mergers", () => {
+    const custom = createDefu((object, key, value) => {
+      if (key === "special") {
+        object[key] = `custom_${value}`;
+        return true;
+      }
+    });
+
+    const result = custom({ special: "value" }, { special: "default" });
+
+    expect(result).toEqual({ special: "custom_value" });
+  });
+});
+
+describe("defuFn", () => {
+  it("should call functions when merging existing keys", () => {
+    const base = {
+      callback: (val: number) => val + 1
+    };
+    const defaults = {
+      callback: 10
+    };
+    const result = defuFn(base, defaults);
+
+    expect(result).toEqual({
+      callback: 11
+    });
+  });
+
+  it("should not call functions if key does not exist in object", () => {
+    const base = {};
+    const defaults = {
+      callback: (val: number) => val + 1
+    };
+    const result = defuFn(base, defaults);
+
+    expect(typeof result.callback).toBe("function");
+  });
+
+  it("should not execute function if object has undefined for that key", () => {
+    const base = {
+      callback: undefined
+    };
+    const defaults = {
+      callback: (val: number) => val + 1
+    };
+    const result = defuFn(base, defaults);
+
+    expect(typeof result.callback).toBe("function");
+  });
+
+  it("should not call function if defaults value is not a function even if base key exists", () => {
+    const base = {
+      callback: 10
+    };
+    const defaults = {
+      callback: 20
+    };
+    const result = defuFn(base, defaults);
+
+    expect(result).toEqual({
+      callback: 10
+    });
+  });
+});
+
+describe("defuArrayFn", () => {
+  it("should call functions only when merging defined arrays", () => {
+    const base = {
+      arr: (val: number[]) => [...val, 3]
+    };
+    const defaults = {
+      arr: [1, 2]
+    };
+    const result = defuArrayFn(base, defaults);
+
+    expect(result).toEqual({
+      arr: [1, 2, 3]
+    });
+  });
+
+  it("should not call functions if target is not an array", () => {
+    const base = {
+      arr: (val: string) => `${val}_modified`
+    };
+    const defaults = {
+      arr: "not_an_array"
+    };
+    const result = defuArrayFn(base, defaults);
+
+    expect(typeof result.arr).toBe("function");
+  });
+
+  it("should not call function if target array is undefined", () => {
+    const base = {
+      arr: undefined
+    };
+    const defaults = {
+      arr: (val: number[]) => [...val, 3]
+    };
+    const result = defuArrayFn(base, defaults);
+
+    expect(typeof result.arr).toBe("function");
+  });
+
+  it("should not call function if defaults value is not a function even if base key is an array", () => {
+    const base = {
+      arr: [1, 2]
+    };
+    const defaults = {
+      arr: [3, 4]
+    };
+    const result = defuArrayFn(base, defaults);
+
+    expect(result).toEqual({
+      arr: [1, 2, 3, 4]
+    });
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.6 /home/runner/work/_temp/defu
+
+ ❯ test/__generated__/defu.gen.test.ts (20 tests | 1 failed) 9ms
+     ✓ should merge basic objects with defaults 1ms
+     ✓ should handle multiple arguments in correct priority order 0ms
+     ✓ should ignore null and undefined values in base object 0ms
+     ✓ should recursively merge plain objects 0ms
+     ✓ should concatenate arrays 0ms
+     ✓ should protect against prototype pollution 0ms
+     ✓ should explicitly prevent prototype pollution via __proto__ key when namespace is passed 0ms
+     ✓ should fallback to empty object if defaults is not a plain object 0ms
+     ✓ should fallback to empty object if defaults is an array or primitive 0ms
+     ✓ should pass the correct namespace path to custom merger during nested merges 1ms
+     × should default namespace to dot in internal recursive calls when namespace parameter is omitted 3ms
+     ✓ should allow custom mergers 0ms
+     ✓ should call functions when merging existing keys 0ms
+     ✓ should not call functions if key does not exist in object 0ms
+     ✓ should not execute function if object has undefined for that key 0ms
+     ✓ should not call function if defaults value is not a function even if base key exists 0ms
+     ✓ should call functions only when merging defined arrays 0ms
+     ✓ should not call functions if target is not an array 0ms
+     ✓ should not call function if target array is undefined 0ms
+     ✓ should not call function if defaults value is not a function even if base key is an array 0ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 passed (20)
+   Start at  02:27:01
+   Duration  151ms (transform 36ms, setup 0ms, import 48ms, tests 9ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/defu.gen.test.ts > defu > should default namespace to dot in internal recursive calls when namespace parameter is omitted
+AssertionError: expected [ '', 'sub' ] to include '.sub'
+ ❯ test/__generated__/defu.gen.test.ts:127:24
+    125|     custom(base, defaults);
+    126|
+    127|     expect(namespaces).toContain(".sub");
+       |                        ^
+    128|   });
+    129| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

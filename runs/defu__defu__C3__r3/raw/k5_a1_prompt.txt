@@ -1,0 +1,305 @@
+The Vitest test file below for `src/defu.ts` (import path: `../../src/defu`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/defu.ts`:
+```ts
+import { isPlainObject } from "./_utils";
+import type { Merger, DefuFn as DefuFunction, DefuInstance } from "./types";
+
+// Base function to apply defaults
+function _defu<T>(baseObject: T, defaults: any, namespace = ".", merger?: Merger): T {
+  if (!isPlainObject(defaults)) {
+    return _defu(baseObject, {}, namespace, merger);
+  }
+
+  const object = { ...defaults };
+
+  for (const key of Object.keys(baseObject as Record<string, any>)) {
+    if (key === "__proto__" || key === "constructor") {
+      continue;
+    }
+
+    const value = (baseObject as Record<string, any>)[key];
+
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    if (merger && merger(object, key, value, namespace)) {
+      continue;
+    }
+
+    if (Array.isArray(value) && Array.isArray(object[key])) {
+      object[key] = [...value, ...object[key]];
+    } else if (isPlainObject(value) && isPlainObject(object[key])) {
+      object[key] = _defu(
+        value,
+        object[key],
+        (namespace ? `${namespace}.` : "") + key.toString(),
+        merger,
+      );
+    } else {
+      object[key] = value;
+    }
+  }
+
+  return object;
+}
+
+// Create defu wrapper with optional merger and multi arg support
+export function createDefu(merger?: Merger): DefuFunction {
+  return (...arguments_) =>
+    // eslint-disable-next-line unicorn/no-array-reduce
+    arguments_.reduce((p, c) => _defu(p, c, "", merger), {} as any);
+}
+
+// Standard version
+export const defu = createDefu() as DefuInstance;
+export default defu;
+
+// Custom version with function merge support
+export const defuFn = createDefu((object, key, currentValue) => {
+  if (object[key] !== undefined && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+// Custom version with function merge support only for defined arrays
+export const defuArrayFn = createDefu((object, key, currentValue) => {
+  if (Array.isArray(object[key]) && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+export type { Defu, DefuFn, DefuInstance } from "./types";
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import defu, { createDefu, defuFn, defuArrayFn } from "../../src/defu";
+
+describe("defu", () => {
+  it("should merge basic objects", () => {
+    const base = { a: 1, b: 2 };
+    const defaults = { b: 3, c: 4 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 2, c: 4 });
+  });
+
+  it("should prioritize base object over defaults", () => {
+    const result = defu({ a: 1 }, { a: 2, b: 3 });
+    expect(result).toEqual({ a: 1, b: 3 });
+  });
+
+  it("should handle multiple arguments", () => {
+    const result = defu({ a: 1 }, { b: 2 }, { c: 3, a: 10 });
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should ignore null and undefined values in base", () => {
+    const result = defu({ a: null, b: undefined, c: 1 }, { a: 10, b: 20, c: 30 });
+    expect(result).toEqual({ a: 10, b: 20, c: 1 });
+  });
+
+  it("should handle non-plain-object defaults gracefully by treating them as empty objects", () => {
+    const result = defu({ a: 1, b: 2 }, "not-an-object");
+    expect(result).toEqual({ a: 1, b: 2 });
+  });
+
+  it("should concatenate arrays", () => {
+    const result = defu({ a: [3, 4] }, { a: [1, 2] });
+    expect(result).toEqual({ a: [3, 4, 1, 2] });
+  });
+
+  it("should recursively merge nested objects and track namespace correctly", () => {
+    let capturedNamespace = "";
+    const customMerger = (object: any, key: string, value: any, namespace: string) => {
+      if (key === "d") {
+        capturedNamespace = namespace;
+        object[key] = `${namespace}:${value}`;
+        return true;
+      }
+    };
+    const customDefu = createDefu(customMerger);
+    const base = {
+      nested: { c: { d: "val" } },
+    };
+    const defaults = {
+      nested: { c: { d: "default" } },
+    };
+    const result = customDefu(base, defaults);
+    expect(result).toEqual({
+      nested: { c: { d: "nested.c:val" } },
+    });
+    expect(capturedNamespace).toBe("nested.c");
+  });
+
+  it("should use dot namespace by default when namespace argument is omitted internally", () => {
+    let capturedNamespaces: string[] = [];
+    const customMerger = (_object: any, _key: string, _value: any, namespace: string) => {
+      capturedNamespaces.push(namespace);
+    };
+    const customDefu = createDefu(customMerger);
+    customDefu({ target: { inner: 1 } }, { target: { inner: 2 } });
+    expect(capturedNamespaces).toEqual([".", "target"]);
+  });
+
+  it("should ignore __proto__ and constructor keys", () => {
+    const malicious = JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"prototype": {"polluted": true}}, "a": 1}');
+    const result = defu(malicious, { b: 2 });
+    expect(result).toEqual({ a: 1, b: 2 });
+    expect({}.polluted).toBeUndefined();
+  });
+
+  it("should not skip keys named literally empty string if passed, protecting against empty string mutations of proto check", () => {
+    const base = { "": "empty-key-val" };
+    const defaults = { "": "default-val", a: 1 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ "": "empty-key-val", a: 1 });
+  });
+});
+
+describe("createDefu", () => {
+  it("should create a custom defu instance with a custom merger", () => {
+    const customMerger = (object: any, key: string, value: any) => {
+      if (key === "special") {
+        object[key] = `custom-${value}`;
+        return true;
+      }
+    };
+    const customDefu = createDefu(customMerger);
+    const result = customDefu({ special: "value" }, { special: "default" });
+    expect(result).toEqual({ special: "custom-value" });
+  });
+});
+
+describe("defuFn", () => {
+  it("should invoke function values with current object value", () => {
+    const base = {
+      score: (val: number) => val + 10,
+    };
+    const defaults = {
+      score: 5,
+    };
+    const result = defuFn(base, defaults);
+    expect(result).toEqual({ score: 15 });
+  });
+
+  it("should not invoke function if default value is undefined", () => {
+    const base = {
+      score: (val: number) => val + 10,
+    };
+    const defaults = {};
+    const result = defuFn(base, defaults);
+    expect(result).toEqual({ score: base.score });
+  });
+});
+
+describe("defuArrayFn", () => {
+  it("should invoke function if default value is an array", () => {
+    const base = {
+      items: (val: string[]) => [...val, "c"],
+    };
+    const defaults = {
+      items: ["a", "b"],
+    };
+    const result = defuArrayFn(base, defaults);
+    expect(result).toEqual({ items: ["a", "b", "c"] });
+  });
+
+  it("should not invoke function if default value is not an array", () => {
+    const fn = (val: any) => val;
+    const defaults = {
+      items: "not-an-array",
+    };
+    const result = defuArrayFn({ items: fn }, defaults);
+    expect(result).toEqual({ items: fn });
+  });
+
+  it("should not invoke function if default value is a plain object instead of an array", () => {
+    const fn = (val: any) => val;
+    const defaults = {
+      items: { a: 1 },
+    };
+    const result = defuArrayFn({ items: fn }, defaults);
+    expect(result).toEqual({ items: fn });
+  });
+
+  it("should assign non-function non-array base values directly even when default is an array", () => {
+    const base = {
+      items: "not-a-function",
+    };
+    const defaults = {
+      items: ["a", "b"],
+    };
+    const result = defuArrayFn(base, defaults);
+    expect(result).toEqual({ items: "not-a-function" });
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.6 /home/runner/work/_temp/defu
+
+ ❯ test/__generated__/defu.gen.test.ts (17 tests | 1 failed) 15ms
+     ✓ should merge basic objects 2ms
+     ✓ should prioritize base object over defaults 0ms
+     ✓ should handle multiple arguments 0ms
+     ✓ should ignore null and undefined values in base 0ms
+     ✓ should handle non-plain-object defaults gracefully by treating them as empty objects 0ms
+     ✓ should concatenate arrays 0ms
+     ✓ should recursively merge nested objects and track namespace correctly 0ms
+     × should use dot namespace by default when namespace argument is omitted internally 7ms
+     ✓ should ignore __proto__ and constructor keys 1ms
+     ✓ should not skip keys named literally empty string if passed, protecting against empty string mutations of proto check 0ms
+     ✓ should create a custom defu instance with a custom merger 0ms
+     ✓ should invoke function values with current object value 0ms
+     ✓ should not invoke function if default value is undefined 0ms
+     ✓ should invoke function if default value is an array 0ms
+     ✓ should not invoke function if default value is not an array 0ms
+     ✓ should not invoke function if default value is a plain object instead of an array 0ms
+     ✓ should assign non-function non-array base values directly even when default is an array 0ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 passed (17)
+   Start at  02:28:26
+   Duration  215ms (transform 47ms, setup 0ms, import 64ms, tests 15ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/defu.gen.test.ts > defu > should use dot namespace by default when namespace argument is omitted internally
+AssertionError: expected [ '', 'target' ] to deeply equal [ '.', 'target' ]
+
+- Expected
++ Received
+
+  [
+-   ".",
++   "",
+    "target",
+  ]
+
+ ❯ test/__generated__/defu.gen.test.ts:67:32
+     65|     const customDefu = createDefu(customMerger);
+     66|     customDefu({ target: { inner: 1 } }, { target: { inner: 2 } });
+     67|     expect(capturedNamespaces).toEqual([".", "target"]);
+       |                                ^
+     68|   });
+     69|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

@@ -1,0 +1,250 @@
+Improve the Vitest test file for the module `src/defu.ts` (import path: `../../src/defu`).
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: defu (merge recursivo de objetos com padrões)
+
+- A função principal recebe o objeto de maior prioridade primeiro e os padrões depois.
+- Os testes originais usam `it("should ...")` e comparam o resultado com `toEqual`.
+- Cubra: valores `null`/`undefined`, arrays (concatenados), objetos aninhados, chaves perigosas como `__proto__`, funções de merge personalizadas (`createDefu`, `defuFn`, `defuArrayFn`).
+</conventions>
+
+Source of `src/defu.ts`:
+```ts
+import { isPlainObject } from "./_utils";
+import type { Merger, DefuFn as DefuFunction, DefuInstance } from "./types";
+
+// Base function to apply defaults
+function _defu<T>(baseObject: T, defaults: any, namespace = ".", merger?: Merger): T {
+  if (!isPlainObject(defaults)) {
+    return _defu(baseObject, {}, namespace, merger);
+  }
+
+  const object = { ...defaults };
+
+  for (const key of Object.keys(baseObject as Record<string, any>)) {
+    if (key === "__proto__" || key === "constructor") {
+      continue;
+    }
+
+    const value = (baseObject as Record<string, any>)[key];
+
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    if (merger && merger(object, key, value, namespace)) {
+      continue;
+    }
+
+    if (Array.isArray(value) && Array.isArray(object[key])) {
+      object[key] = [...value, ...object[key]];
+    } else if (isPlainObject(value) && isPlainObject(object[key])) {
+      object[key] = _defu(
+        value,
+        object[key],
+        (namespace ? `${namespace}.` : "") + key.toString(),
+        merger,
+      );
+    } else {
+      object[key] = value;
+    }
+  }
+
+  return object;
+}
+
+// Create defu wrapper with optional merger and multi arg support
+export function createDefu(merger?: Merger): DefuFunction {
+  return (...arguments_) =>
+    // eslint-disable-next-line unicorn/no-array-reduce
+    arguments_.reduce((p, c) => _defu(p, c, "", merger), {} as any);
+}
+
+// Standard version
+export const defu = createDefu() as DefuInstance;
+export default defu;
+
+// Custom version with function merge support
+export const defuFn = createDefu((object, key, currentValue) => {
+  if (object[key] !== undefined && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+// Custom version with function merge support only for defined arrays
+export const defuArrayFn = createDefu((object, key, currentValue) => {
+  if (Array.isArray(object[key]) && typeof currentValue === "function") {
+    object[key] = currentValue(object[key]);
+    return true;
+  }
+});
+
+export type { Defu, DefuFn, DefuInstance } from "./types";
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect } from "vitest";
+import defu, { createDefu, defuFn, defuArrayFn } from "../../src/defu";
+
+describe("defu", () => {
+  it("should merge basic objects", () => {
+    const base = { a: 1, b: 2 };
+    const defaults = { b: 3, c: 4 };
+    const result = defu(base, defaults);
+    expect(result).toEqual({ a: 1, b: 2, c: 4 });
+  });
+
+  it("should prioritize base object over defaults", () => {
+    const result = defu({ a: 1 }, { a: 2, b: 3 });
+    expect(result).toEqual({ a: 1, b: 3 });
+  });
+
+  it("should handle multiple arguments", () => {
+    const result = defu({ a: 1 }, { b: 2 }, { c: 3, a: 10 });
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it("should ignore null and undefined values in base", () => {
+    const result = defu({ a: null, b: undefined, c: 1 }, { a: 10, b: 20, c: 30 });
+    expect(result).toEqual({ a: 10, b: 20, c: 1 });
+  });
+
+  it("should handle non-plain-object defaults gracefully by treating them as empty objects", () => {
+    const result = defu({ a: 1, b: 2 }, "not-an-object");
+    expect(result).toEqual({ a: 1, b: 2 });
+  });
+
+  it("should concatenate arrays", () => {
+    const result = defu({ a: [3, 4] }, { a: [1, 2] });
+    expect(result).toEqual({ a: [3, 4, 1, 2] });
+  });
+
+  it("should recursively merge nested objects and track namespace correctly", () => {
+    const customMerger = (object: any, key: string, value: any, namespace: string) => {
+      if (key === "d") {
+        object[key] = `${namespace}:${value}`;
+        return true;
+      }
+    };
+    const customDefu = createDefu(customMerger);
+    const base = {
+      nested: { c: { d: "val" } },
+    };
+    const defaults = {
+      nested: { c: { d: "default" } },
+    };
+    const result = customDefu(base, defaults);
+    expect(result).toEqual({
+      nested: { c: { d: "nested.c:val" } },
+    });
+  });
+
+  it("should ignore __proto__ and constructor keys", () => {
+    const malicious = JSON.parse('{"__proto__": {"polluted": true}, "constructor": {"prototype": {"polluted": true}}, "a": 1}');
+    const result = defu(malicious, { b: 2 });
+    expect(result).toEqual({ a: 1, b: 2 });
+    expect({}.polluted).toBeUndefined();
+  });
+});
+
+describe("createDefu", () => {
+  it("should create a custom defu instance with a custom merger", () => {
+    const customMerger = (object: any, key: string, value: any) => {
+      if (key === "special") {
+        object[key] = `custom-${value}`;
+        return true;
+      }
+    };
+    const customDefu = createDefu(customMerger);
+    const result = customDefu({ special: "value" }, { special: "default" });
+    expect(result).toEqual({ special: "custom-value" });
+  });
+});
+
+describe("defuFn", () => {
+  it("should invoke function values with current object value", () => {
+    const base = {
+      score: (val: number) => val + 10,
+    };
+    const defaults = {
+      score: 5,
+    };
+    const result = defuFn(base, defaults);
+    expect(result).toEqual({ score: 15 });
+  });
+
+  it("should not invoke function if default value is undefined", () => {
+    const base = {
+      score: (val: number) => val + 10,
+    };
+    const defaults = {};
+    const result = defuFn(base, defaults);
+    expect(result).toEqual({ score: base.score });
+  });
+});
+
+describe("defuArrayFn", () => {
+  it("should invoke function if default value is an array", () => {
+    const base = {
+      items: (val: string[]) => [...val, "c"],
+    };
+    const defaults = {
+      items: ["a", "b"],
+    };
+    const result = defuArrayFn(base, defaults);
+    expect(result).toEqual({ items: ["a", "b", "c"] });
+  });
+
+  it("should not invoke function if default value is not an array", () => {
+    const fn = (val: any) => val;
+    const defaults = {
+      items: "not-an-array",
+    };
+    const result = defuArrayFn({ items: fn }, defaults);
+    expect(result).toEqual({ items: fn });
+  });
+
+  it("should not invoke function if default value is a plain object instead of an array", () => {
+    const fn = (val: any) => val;
+    const defaults = {
+      items: { a: 1 },
+    };
+    const result = defuArrayFn({ items: fn }, defaults);
+    expect(result).toEqual({ items: fn });
+  });
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 3 changes below (3 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. line 5, operator StringLiteral (no test executes this code)
+   line: function _defu<T>(baseObject: T, defaults: any, namespace = ".", merger?: Merger): T {
+   original fragment: "\".\""
+   mutated fragment:  "\"\""
+2. line 13, operator StringLiteral
+   line: if (key === "__proto__" || key === "constructor") {
+   original fragment: "\"__proto__\""
+   mutated fragment:  "\"\""
+3. line 65, operator ConditionalExpression
+   line: if (Array.isArray(object[key]) && typeof currentValue === "function") {
+   original fragment: "typeof currentValue === \"function\""
+   mutated fragment:  "true"
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.
