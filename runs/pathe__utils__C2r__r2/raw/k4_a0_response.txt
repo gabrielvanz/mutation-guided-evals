@@ -1,0 +1,94 @@
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  normalizeAliases,
+  resolveAlias,
+  reverseResolveAlias,
+  filename
+} from "../../src/utils";
+
+describe("normalizeAliases", () => {
+  it("should sort aliases from specific to general and resolve nested aliases", () => {
+    const input = {
+      "~/components": "/app/components",
+      "~": "/app"
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "~/components": "/app/components",
+      "~": "/app"
+    });
+  });
+
+  it("should return the same object if already normalized", () => {
+    const input = { "~": "/app" };
+    const normalized1 = normalizeAliases(input);
+    const normalized2 = normalizeAliases(normalized1);
+    expect(normalized2).toBe(normalized1);
+  });
+
+  it("should handle empty alias records", () => {
+    const result = normalizeAliases({});
+    expect(result).toEqual({});
+  });
+});
+
+describe("resolveAlias", () => {
+  const aliases = {
+    "@": "/root/src",
+    "@components": "/root/src/components"
+  };
+
+  const testCases = [
+    { path: "@components/Button.ts", expected: "/root/src/components/Button.ts" },
+    { path: "@util.ts", expected: "/root/src/util.ts" },
+    { path: "C:\\project\\@components\\Button.ts", expected: "/root/src/components/Button.ts" },
+    { path: "unknown/path", expected: "unknown/path" }
+  ];
+
+  for (const { path, expected } of testCases) {
+    it(`should resolve ${path} to ${expected}`, () => {
+      expect(resolveAlias(path, aliases)).toBe(expected);
+    });
+  }
+});
+
+describe("reverseResolveAlias", () => {
+  const aliases = {
+    "/root/src": "@",
+    "/root/src/components": "@components"
+  };
+
+  it("should return sorted matching aliases", () => {
+    const result = reverseResolveAlias("/root/src/components/Button.ts", aliases);
+    expect(result).toEqual([
+      "@components/Button.ts",
+      "@/components/Button.ts"
+    ]);
+  });
+
+  it("should return empty array when no alias matches", () => {
+    const result = reverseResolveAlias("/other/path/file.ts", aliases);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("filename", () => {
+  const testCases = [
+    { path: "/path/to/file.ts", expected: "file" },
+    { path: "file.min.js", expected: "file.min" },
+    { path: "/path/to/.gitignore", expected: ".gitignore" },
+    { path: "filename", expected: "filename" },
+    { path: "C:\\windows\\path\\file.txt", expected: "file" },
+    { path: "", expected: undefined },
+    { path: "/", expected: undefined },
+    { path: "\\", expected: undefined }
+  ];
+
+  for (const { path, expected } of testCases) {
+    it(`should extract filename from ${path || "empty path"}`, () => {
+      expect(filename(path)).toBe(expected);
+    });
+  }
+});
+```
