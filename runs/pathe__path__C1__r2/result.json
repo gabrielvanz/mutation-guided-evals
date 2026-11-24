@@ -1,0 +1,136 @@
+{
+  "schema_version": "0.1",
+  "run_id": "pathe__path__C1__r2",
+  "started_at": "2026-11-23T13:27:09.346Z",
+  "finished_at": "2026-11-23T13:28:23.993Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "pathe",
+    "repo": "unjs/pathe",
+    "commit": "bc7477a01f0bd60ada017add8142c9f9d69ccdc5",
+    "license": "MIT",
+    "module_path": "src/_path.ts",
+    "module_loc": 314,
+    "mutants_total": 397,
+    "human_test_files": [
+      "test/index.spec.ts"
+    ]
+  },
+  "condition": "C1",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.9",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": null,
+    "git_sha_agent": "32c8d631b74d76e817e62a515fa5460f680b102f"
+  },
+  "memorization": {
+    "probe_similarity": 0.1257,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 65.1282,
+        "ms_feedback": 60.396,
+        "ms_all": 62.7204,
+        "ms_covered": 73.0205
+      },
+      "coverage": {
+        "line_cov": 88.46,
+        "branch_cov": 73.43
+      },
+      "mutants_eval": {
+        "killed": 125,
+        "survived": 43,
+        "no_coverage": 25,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 122,
+        "survived": 49,
+        "no_coverage": 31,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 18,
+        "n_asserts": 35,
+        "sha256": "073efa6afdfe20f5da69b02dede326bbeac6c41a449d676f0a0e6d803ca4b564"
+      },
+      "prompt_file": "runs/pathe__path__C1__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C1__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 8599,
+        "tokens_out": 2568,
+        "usd_ref": 0.001887,
+        "wall_s": 74.65,
+        "stryker_s": 37.1
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 65.1282,
+      "ms_feedback": 60.396,
+      "ms_all": 62.7204,
+      "ms_covered": 73.0205
+    },
+    "coverage": {
+      "line_cov": 88.46,
+      "branch_cov": 73.43
+    },
+    "cost": {
+      "calls": 2,
+      "repair_calls": 1,
+      "tokens_in": 8599,
+      "tokens_out": 2568,
+      "usd_ref": 0.001887,
+      "wall_s": 74.65,
+      "stryker_s": 37.1
+    },
+    "tests": {
+      "n_tests": 18,
+      "n_asserts": 35,
+      "sha256": "073efa6afdfe20f5da69b02dede326bbeac6c41a449d676f0a0e6d803ca4b564"
+    },
+    "gap_cov_ms": 25.7396,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/pathe__path__C1__r2/raw"
+  }
+}

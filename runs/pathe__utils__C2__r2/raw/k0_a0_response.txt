@@ -1,0 +1,85 @@
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  normalizeAliases,
+  resolveAlias,
+  reverseResolveAlias,
+  filename
+} from "../../src/utils";
+
+describe("normalizeAliases", () => {
+  it("should sort aliases by specificity and resolve nested aliases", () => {
+    const input = {
+      "~/": "/root/",
+      "~/components": "~/src/components"
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "~/components": "/root/src/components",
+      "~/": "/root/"
+    });
+  });
+
+  it("should return already normalized aliases as is", () => {
+    const input = { "~/": "/root/" };
+    const first = normalizeAliases(input);
+    const second = normalizeAliases(first);
+    expect(second).toBe(first);
+  });
+});
+
+describe("resolveAlias", () => {
+  it("should resolve path matching an alias", () => {
+    const aliases = { "@": "/src" };
+    const result = resolveAlias("@/components/Button.ts", aliases);
+    expect(result).toBe("/src/components/Button.ts");
+  });
+
+  it("should return original path if no alias matches", () => {
+    const aliases = { "@": "/src" };
+    const result = resolveAlias("/other/path.ts", aliases);
+    expect(result).toBe("/other/path.ts");
+  });
+
+  it("should handle Windows paths correctly", () => {
+    const aliases = { "@": "/src" };
+    const result = resolveAlias("@\\components\\Button.ts", aliases);
+    expect(result).toBe("/src/components/Button.ts");
+  });
+});
+
+describe("reverseResolveAlias", () => {
+  it("should return possible reverse alias resolutions sorted by length", () => {
+    const aliases = {
+      "~/": "/app/",
+      "~/src": "/app/src"
+    };
+    const result = reverseResolveAlias("/app/src/index.ts", aliases);
+    expect(result).toEqual(["~/src/index.ts", "~/src/index.ts"]);
+  });
+
+  it("should return empty array if no reverse alias matches", () => {
+    const aliases = { "@": "/src" };
+    const result = reverseResolveAlias("/other/path.ts", aliases);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("filename", () => {
+  const cases = [
+    { input: "/path/to/file.ts", expected: "file" },
+    { input: "file.tar.gz", expected: "file.tar" },
+    { input: "README", expected: "README" },
+    { input: ".gitignore", expected: ".gitignore" },
+    { input: "C:\\path\\to\\image.png", expected: "image" },
+    { input: "", expected: undefined },
+    { input: "/", expected: undefined }
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should extract filename from ${JSON.stringify(input)}`, () => {
+      expect(filename(input)).toBe(expected);
+    });
+  }
+});
+```

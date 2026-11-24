@@ -1,0 +1,183 @@
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  sep,
+  normalize,
+  join,
+  resolve,
+  normalizeString,
+  isAbsolute,
+  toNamespacedPath,
+  extname,
+  relative,
+  dirname,
+  format,
+  basename,
+  parse,
+  matchesGlob
+} from "../../src/_path";
+
+describe("sep", () => {
+  it("should be a POSIX separator", () => {
+    expect(sep).toBe("/");
+  });
+});
+
+describe("normalize", () => {
+  it("should normalize empty string to dot", () => {
+    expect(normalize("")).toBe(".");
+  });
+
+  it("should normalize simple paths", () => {
+    expect(normalize("foo/bar//baz/..")).toBe("foo/bar");
+  });
+
+  it("should handle Windows paths", () => {
+    expect(normalize("C:\\foo\\bar\\..\\baz")).toBe("C:/foo/baz");
+  });
+
+  it("should preserve trailing slash", () => {
+    expect(normalize("foo/bar/")).toBe("foo/bar/");
+  });
+});
+
+describe("join", () => {
+  it("should join path segments", () => {
+    expect(join("foo", "bar", "baz")).toBe("foo/bar/baz");
+  });
+
+  it("should handle empty segments", () => {
+    expect(join("foo", "", "bar")).toBe("foo/bar");
+  });
+
+  it("should handle trailing and leading slashes", () => {
+    expect(join("/foo/", "/bar")).toBe("/foo/bar");
+  });
+});
+
+describe("resolve", () => {
+  it("should resolve absolute paths", () => {
+    expect(resolve("/foo", "bar")).toBe("/foo/bar");
+  });
+
+  it("should handle empty arguments", () => {
+    expect(resolve("")).not.toBe("");
+  });
+});
+
+describe("normalizeString", () => {
+  it("should normalize string with dots and allow above root", () => {
+    expect(normalizeString("foo/../bar", true)).toBe("bar");
+  });
+
+  it("should handle above root when allowed", () => {
+    expect(normalizeString("../foo", true)).toBe("../foo");
+  });
+});
+
+describe("isAbsolute", () => {
+  const cases = [
+    { input: "/foo/bar", expected: true },
+    { input: "C:/foo/bar", expected: true },
+    { input: "C:\\foo\\bar", expected: true },
+    { input: "foo/bar", expected: false },
+    { input: "", expected: false }
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for ${input}`, () => {
+      expect(isAbsolute(input)).toBe(expected);
+    });
+  }
+});
+
+describe("toNamespacedPath", () => {
+  it("should normalize windows path for namespacing", () => {
+    expect(toNamespacedPath("C:\\foo\\bar")).toBe("C:/foo/bar");
+  });
+});
+
+describe("extname", () => {
+  const cases = [
+    { input: "index.ts", expected: ".ts" },
+    { input: "file.tar.gz", expected: ".gz" },
+    { input: "README", expected: "" },
+    { input: ".gitignore", expected: "" },
+    { input: "..", expected: "" }
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for ${input}`, () => {
+      expect(extname(input)).toBe(expected);
+    });
+  }
+});
+
+describe("relative", () => {
+  it("should calculate relative path between two absolute paths", () => {
+    expect(relative("/var/lib", "/var/lib/node")).toBe("node");
+  });
+
+  it("should handle paths requiring going up", () => {
+    expect(relative("/var/lib/node", "/var/log")).toBe("../../log");
+  });
+});
+
+describe("dirname", () => {
+  const cases = [
+    { input: "/foo/bar/baz.js", expected: "/foo/bar" },
+    { input: "/foo/bar/", expected: "/foo" },
+    { input: "foo", expected: "." },
+    { input: "C:/foo/bar", expected: "C:/foo" }
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for ${input}`, () => {
+      expect(dirname(input)).toBe(expected);
+    });
+  }
+});
+
+describe("format", () => {
+  it("should format a path object", () => {
+    expect(
+      format({
+        root: "/",
+        dir: "/foo/bar",
+        base: "baz.js",
+        ext: ".js",
+        name: "baz"
+      })
+    ).toBe("/foo/bar/baz.js");
+  });
+});
+
+describe("basename", () => {
+  it("should return the last segment", () => {
+    expect(basename("/foo/bar/baz.js")).toBe("baz.js");
+  });
+
+  it("should strip extension if provided", () => {
+    expect(basename("/foo/bar/baz.js", ".js")).toBe("baz");
+  });
+});
+
+describe("parse", () => {
+  it("should parse a path into its components", () => {
+    expect(parse("/home/user/dir/file.txt")).toEqual({
+      root: "/",
+      dir: "/home/user/dir",
+      base: "file.txt",
+      ext: ".txt",
+      name: "file"
+    });
+  });
+});
+
+describe("matchesGlob", () => {
+  it("should match path against glob pattern", () => {
+    expect(matchesGlob("/foo/bar.js", "**/*.js")).toBe(true);
+    expect(matchesGlob("/foo/bar.txt", "**/*.js")).toBe(false);
+  });
+});
+```

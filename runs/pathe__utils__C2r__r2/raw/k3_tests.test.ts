@@ -1,0 +1,70 @@
+import { describe, it, expect } from "vitest";
+import { normalizeAliases, resolveAlias, reverseResolveAlias, filename } from "../../src/utils";
+
+describe("normalizeAliases", () => {
+  it("should return the same object if already normalized", () => {
+    const aliases = { "~": "/home/user" };
+    const normalized = normalizeAliases(aliases);
+    const twiceNormalized = normalizeAliases(normalized);
+    expect(twiceNormalized).toBe(normalized);
+  });
+
+  it("should sort aliases by specificity and resolve nested aliases", () => {
+    const aliases = {
+      "@components": "@app/components",
+      "@app": "/app/src"
+    };
+    const result = normalizeAliases(aliases);
+    expect(result["@app"]).toBe("/app/src");
+    expect(result["@components"]).toBe("/app/src/components");
+  });
+});
+
+describe("resolveAlias", () => {
+  it("should resolve path matching an alias correctly", () => {
+    const aliases = { "@": "/root/src" };
+    const result = resolveAlias("@/utils/index.js", aliases);
+    expect(result).toBe("/root/src/utils/index.js");
+  });
+
+  it("should return normalized original path if no alias matches", () => {
+    const aliases = { "@": "/root/src" };
+    const result = resolveAlias("C:\\other\\path.js", aliases);
+    expect(result).toBe("C:/other/path.js");
+  });
+});
+
+describe("reverseResolveAlias", () => {
+  it("should return an array of reverse resolved alias paths sorted by length", () => {
+    const aliases = {
+      "@app": "/app/src",
+      "@components": "/app/src/components"
+    };
+    const result = reverseResolveAlias("/app/src/components/Button.js", aliases);
+    expect(result).toEqual(["@app/components/Button.js", "@components/Button.js"]);
+  });
+
+  it("should return an empty array if no reverse alias matches", () => {
+    const aliases = { "/app/src": "@app" };
+    const result = reverseResolveAlias("/other/path/file.js", aliases);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("filename", () => {
+  const cases = [
+    { input: "/path/to/file.txt", expected: "file" },
+    { input: "file.tar.gz", expected: "file.tar" },
+    { input: "README", expected: "README" },
+    { input: ".gitignore", expected: ".gitignore" },
+    { input: "/path/to/", expected: undefined },
+    { input: "", expected: undefined },
+    { input: "C:\\Windows\\System32\\notepad.exe", expected: "notepad" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should extract filename for ${JSON.stringify(input)}`, () => {
+      expect(filename(input)).toBe(expected);
+    });
+  }
+});
