@@ -154,7 +154,9 @@ async function cmdRun(argv: string[]): Promise<number> {
   );
   // O motivo da falha só existia dentro do result.json; mostra no log (o persist descarta runs com erro de infraestrutura).
   if (result.error) console.error(`[erro] ${id}: ${result.error}`);
-  return result.status === "ok" ? 0 : 2;
+  // 2 = erro de infraestrutura (cota, 503, timeout): o run é refeito. Qualquer outro desfecho (inclusive
+  // invalid_all_iterations, que é resultado do experimento e entra na análise) sai com 0 e NÃO deve ser repetido.
+  return RETRY_STATUSES.has(result.status) ? 2 : 0;
 }
 
 async function cmdMatrix(argv: string[]): Promise<number> {

@@ -1,4 +1,4 @@
-import { ProviderError, RateLimiter, withRetry, type LLMProvider, type LLMRequest, type LLMResponse, type RetryOptions } from "./provider.js";
+import { ProviderError, RateLimiter, parseRetryDelayMs, withRetry, type LLMProvider, type LLMRequest, type LLMResponse, type RetryOptions } from "./provider.js";
 
 interface GeminiOptions {
   apiKey: string;
@@ -50,19 +50,26 @@ export class GeminiProvider implements LLMProvider {
       else if (this.o.thinkingBudget !== undefined) generationConfig.thinkingConfig = { thinkingBudget: this.o.thinkingBudget };
 
       const t0 = Date.now();
-      const res = await this.fetchImpl(`${this.baseUrl}/models/${encodeURIComponent(this.modelId)}:generateContent`, {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-goog-api-key": this.o.apiKey },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: req.system }] },
-          contents: [{ role: "user", parts: [{ text: req.user }] }],
-          generationConfig,
-        }),
-      });
-      const bodyText = await res.text();
+      let res: Response;
+      let bodyText: string;
+      try {
+        res = await this.fetchImpl(`${this.baseUrl}/models/${encodeURIComponent(this.modelId)}:generateContent`, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-goog-api-key": this.o.apiKey },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: req.system }] },
+            contents: [{ role: "user", parts: [{ text: req.user }] }],
+            generationConfig,
+          }),
+        });
+        bodyText = await res.text();
+      } catch (e) {
+        // falha de rede (DNS, reset, timeout): transitória, tenta de novo
+        throw new ProviderError(`Gemini: falha de rede: ${e instanceof Error ? e.message : String(e)}`, null, true);
+      }
       if (!res.ok) {
         const retriable = res.status === 429 || res.status >= 500;
-        throw new ProviderError(`Gemini HTTP ${res.status}: ${bodyText.slice(0, 400)}`, res.status, retriable);
+        throw new ProviderError(`Gemini HTTP ${res.status}: ${bodyText.slice(0, 400)}`, res.status, retriable, retriable ? parseRetryDelayMs(bodyText) : null);
       }
       const json = JSON.parse(bodyText) as GeminiResponse;
       if (json.promptFeedback?.blockReason) {

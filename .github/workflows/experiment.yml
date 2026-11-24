@@ -68,13 +68,23 @@ jobs:
       - run: npm ci
       - name: Preparar sujeito no commit fixado
         run: scripts/setup-subject.sh ${{ matrix.library }} "$RUNNER_TEMP/${{ matrix.library }}"
-      - name: Executar run
-        run: >
-          npm run -s run --
-          --library ${{ matrix.library }} --module ${{ matrix.module }}
-          --condition ${{ matrix.condition }} --rep ${{ matrix.rep }}
-          --workdir "$RUNNER_TEMP/${{ matrix.library }}"
-          --memo-file data/memorization.flat.json
+      - name: Executar run (repete o run inteiro se o erro for de infraestrutura)
+        run: |
+          # Código de saída 2 = erro de infraestrutura (503 "high demand", cota, timeout): o CLI refaz o run do zero.
+          # Qualquer outro desfecho (ok, invalid_all_iterations) sai com 0 e NÃO é repetido (repetir só os runs ruins
+          # enviesaria a comparação).
+          for attempt in 1 2 3; do
+            rc=0
+            npm run -s run -- \
+              --library ${{ matrix.library }} --module ${{ matrix.module }} \
+              --condition ${{ matrix.condition }} --rep ${{ matrix.rep }} \
+              --workdir "$RUNNER_TEMP/${{ matrix.library }}" \
+              --memo-file data/memorization.flat.json || rc=$?
+            if [ "$rc" -ne 2 ]; then exit "$rc"; fi
+            echo "::warning::tentativa $attempt/3 terminou com erro de infraestrutura"
+            if [ "$attempt" -lt 3 ]; then sleep 300; fi
+          done
+          exit 2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
