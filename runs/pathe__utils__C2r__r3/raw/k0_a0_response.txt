@@ -1,0 +1,88 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { normalizeAliases, resolveAlias, reverseResolveAlias, filename } from "../../src/utils";
+
+describe("normalizeAliases", () => {
+  it("should sort aliases by specificity and resolve nested aliases", () => {
+    const input = {
+      "~/": "/root/",
+      "~/components": "/root/components",
+    };
+    const result = normalizeAliases(input);
+    expect(result["~/components"]).toBe("/root/components");
+  });
+
+  it("should return the same object if already normalized", () => {
+    const input = {
+      "~": "/root",
+    };
+    const normalized = normalizeAliases(input);
+    const resultAgain = normalizeAliases(normalized);
+    expect(resultAgain).toBe(normalized);
+  });
+});
+
+describe("resolveAlias", () => {
+  const cases = [
+    {
+      path: "~/file.ts",
+      aliases: { "~": "/root" },
+      expected: "/root/file.ts",
+    },
+    {
+      path: "/other/path",
+      aliases: { "~": "/root" },
+      expected: "/other/path",
+    },
+    {
+      path: "C:\\project\\file.ts",
+      aliases: { "~": "C:/project" },
+      expected: "C:/project/file.ts",
+    },
+  ];
+
+  for (const { path, aliases, expected } of cases) {
+    it(`should resolve ${path} correctly`, () => {
+      expect(resolveAlias(path, aliases)).toBe(expected);
+    });
+  }
+});
+
+describe("reverseResolveAlias", () => {
+  it("should return possible alias resolutions sorted by specificity", () => {
+    const aliases = {
+      "~/comp": "/root/components",
+      "~": "/root",
+    };
+    const result = reverseResolveAlias("/root/components/Button.ts", aliases);
+    expect(result).toEqual([
+      "~/comp/Button.ts",
+      "~/components/Button.ts",
+    ]);
+  });
+
+  it("should return an empty array when no alias matches", () => {
+    const aliases = { "~": "/root" };
+    const result = reverseResolveAlias("/other/file.ts", aliases);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("filename", () => {
+  const cases = [
+    { input: "/path/to/file.ts", expected: "file" },
+    { input: "file.js", expected: "file" },
+    { input: "/path/to/.gitignore", expected: ".gitignore" },
+    { input: "no-extension", expected: "no-extension" },
+    { input: "", expected: undefined },
+    { input: "C:\\path\\to\\image.png", expected: "image" },
+    { input: "/path/to/archive.tar.gz", expected: "archive.tar" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should extract filename from ${input}`, () => {
+      expect(filename(input)).toBe(expected);
+    });
+  }
+});
+```

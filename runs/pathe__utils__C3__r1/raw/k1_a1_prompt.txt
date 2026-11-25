@@ -1,0 +1,336 @@
+The Vitest test file below for `src/utils.ts` (import path: `../../src/utils`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/utils.ts`:
+```ts
+import { join } from "./_path";
+import { normalizeWindowsPath } from "./_internal";
+
+const pathSeparators = new Set(["/", "\\", undefined]);
+
+const normalizedAliasSymbol = Symbol.for("pathe:normalizedAlias");
+
+const SLASH_RE = /[/\\]/;
+
+/**
+ * Normalises alias mappings, ensuring that more specific aliases are resolved before less specific ones.
+ * This function also ensures that aliases do not resolve to themselves cyclically.
+ *
+ * @param _aliases - A set of alias mappings where each key is an alias and its value is the actual path it points to.
+ * @returns a set of normalised alias mappings.
+ */
+export function normalizeAliases(_aliases: Record<string, string>) {
+  if ((_aliases as any)[normalizedAliasSymbol]) {
+    return _aliases;
+  }
+
+  // Sort aliases from specific to general (ie. fs/promises before fs)
+  const aliases = Object.fromEntries(
+    Object.entries(_aliases).sort(([a], [b]) => _compareAliases(a, b)),
+  );
+
+  // Resolve alias values in relation to each other
+  for (const key in aliases) {
+    for (const alias in aliases) {
+      // don't resolve a more specific alias with regard to a less specific one
+      if (alias === key || key.startsWith(alias)) {
+        continue;
+      }
+
+      if (aliases[key]?.startsWith(alias) && pathSeparators.has(aliases[key][alias.length])) {
+        aliases[key] = aliases[alias] + aliases[key].slice(alias.length);
+      }
+    }
+  }
+
+  Object.defineProperty(aliases, normalizedAliasSymbol, {
+    value: true,
+    enumerable: false,
+  });
+  return aliases;
+}
+
+/**
+ * Resolves a path string to its alias if applicable, otherwise returns the original path.
+ * This function normalises the path, resolves the alias and then joins it to the alias target if necessary.
+ *
+ * @param path - The path string to resolve.
+ * @param aliases - A set of alias mappings to use for resolution.
+ * @returns the resolved path as a string.
+ */
+export function resolveAlias(path: string, aliases: Record<string, string>) {
+  const _path = normalizeWindowsPath(path);
+  aliases = normalizeAliases(aliases);
+  for (const [alias, to] of Object.entries(aliases)) {
+    if (!_path.startsWith(alias)) {
+      continue;
+    }
+
+    // Strip trailing slash from alias for check
+    const _alias = hasTrailingSlash(alias) ? alias.slice(0, -1) : alias;
+
+    if (hasTrailingSlash(_path[_alias.length])) {
+      return join(to, _path.slice(alias.length));
+    }
+  }
+  return _path;
+}
+
+/**
+ * Resolves a path string to its possible alias.
+ *
+ * Returns an array of possible alias resolutions (could be empty), sorted by specificity (longest first).
+ */
+export function reverseResolveAlias(path: string, aliases: Record<string, string>): string[] {
+  const _path = normalizeWindowsPath(path);
+  aliases = normalizeAliases(aliases);
+
+  const matches: string[] = [];
+
+  for (const [to, alias] of Object.entries(aliases)) {
+    if (!_path.startsWith(alias)) {
+      continue;
+    }
+
+    // Strip trailing slash from alias for check
+    const _alias = hasTrailingSlash(alias) ? alias.slice(0, -1) : alias;
+
+    if (hasTrailingSlash(_path[_alias.length])) {
+      matches.push(join(to, _path.slice(alias.length)));
+    }
+  }
+
+  // Sort by length, longest (more specific) first
+  return matches.sort((a, b) => b.length - a.length);
+}
+
+/**
+ * Extracts the filename from a given path, excluding any directory paths and the file extension.
+ *
+ * @param path - The full path of the file from which to extract the filename.
+ * @returns the filename without the extension, or `undefined` if the filename cannot be extracted.
+ */
+export function filename(path: string) {
+  const base = path.split(SLASH_RE).pop();
+
+  if (!base) {
+    return undefined;
+  }
+
+  const separatorIndex = base.lastIndexOf(".");
+
+  if (separatorIndex <= 0) {
+    return base;
+  }
+
+  return base.slice(0, separatorIndex);
+}
+
+// --- internals ---
+
+function _compareAliases(a: string, b: string) {
+  return b.split("/").length - a.split("/").length;
+}
+
+// Returns true if path ends with a slash or **is empty**
+function hasTrailingSlash(path = "/") {
+  const lastChar = path[path.length - 1];
+  return lastChar === "/" || lastChar === "\\";
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  normalizeAliases,
+  resolveAlias,
+  reverseResolveAlias,
+  filename
+} from "../../src/utils";
+
+describe("normalizeAliases", () => {
+  it("should sort aliases from specific to general and resolve nested aliases", () => {
+    const input = {
+      "~/": "/root/",
+      "~/components": "/root/components"
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "~/components": "/root/components",
+      "~/": "/root/"
+    });
+  });
+
+  it("should resolve alias values referencing other aliases when separated properly", () => {
+    const input = {
+      "@": "/app",
+      "@components": "@/components"
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "@components": "/app/components",
+      "@": "/app"
+    });
+  });
+
+  it("should return the same object if already normalized", () => {
+    const input = { "~/": "/root/" };
+    const normalized = normalizeAliases(input);
+    const resultAgain = normalizeAliases(normalized);
+    expect(resultAgain).toBe(normalized);
+  });
+
+  it("should handle empty alias objects", () => {
+    const result = normalizeAliases({});
+    expect(result).toEqual({});
+  });
+});
+
+describe("resolveAlias", () => {
+  it("should resolve a matching alias to its target", () => {
+    const aliases = {
+      "~": "/app/src"
+    };
+    const result = resolveAlias("~/components/Button", aliases);
+    expect(result).toBe("/app/src/components/Button");
+  });
+
+  it("should return the original path if no alias matches", () => {
+    const aliases = {
+      "@": "/app/src"
+    };
+    const result = resolveAlias("/other/path", aliases);
+    expect(result).toBe("/other/path");
+  });
+
+  it("should normalize Windows path separators during resolution", () => {
+    const aliases = {
+      "~": "/app/src"
+    };
+    const result = resolveAlias("~\\components\\Button", aliases);
+    expect(result).toBe("/app/src/components/Button");
+  });
+
+  it("should respect trailing slashes on alias keys when resolving", () => {
+    const aliases = {
+      "~": "/app/src"
+    };
+    // "~foo" should not match alias "~" unless followed by a path separator
+    const result = resolveAlias("~foo/bar", aliases);
+    expect(result).toBe("~foo/bar");
+  });
+});
+
+describe("reverseResolveAlias", () => {
+  it("should return an array of reverse-resolved paths sorted by specificity", () => {
+    const aliases = {
+      "~/comp": "/app/components",
+      "~": "/app"
+    };
+    const result = reverseResolveAlias("/app/components/Button", aliases);
+    expect(result).toEqual([
+      "~/components/Button",
+      "~/comp/Button"
+    ]);
+  });
+
+  it("should return an empty array if no reverse alias matches", () => {
+    const aliases = {
+      "~": "/app"
+    };
+    const result = reverseResolveAlias("/other/path", aliases);
+    expect(result).toEqual([]);
+  });
+
+  it("should respect trailing slashes when reverse resolving aliases", () => {
+    const aliases = {
+      "~": "/app"
+    };
+    const result = reverseResolveAlias("/appother/file", aliases);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("filename", () => {
+  const cases = [
+    { input: "/path/to/file.ts", expected: "file" },
+    { input: "file.tar.gz", expected: "file.tar" },
+    { input: "/path/to/.gitignore", expected: ".gitignore" },
+    { input: "filename", expected: "filename" },
+    { input: "", expected: undefined },
+    { input: "/", expected: undefined },
+    { input: "C:\\path\\to\\image.png", expected: "image" }
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${JSON.stringify(expected)} for input ${JSON.stringify(input)}`, () => {
+      expect(filename(input)).toBe(expected);
+    });
+  }
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.9 /home/runner/work/_temp/pathe
+
+ ❯ test/__generated__/utils.gen.test.ts (18 tests | 1 failed) 15ms
+     ✓ should sort aliases from specific to general and resolve nested aliases 2ms
+     × should resolve alias values referencing other aliases when separated properly 7ms
+     ✓ should return the same object if already normalized 0ms
+     ✓ should handle empty alias objects 0ms
+     ✓ should resolve a matching alias to its target 1ms
+     ✓ should return the original path if no alias matches 0ms
+     ✓ should normalize Windows path separators during resolution 0ms
+     ✓ should respect trailing slashes on alias keys when resolving 0ms
+     ✓ should return an array of reverse-resolved paths sorted by specificity 1ms
+     ✓ should return an empty array if no reverse alias matches 0ms
+     ✓ should respect trailing slashes when reverse resolving aliases 0ms
+     ✓ should return "file" for input "/path/to/file.ts" 0ms
+     ✓ should return "file.tar" for input "file.tar.gz" 0ms
+     ✓ should return ".gitignore" for input "/path/to/.gitignore" 0ms
+     ✓ should return "filename" for input "filename" 0ms
+     ✓ should return undefined for input "" 0ms
+     ✓ should return undefined for input "/" 0ms
+     ✓ should return "image" for input "C:\\path\\to\\image.png" 0ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 17 passed (18)
+   Start at  20:52:14
+   Duration  249ms (transform 79ms, setup 0ms, import 99ms, tests 15ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/utils.gen.test.ts > normalizeAliases > should resolve alias values referencing other aliases when separated properly
+AssertionError: expected { '@': '/app', …(1), …(1) } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "@": "/app",
+-   "@components": "/app/components",
++   "@components": "@/components",
+  }
+
+ ❯ test/__generated__/utils.gen.test.ts:28:20
+     26|     };
+     27|     const result = normalizeAliases(input);
+     28|     expect(result).toEqual({
+       |                    ^
+     29|       "@components": "/app/components",
+     30|       "@": "/app"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

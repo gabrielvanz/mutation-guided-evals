@@ -1,0 +1,668 @@
+Improve the Vitest test file for the module `src/_path.ts` (import path: `../../src/_path`).
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: pathe (utilitários de caminho multiplataforma)
+
+- A biblioteca normaliza caminhos para separadores POSIX (`/`), inclusive para entradas estilo Windows (`C:\\dir\\file`).
+- Os testes originais comparam strings completas de saída com `toBe`/`toEqual`.
+- Cubra: caminhos absolutos e relativos, `.` e `..`, barras duplicadas, caminhos Windows com letra de unidade, string vazia, extensões e nomes de arquivo.
+</conventions>
+
+Source of `src/_path.ts`:
+```ts
+/*
+Based on Node.js implementation:
+ - Last synced with: https://github.com/nodejs/node/blob/c4429c85ecae65750fecb6c4c342fe2e9888317e/lib/path.js (2026-06-30)
+ - Latest: https://github.com/nodejs/node/blob/main/lib/path.js
+Check LICENSE file
+
+*/
+
+import type path from "node:path";
+
+import { matchGlob } from "./_glob";
+import { normalizeWindowsPath } from "./_internal";
+
+const _UNC_REGEX = /^[/\\]{2}/;
+const _IS_ABSOLUTE_RE = /^[/\\](?![/\\])|^[/\\]{2}(?!\.)|^[A-Za-z]:[/\\]/;
+const _DRIVE_LETTER_RE = /^[A-Za-z]:$/;
+const _ROOT_FOLDER_RE = /^\/([A-Za-z]:)?$/;
+const _EXTNAME_RE = /.(\.[^./]+|\.)$/;
+const _PATH_ROOT_RE = /^[/\\]|^[a-zA-Z]:[/\\]/;
+
+/**
+ * Constant for path separator.
+ *
+ * Always equals to `"/"`.
+ */
+export const sep = "/";
+
+export const normalize: typeof path.normalize = function (path: string) {
+  if (path.length === 0) {
+    return ".";
+  }
+
+  // Normalize windows argument
+  path = normalizeWindowsPath(path);
+
+  const isUNCPath = path.match(_UNC_REGEX);
+  const isPathAbsolute = isAbsolute(path);
+  const trailingSeparator = path[path.length - 1] === "/";
+
+  // Normalize the path
+  path = normalizeString(path, !isPathAbsolute);
+
+  if (path.length === 0) {
+    if (isPathAbsolute) {
+      return "/";
+    }
+    return trailingSeparator ? "./" : ".";
+  }
+  if (trailingSeparator) {
+    path += "/";
+  }
+  if (_DRIVE_LETTER_RE.test(path)) {
+    path += "/";
+  }
+
+  if (isUNCPath) {
+    if (!isPathAbsolute) {
+      return `//./${path}`;
+    }
+    return `//${path}`;
+  }
+
+  return isPathAbsolute && !isAbsolute(path) ? `/${path}` : path;
+};
+
+export const join: typeof path.join = function (...segments) {
+  let path = "";
+
+  for (const seg of segments) {
+    if (!seg) {
+      continue;
+    }
+    if (path.length > 0) {
+      const pathTrailing = path[path.length - 1] === "/";
+      const segLeading = seg[0] === "/";
+      const both = pathTrailing && segLeading;
+      if (both) {
+        path += seg.slice(1);
+      } else {
+        path += pathTrailing || segLeading ? seg : `/${seg}`;
+      }
+    } else {
+      path += seg;
+    }
+  }
+
+  return normalize(path);
+};
+
+function cwd() {
+  if (typeof process !== "undefined" && typeof process.cwd === "function") {
+    return process.cwd().replace(/\\/g, "/");
+  }
+  return "/";
+}
+
+export const resolve: typeof path.resolve = function (...arguments_) {
+  // Normalize windows arguments
+  arguments_ = arguments_.map((argument) => normalizeWindowsPath(argument));
+
+  let resolvedPath = "";
+  let resolvedAbsolute = false;
+  // Whether the base (last absolute) segment is a UNC path (e.g. `\\server\share`).
+  // Tracked on the source segment rather than the concatenated `resolvedPath`,
+  // which can start with `//` as an artifact of joining a `/` root.
+  let resolvedUNC = false;
+
+  for (let index = arguments_.length - 1; index >= -1 && !resolvedAbsolute; index--) {
+    const path = index >= 0 ? arguments_[index] : cwd();
+
+    // Skip empty entries
+    if (!path || path.length === 0) {
+      continue;
+    }
+
+    resolvedPath = `${path}/${resolvedPath}`;
+    resolvedAbsolute = isAbsolute(path);
+    resolvedUNC = _UNC_REGEX.test(path);
+  }
+
+  // At this point the path should be resolved to a full absolute path, but
+  // handle relative paths to be safe (might happen when process.cwd() fails)
+
+  // Normalize the path
+  resolvedPath = normalizeString(resolvedPath, !resolvedAbsolute);
+
+  // Preserve a leading UNC prefix (e.g. `\\server\share`), matching `normalize`
+  // and node's `path.win32.resolve`. `normalizeString` collapses the consecutive
+  // slashes, so it is re-applied here.
+  if (resolvedUNC) {
+    return `//${resolvedPath}`;
+  }
+
+  if (resolvedAbsolute && !isAbsolute(resolvedPath)) {
+    return `/${resolvedPath}`;
+  }
+
+  return resolvedPath.length > 0 ? resolvedPath : ".";
+};
+
+/**
+ * Resolves a string path, resolving '.' and '.' segments and allowing paths above the root.
+ *
+ * @param path - The path to normalise.
+ * @param allowAboveRoot - Whether to allow the resulting path to be above the root directory.
+ * @returns the normalised path string.
+ */
+export function normalizeString(path: string, allowAboveRoot: boolean) {
+  let res = "";
+  let lastSegmentLength = 0;
+  let lastSlash = -1;
+  let dots = 0;
+  let char: string | null = null;
+  for (let index = 0; index <= path.length; ++index) {
+    if (index < path.length) {
+      // casted because we know it exists thanks to the length check
+      char = path[index] as string;
+    } else if (char === "/") {
+      break;
+    } else {
+      char = "/";
+    }
+    if (char === "/") {
+      if (lastSlash === index - 1 || dots === 1) {
+        // NOOP
+      } else if (dots === 2) {
+        if (
+          res.length < 2 ||
+          lastSegmentLength !== 2 ||
+          res[res.length - 1] !== "." ||
+          res[res.length - 2] !== "."
+        ) {
+          if (res.length > 2) {
+            const lastSlashIndex = res.length - lastSegmentLength - 1;
+            if (lastSlashIndex === -1) {
+              res = "";
+              lastSegmentLength = 0;
+            } else {
+              res = res.slice(0, lastSlashIndex);
+              lastSegmentLength = res.length - 1 - res.lastIndexOf("/");
+            }
+            lastSlash = index;
+            dots = 0;
+            continue;
+          } else if (res.length > 0) {
+            res = "";
+            lastSegmentLength = 0;
+            lastSlash = index;
+            dots = 0;
+            continue;
+          }
+        }
+        if (allowAboveRoot) {
+          res += res.length > 0 ? "/.." : "..";
+          lastSegmentLength = 2;
+        }
+      } else {
+        if (res.length > 0) {
+          res += `/${path.slice(lastSlash + 1, index)}`;
+        } else {
+          res = path.slice(lastSlash + 1, index);
+        }
+        lastSegmentLength = index - lastSlash - 1;
+      }
+      lastSlash = index;
+      dots = 0;
+    } else if (char === "." && dots !== -1) {
+      ++dots;
+    } else {
+      dots = -1;
+    }
+  }
+  return res;
+}
+
+export const isAbsolute: typeof path.isAbsolute = function (p) {
+  return _IS_ABSOLUTE_RE.test(p);
+};
+
+export const toNamespacedPath: typeof path.toNamespacedPath = function (p) {
+  return normalizeWindowsPath(p);
+};
+
+export const extname: typeof path.extname = function (p) {
+  // Resolve the extension from the last path segment only, so a separator or
+  // trailing slash earlier in the input does not leak into the result. This
+  // keeps `extname()` in agreement with `parse().ext` and `node:path`.
+  const base = basename(p);
+  if (base === "..") return "";
+  const match = _EXTNAME_RE.exec(base);
+  return (match && match[1]) || "";
+};
+
+export const relative: typeof path.relative = function (from, to) {
+  // we cast these because `split` will always be at least one string
+  const _from = resolve(from).replace(_ROOT_FOLDER_RE, "$1").split("/") as [string, ...string[]];
+  const _to = resolve(to).replace(_ROOT_FOLDER_RE, "$1").split("/") as [string, ...string[]];
+
+  // Different windows drive letters
+  if (_to[0][1] === ":" && _from[0][1] === ":" && _from[0] !== _to[0]) {
+    return _to.join("/");
+  }
+
+  const _fromCopy = [..._from];
+  for (const segment of _fromCopy) {
+    if (_to[0] !== segment) {
+      break;
+    }
+    _from.shift();
+    _to.shift();
+  }
+  return [..._from.map(() => ".."), ..._to].join("/");
+};
+
+export const dirname: typeof path.dirname = function (p) {
+  const segments = normalizeWindowsPath(p).replace(/\/+$/, "").split("/").slice(0, -1);
+  if (segments.length === 1 && _DRIVE_LETTER_RE.test(segments[0] as string)) {
+    segments[0] += "/";
+  }
+  return segments.join("/") || (isAbsolute(p) ? "/" : ".");
+};
+
+export const format: typeof path.format = function (p) {
+  const ext = p.ext ? (p.ext.startsWith(".") ? p.ext : `.${p.ext}`) : "";
+  const segments = [p.root, p.dir, p.base ?? (p.name ?? "") + ext].filter(Boolean) as string[];
+  return normalizeWindowsPath(p.root ? resolve(...segments) : segments.join("/"));
+};
+
+export const basename: typeof path.basename = function (p, extension) {
+  const segments = normalizeWindowsPath(p).split("/");
+
+  // default to empty string
+  let lastSegment = "";
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const val = segments[i];
+    if (val) {
+      lastSegment = val;
+      break;
+    }
+  }
+
+  return extension && lastSegment.endsWith(extension)
+    ? lastSegment.slice(0, -extension.length)
+    : lastSegment;
+};
+
+export const parse: typeof path.parse = function (p) {
+  // The root of the path such as '/' or 'c:\'
+  const root = _PATH_ROOT_RE.exec(p)?.[0]?.replace(/\\/g, "/") || "";
+  const base = basename(p);
+  const extension = extname(base);
+  // Node returns an empty `dir` (not ".") when the path has no directory segment.
+  // A purely trailing separator (e.g. "b/") does not count as a directory segment.
+  let dir = dirname(p);
+  if (dir === "." && !normalizeWindowsPath(p).replace(/\/+$/, "").includes("/")) {
+    dir = "";
+  }
+  return {
+    root,
+    dir,
+    base,
+    ext: extension,
+    name: base.slice(0, base.length - extension.length),
+  };
+};
+
+/**
+ * The `path.matchesGlob()` method determines if `path` matches the `pattern`.
+ * @param path The path to glob-match against.
+ * @param pattern The glob to check the path against.
+ */
+export const matchesGlob = (path: string, pattern: string | string[]): boolean => {
+  return matchGlob(pattern, normalize(path));
+};
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  sep,
+  normalize,
+  join,
+  resolve,
+  normalizeString,
+  isAbsolute,
+  toNamespacedPath,
+  extname,
+  relative,
+  dirname,
+  format,
+  basename,
+  parse,
+  matchesGlob
+} from "../../src/_path";
+
+describe("sep", () => {
+  it("should be a forward slash", () => {
+    expect(sep).toBe("/");
+  });
+});
+
+describe("normalize", () => {
+  it("should normalize empty path to current directory", () => {
+    expect(normalize("")).toBe(".");
+  });
+
+  it("should normalize standard paths", () => {
+    expect(normalize("foo/bar//baz/../asdf")).toBe("foo/bar/asdf");
+  });
+
+  it("should normalize Windows paths", () => {
+    expect(normalize("foo\\bar\\baz")).toBe("foo/bar/baz");
+    expect(normalize("C:\\foo\\bar")).toBe("C:/foo/bar");
+  });
+
+  it("should preserve trailing slash", () => {
+    expect(normalize("foo/bar/")).toBe("foo/bar/");
+  });
+
+  it("should handle absolute paths correctly when normalizing", () => {
+    expect(normalize("/foo/../")).toBe("/");
+  });
+
+  it("should correctly handle drive letters like C:", () => {
+    expect(normalize("C:")).toBe("C:/");
+    expect(normalize("1:")).toBe("1:");
+  });
+
+  it("should handle relative UNC paths correctly", () => {
+    expect(normalize("\\\\server\\share")).toBe("//server/share");
+  });
+});
+
+describe("join", () => {
+  it("should join multiple segments", () => {
+    expect(join("foo", "bar", "baz")).toBe("foo/bar/baz");
+  });
+
+  it("should ignore empty segments", () => {
+    expect(join("foo", "", "bar")).toBe("foo/bar");
+  });
+
+  it("should handle segments with slashes correctly", () => {
+    expect(join("/foo", "bar")).toBe("/foo/bar");
+    expect(join("foo/", "/bar")).toBe("foo/bar");
+  });
+
+  it("should not drop leading slash from segment when joining", () => {
+    expect(join("foo/", "/bar/baz")).toBe("foo/bar/baz");
+  });
+
+  it("should handle trailing slash in path correctly during join", () => {
+    expect(join("foo/", "bar")).toBe("foo/bar");
+  });
+});
+
+describe("resolve", () => {
+  it("should resolve relative paths", () => {
+    expect(resolve("foo", "bar")).toContain("foo/bar");
+  });
+
+  it("should resolve absolute paths correctly", () => {
+    expect(resolve("/foo/bar", "./baz")).toBe("/foo/bar/baz");
+  });
+
+  it("should correctly handle absolute and relative combination", () => {
+    expect(resolve("/foo", "bar")).toBe("/foo/bar");
+  });
+
+  it("should return dot when resolved path length is zero", () => {
+    expect(resolve("", "")).not.toBe("");
+  });
+});
+
+describe("normalizeString", () => {
+  it("should normalize string path without allowing above root", () => {
+    expect(normalizeString("/foo/../bar", false)).toBe("bar");
+  });
+
+  it("should allow above root when specified", () => {
+    expect(normalizeString("../foo", true)).toBe("../foo");
+  });
+
+  it("should handle complex dot segments correctly with strict condition", () => {
+    expect(normalizeString("a/b/..", false)).toBe("a");
+    expect(normalizeString("a/b/../..", false)).toBe("");
+  });
+
+  it("should handle multiple dots and specific edge cases", () => {
+    expect(normalizeString("a/../../b", true)).toBe("../b");
+    expect(normalizeString("a/../../b", false)).toBe("b");
+  });
+});
+
+describe("isAbsolute", () => {
+  it.each([
+    { input: "/foo/bar", expected: true },
+    { input: "C:\\foo\\bar", expected: true },
+    { input: "foo/bar", expected: false },
+    { input: "", expected: false }
+  ])("should determine if $input is absolute: $expected", ({ input, expected }) => {
+    expect(isAbsolute(input)).toBe(expected);
+  });
+});
+
+describe("toNamespacedPath", () => {
+  it("should normalize windows path for namespacing", () => {
+    expect(toNamespacedPath("C:\\foo\\bar")).toBe("C:/foo/bar");
+  });
+});
+
+describe("extname", () => {
+  it.each([
+    { input: "index.html", expected: ".html" },
+    { input: "index.coffee.md", expected: ".md" },
+    { input: "index.", expected: "." },
+    { input: "index", expected: "" },
+    { input: ".gitignore", expected: "" }
+  ])("should return extension for $input", ({ input, expected }) => {
+    expect(extname(input)).toBe(expected);
+  });
+});
+
+describe("relative", () => {
+  it("should compute relative path between two paths", () => {
+    expect(relative("/data/orandea/test/aaa", "/data/orandea/impl/bbb")).toBe("../../impl/bbb");
+  });
+
+  it("should handle different drive letters properly without incorrect logical shortcuts", () => {
+    expect(relative("C:\\foo", "D:\\bar")).toBe("D:/bar");
+  });
+
+  it("should handle same drive letter relative paths", () => {
+    expect(relative("C:\\foo\\bar", "C:\\foo\\baz")).toBe("../baz");
+  });
+});
+
+describe("dirname", () => {
+  it.each([
+    { input: "/foo/bar/baz", expected: "/foo/bar" },
+    { input: "/foo", expected: "/" },
+    { input: "foo/bar", expected: "foo" },
+    { input: "foo", expected: "." },
+    { input: "C:", expected: "." },
+    { input: "C:/foo//", expected: "C:/" }
+  ])("should return dirname of $input", ({ input, expected }) => {
+    expect(dirname(input)).toBe(expected);
+  });
+});
+
+describe("format", () => {
+  it("should format path object", () => {
+    expect(
+      format({
+        root: "/",
+        dir: "/home/user/dir",
+        base: "file.txt",
+        ext: ".txt",
+        name: "file"
+      })
+    ).toBe("/home/user/dir/file.txt");
+  });
+
+  it("should handle extension with or without leading dot correctly", () => {
+    expect(format({ name: "file", ext: "txt" })).toBe("file.txt");
+    expect(format({ name: "file", ext: ".txt" })).toBe("file.txt");
+  });
+});
+
+describe("basename", () => {
+  it.each([
+    { input: "/foo/bar/baz.html", extension: undefined, expected: "baz.html" },
+    { input: "/foo/bar/baz.html", extension: ".html", expected: "baz" },
+    { input: "/foo/bar/baz/", extension: undefined, expected: "baz" }
+  ])("should return basename of $input", ({ input, extension, expected }) => {
+    expect(basename(input, extension)).toBe(expected);
+  });
+});
+
+describe("parse", () => {
+  it("should parse path into segments", () => {
+    const result = parse("/home/user/dir/file.txt");
+    expect(result).toEqual({
+      root: "/",
+      dir: "/home/user/dir",
+      base: "file.txt",
+      ext: ".txt",
+      name: "file"
+    });
+  });
+
+  it("should handle root paths safely without crashing on optional chaining", () => {
+    const result = parse("/");
+    expect(result).toEqual({
+      root: "/",
+      dir: "/",
+      base: "",
+      ext: "",
+      name: ""
+    });
+  });
+
+  it("should correctly identify directory when no slash exists", () => {
+    const result = parse("file.txt");
+    expect(result.dir).toBe("");
+  });
+});
+
+describe("matchesGlob", () => {
+  it("should match path against glob pattern", () => {
+    expect(matchesGlob("/foo/bar.js", "*.js")).toBe(false);
+    expect(matchesGlob("/foo/bar.js", "**/bar.js")).toBe(true);
+  });
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 20 changes below (62 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. line 17, operator Regex
+   line: const _ROOT_FOLDER_RE = /^\/([A-Za-z]:)?$/;
+   original fragment: "/^\\/([A-Za-z]:)?$/"
+   mutated fragment:  "/^\\/([^A-Za-z]:)?$/"
+2. line 19, operator Regex
+   line: const _PATH_ROOT_RE = /^[/\\]|^[a-zA-Z]:[/\\]/;
+   original fragment: "/^[/\\\\]|^[a-zA-Z]:[/\\\\]/"
+   mutated fragment:  "/^[/\\\\]|^[a-zA-Z]:[^/\\\\]/"
+3. line 29, operator BlockStatement
+   line: if (path.length === 0) {
+   original fragment: "{\n    return \".\";\n  }"
+   mutated fragment:  "{}"
+4. line 57, operator ConditionalExpression
+   line: if (!isPathAbsolute) {
+   original fragment: "!isPathAbsolute"
+   mutated fragment:  "false"
+5. line 74, operator ConditionalExpression
+   line: const pathTrailing = path[path.length - 1] === "/";
+   original fragment: "path[path.length - 1] === \"/\""
+   mutated fragment:  "false"
+6. line 74, operator StringLiteral
+   line: const pathTrailing = path[path.length - 1] === "/";
+   original fragment: "\"/\""
+   mutated fragment:  "\"\""
+7. line 78, operator MethodExpression
+   line: path += seg.slice(1);
+   original fragment: "seg.slice(1)"
+   mutated fragment:  "seg"
+8. line 90, operator BlockStatement
+   line: function cwd() {
+   original fragment: "{\n  if (typeof process !== \"undefined\" && typeof process.cwd === \"function\") {\n    return process.cwd().replace(/\\\\/g, \"/\");\n  }\n  return \"/\";\n}"
+   mutated fragment:  "{}"
+9. line 91, operator EqualityOperator
+   line: if (typeof process !== "undefined" && typeof process.cwd === "function") {
+   original fragment: "typeof process !== \"undefined\""
+   mutated fragment:  "typeof process === \"undefined\""
+10. line 106, operator BooleanLiteral
+   line: let resolvedUNC = false;
+   original fragment: "false"
+   mutated fragment:  "true"
+11. line 109, operator ConditionalExpression
+   line: const path = index >= 0 ? arguments_[index] : cwd();
+   original fragment: "index >= 0"
+   mutated fragment:  "true"
+12. line 130, operator BlockStatement (no test executes this code)
+   line: if (resolvedUNC) {
+   original fragment: "{\n    return `//${resolvedPath}`;\n  }"
+   mutated fragment:  "{}"
+13. line 168, operator LogicalOperator
+   line: res.length < 2 ||
+   original fragment: "res.length < 2 ||\n          lastSegmentLength !== 2"
+   mutated fragment:  "res.length < 2 && lastSegmentLength !== 2"
+14. line 168, operator LogicalOperator
+   line: res.length < 2 ||
+   original fragment: "res.length < 2 ||\n          lastSegmentLength !== 2 ||\n          res[res.length - 1] !== \".\" ||\n          res[res.length - 2] !== \".\""
+   mutated fragment:  "(res.length < 2 || lastSegmentLength !== 2 || res[res.length - 1] !== \".\") && res[res.length - 2] !== \".\""
+15. line 169, operator EqualityOperator
+   line: lastSegmentLength !== 2 ||
+   original fragment: "lastSegmentLength !== 2"
+   mutated fragment:  "lastSegmentLength === 2"
+16. line 170, operator EqualityOperator (no test executes this code)
+   line: res[res.length - 1] !== "." ||
+   original fragment: "res[res.length - 1] !== \".\""
+   mutated fragment:  "res[res.length - 1] === \".\""
+17. line 170, operator ArithmeticOperator (no test executes this code)
+   line: res[res.length - 1] !== "." ||
+   original fragment: "res.length - 1"
+   mutated fragment:  "res.length + 1"
+18. line 256, operator StringLiteral
+   line: const segments = normalizeWindowsPath(p).replace(/\/+$/, "").split("/").slice(0, -1);
+   original fragment: "\"\""
+   mutated fragment:  "\"Stryker was here!\""
+19. line 274, operator ArithmeticOperator
+   line: for (let i = segments.length - 1; i >= 0; i--) {
+   original fragment: "segments.length - 1"
+   mutated fragment:  "segments.length + 1"
+20. line 295, operator StringLiteral
+   line: if (dir === "." && !normalizeWindowsPath(p).replace(/\/+$/, "").includes("/")) {
+   original fragment: "\"\""
+   mutated fragment:  "\"Stryker was here!\""
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.

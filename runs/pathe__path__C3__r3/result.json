@@ -1,0 +1,506 @@
+{
+  "schema_version": "0.1",
+  "run_id": "pathe__path__C3__r3",
+  "started_at": "2026-11-24T20:19:32.455Z",
+  "finished_at": "2026-11-24T20:51:52.795Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "pathe",
+    "repo": "unjs/pathe",
+    "commit": "bc7477a01f0bd60ada017add8142c9f9d69ccdc5",
+    "license": "MIT",
+    "module_path": "src/_path.ts",
+    "module_loc": 314,
+    "mutants_total": 397,
+    "human_test_files": [
+      "test/index.spec.ts"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.9",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "5ebb2f98a932ff8147664dc21a859a82e30b5551489d4908c9bd4f1133a478d1",
+    "git_sha_agent": "72b0a5e807add30b979e699f839b4bd5b8283257"
+  },
+  "memorization": {
+    "probe_similarity": 0.1257,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 62.0513,
+        "ms_feedback": 55.4455,
+        "ms_all": 58.6902,
+        "ms_covered": 68.7316
+      },
+      "coverage": {
+        "line_cov": 87.82,
+        "branch_cov": 71.09
+      },
+      "mutants_eval": {
+        "killed": 119,
+        "survived": 45,
+        "no_coverage": 29,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 112,
+        "survived": 61,
+        "no_coverage": 29,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 21,
+        "n_asserts": 24,
+        "sha256": "2f9597040c4b50bbd594df0bce617ea0cb4201eec3e811d744fdb7e572b9067b"
+      },
+      "prompt_file": "runs/pathe__path__C3__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C3__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 8967,
+        "tokens_out": 2786,
+        "usd_ref": 0.002011,
+        "wall_s": 121.16,
+        "stryker_s": 38.56
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 68.7179,
+        "ms_feedback": 65.3465,
+        "ms_all": 67.0025,
+        "ms_covered": 72.2826
+      },
+      "coverage": {
+        "line_cov": 94.23,
+        "branch_cov": 83.59
+      },
+      "mutants_eval": {
+        "killed": 132,
+        "survived": 46,
+        "no_coverage": 15,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 131,
+        "survived": 56,
+        "no_coverage": 14,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/_path.ts:17:25-17:43:Regex:/^\\/([^A-Za-z]:)?$/",
+        "src/_path.ts:19:23-19:47:Regex:/^[/\\\\]|^[a-zA-Z]:[^/\\\\]/",
+        "src/_path.ts:44:9-44:23:ConditionalExpression:true",
+        "src/_path.ts:70:15-72:6:BlockStatement:{}",
+        "src/_path.ts:78:17-78:29:MethodExpression:seg",
+        "src/_path.ts:91:64-91:74:StringLiteral:\"\"",
+        "src/_path.ts:106:21-106:26:BooleanLiteral:true",
+        "src/_path.ts:134:7-134:52:LogicalOperator:resolvedAbsolute || !isAbsolute(resolvedPath)",
+        "src/_path.ts:138:10-138:33:EqualityOperator:resolvedPath.length <= 0",
+        "src/_path.ts:138:10-138:33:EqualityOperator:resolvedPath.length >= 0",
+        "src/_path.ts:168:11-169:34:LogicalOperator:res.length < 2 && lastSegmentLength !== 2",
+        "src/_path.ts:170:15-170:29:ArithmeticOperator:res.length + 1",
+        "src/_path.ts:240:7-240:70:LogicalOperator:_to[0][1] === \":\" && _from[0][1] === \":\" || _from[0] !== _to[0]",
+        "src/_path.ts:257:7-257:28:ConditionalExpression:true",
+        "src/_path.ts:257:78-259:4:BlockStatement:{}",
+        "src/_path.ts:264:24-264:45:MethodExpression:p.ext.endsWith(\".\")",
+        "src/_path.ts:274:16-274:35:ArithmeticOperator:segments.length + 1",
+        "src/_path.ts:274:45-274:48:UpdateOperator:i++",
+        "src/_path.ts:289:16-289:42:OptionalChaining:_PATH_ROOT_RE.exec(p)[0]",
+        "src/_path.ts:295:63-295:65:StringLiteral:\"Stryker was here!\""
+      ],
+      "tests": {
+        "n_tests": 29,
+        "n_asserts": 34,
+        "sha256": "a4de3c875d80cd486eceaa94477eab55978e70ac588ec188a5a28eba7b714f52"
+      },
+      "prompt_file": "runs/pathe__path__C3__r3/raw/k1_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C3__r3/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 2,
+        "tokens_in": 21554,
+        "tokens_out": 6353,
+        "usd_ref": 0.004697,
+        "wall_s": 209.34,
+        "stryker_s": 81.79
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 74.8718,
+        "ms_feedback": 69.3069,
+        "ms_all": 72.0403,
+        "ms_covered": 75.6614
+      },
+      "coverage": {
+        "line_cov": 97.43,
+        "branch_cov": 89.06
+      },
+      "mutants_eval": {
+        "killed": 144,
+        "survived": 41,
+        "no_coverage": 8,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 139,
+        "survived": 51,
+        "no_coverage": 11,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/_path.ts:16:26-16:39:Regex:/^[^A-Za-z]:$/",
+        "src/_path.ts:17:25-17:43:Regex:/^\\/([^A-Za-z]:)?$/",
+        "src/_path.ts:57:26-59:6:BlockStatement:{}",
+        "src/_path.ts:74:33-74:48:ArithmeticOperator:path.length + 1",
+        "src/_path.ts:78:17-78:29:MethodExpression:seg",
+        "src/_path.ts:91:64-91:74:StringLiteral:\"\"",
+        "src/_path.ts:106:21-106:26:BooleanLiteral:true",
+        "src/_path.ts:108:43-108:54:ConditionalExpression:true",
+        "src/_path.ts:138:10-138:33:EqualityOperator:resolvedPath.length >= 0",
+        "src/_path.ts:158:30-160:6:BlockStatement:{}",
+        "src/_path.ts:168:11-171:38:LogicalOperator:(res.length < 2 || lastSegmentLength !== 2 || res[res.length - 1] !== \".\") && res[res.length - 2] !== \".\"",
+        "src/_path.ts:170:15-170:29:ArithmeticOperator:res.length + 1",
+        "src/_path.ts:171:11-171:38:ConditionalExpression:false",
+        "src/_path.ts:171:11-171:38:EqualityOperator:res[res.length - 2] === \".\"",
+        "src/_path.ts:240:7-240:70:LogicalOperator:_to[0][1] === \":\" && _from[0][1] === \":\" || _from[0] !== _to[0]",
+        "src/_path.ts:256:52-256:58:Regex:/\\/$/",
+        "src/_path.ts:256:60-256:62:StringLiteral:\"Stryker was here!\"",
+        "src/_path.ts:257:7-257:28:ConditionalExpression:true",
+        "src/_path.ts:258:20-258:23:StringLiteral:\"\"",
+        "src/_path.ts:274:16-274:35:ArithmeticOperator:segments.length + 1"
+      ],
+      "tests": {
+        "n_tests": 35,
+        "n_asserts": 42,
+        "sha256": "9a6fc95e60bf01f51ba90ae7c5fe4ed03ab52e6a95bf251797bde7eb58fb48b5"
+      },
+      "prompt_file": "runs/pathe__path__C3__r3/raw/k2_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C3__r3/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 3,
+        "tokens_in": 34694,
+        "tokens_out": 10486,
+        "usd_ref": 0.007664,
+        "wall_s": 559.62,
+        "stryker_s": 125.69
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 74.8718,
+        "ms_feedback": 71.7822,
+        "ms_all": 73.2997,
+        "ms_covered": 76.5789
+      },
+      "coverage": {
+        "line_cov": 98.07,
+        "branch_cov": 89.84
+      },
+      "mutants_eval": {
+        "killed": 144,
+        "survived": 41,
+        "no_coverage": 8,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 144,
+        "survived": 48,
+        "no_coverage": 9,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/_path.ts:17:25-17:43:Regex:/^\\/([^A-Za-z]:)?$/",
+        "src/_path.ts:19:23-19:47:Regex:/^[/\\\\]|^[a-zA-Z]:[^/\\\\]/",
+        "src/_path.ts:29:26-31:4:BlockStatement:{}",
+        "src/_path.ts:57:9-57:24:ConditionalExpression:false",
+        "src/_path.ts:74:28-74:57:ConditionalExpression:false",
+        "src/_path.ts:74:54-74:57:StringLiteral:\"\"",
+        "src/_path.ts:78:17-78:29:MethodExpression:seg",
+        "src/_path.ts:90:16-95:2:BlockStatement:{}",
+        "src/_path.ts:91:7-91:37:EqualityOperator:typeof process === \"undefined\"",
+        "src/_path.ts:106:21-106:26:BooleanLiteral:true",
+        "src/_path.ts:109:18-109:28:ConditionalExpression:true",
+        "src/_path.ts:130:20-132:4:BlockStatement:{}",
+        "src/_path.ts:168:11-169:34:LogicalOperator:res.length < 2 && lastSegmentLength !== 2",
+        "src/_path.ts:168:11-171:38:LogicalOperator:(res.length < 2 || lastSegmentLength !== 2 || res[res.length - 1] !== \".\") && res[res.length - 2] !== \".\"",
+        "src/_path.ts:169:11-169:34:EqualityOperator:lastSegmentLength === 2",
+        "src/_path.ts:170:11-170:38:EqualityOperator:res[res.length - 1] === \".\"",
+        "src/_path.ts:170:15-170:29:ArithmeticOperator:res.length + 1",
+        "src/_path.ts:256:60-256:62:StringLiteral:\"Stryker was here!\"",
+        "src/_path.ts:274:16-274:35:ArithmeticOperator:segments.length + 1",
+        "src/_path.ts:295:63-295:65:StringLiteral:\"Stryker was here!\""
+      ],
+      "tests": {
+        "n_tests": 41,
+        "n_asserts": 48,
+        "sha256": "5b62bdc671b2bd331bb1b18874520282a67381beebe31962992d69e766bcad74"
+      },
+      "prompt_file": "runs/pathe__path__C3__r3/raw/k3_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C3__r3/raw/k3_a0_response.txt",
+      "best_k_so_far": 3,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 4,
+        "tokens_in": 48488,
+        "tokens_out": 15161,
+        "usd_ref": 0.010913,
+        "wall_s": 646.56,
+        "stryker_s": 168.9
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 76.4103,
+        "ms_feedback": 71.7822,
+        "ms_all": 74.0554,
+        "ms_covered": 77.1654
+      },
+      "coverage": {
+        "line_cov": 98.07,
+        "branch_cov": 90.62
+      },
+      "mutants_eval": {
+        "killed": 147,
+        "survived": 39,
+        "no_coverage": 7,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 144,
+        "survived": 48,
+        "no_coverage": 9,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/_path.ts:15:25-15:74:Regex:/^[/\\\\](?![/\\\\])|^[/\\\\](?!\\.)|^[A-Za-z]:[/\\\\]/",
+        "src/_path.ts:17:25-17:43:Regex:/^\\/([^A-Za-z]:)?$/",
+        "src/_path.ts:57:9-57:24:ConditionalExpression:false",
+        "src/_path.ts:58:14-58:27:StringLiteral:``",
+        "src/_path.ts:70:15-72:6:BlockStatement:{}",
+        "src/_path.ts:74:33-74:48:ArithmeticOperator:path.length + 1",
+        "src/_path.ts:78:17-78:29:MethodExpression:seg",
+        "src/_path.ts:90:16-95:2:BlockStatement:{}",
+        "src/_path.ts:92:41-92:44:StringLiteral:\"\"",
+        "src/_path.ts:106:21-106:26:BooleanLiteral:true",
+        "src/_path.ts:158:30-160:6:BlockStatement:{}",
+        "src/_path.ts:168:11-169:34:LogicalOperator:res.length < 2 && lastSegmentLength !== 2",
+        "src/_path.ts:168:11-171:38:LogicalOperator:(res.length < 2 || lastSegmentLength !== 2 || res[res.length - 1] !== \".\") && res[res.length - 2] !== \".\"",
+        "src/_path.ts:170:11-170:38:EqualityOperator:res[res.length - 1] === \".\"",
+        "src/_path.ts:170:15-170:29:ArithmeticOperator:res.length + 1",
+        "src/_path.ts:171:11-171:38:ConditionalExpression:false",
+        "src/_path.ts:171:11-171:38:EqualityOperator:res[res.length - 2] === \".\"",
+        "src/_path.ts:257:7-257:28:ConditionalExpression:true",
+        "src/_path.ts:274:16-274:35:ArithmeticOperator:segments.length + 1",
+        "src/_path.ts:295:63-295:65:StringLiteral:\"Stryker was here!\""
+      ],
+      "tests": {
+        "n_tests": 44,
+        "n_asserts": 52,
+        "sha256": "f14d10a7744a3f5a1ae572b7ed451564279dc9fb30570ca851faa98c69013383"
+      },
+      "prompt_file": "runs/pathe__path__C3__r3/raw/k4_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C3__r3/raw/k4_a0_response.txt",
+      "best_k_so_far": 3,
+      "cost_cumulative": {
+        "calls": 10,
+        "repair_calls": 5,
+        "tokens_in": 63242,
+        "tokens_out": 20231,
+        "usd_ref": 0.014417,
+        "wall_s": 1074.69,
+        "stryker_s": 213.93
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 76.4103,
+        "ms_feedback": 72.2772,
+        "ms_all": 74.3073,
+        "ms_covered": 77.4278
+      },
+      "coverage": {
+        "line_cov": 98.07,
+        "branch_cov": 90.62
+      },
+      "mutants_eval": {
+        "killed": 147,
+        "survived": 39,
+        "no_coverage": 7,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 145,
+        "survived": 47,
+        "no_coverage": 9,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/_path.ts:15:25-15:74:Regex:/^[/\\\\](?![/\\\\])|^[/\\\\](?!\\.)|^[A-Za-z]:[/\\\\]/",
+        "src/_path.ts:17:25-17:43:Regex:/^\\/([^A-Za-z]:)?$/",
+        "src/_path.ts:29:26-31:4:BlockStatement:{}",
+        "src/_path.ts:58:14-58:27:StringLiteral:``",
+        "src/_path.ts:70:15-72:6:BlockStatement:{}",
+        "src/_path.ts:74:33-74:48:ArithmeticOperator:path.length + 1",
+        "src/_path.ts:78:17-78:29:MethodExpression:seg",
+        "src/_path.ts:90:16-95:2:BlockStatement:{}",
+        "src/_path.ts:91:7-91:37:ConditionalExpression:true",
+        "src/_path.ts:91:7-91:37:EqualityOperator:typeof process === \"undefined\"",
+        "src/_path.ts:106:21-106:26:BooleanLiteral:true",
+        "src/_path.ts:108:43-108:54:EqualityOperator:index > -1",
+        "src/_path.ts:138:10-138:33:EqualityOperator:resolvedPath.length >= 0",
+        "src/_path.ts:158:25-158:28:StringLiteral:\"\"",
+        "src/_path.ts:168:11-169:34:LogicalOperator:res.length < 2 && lastSegmentLength !== 2",
+        "src/_path.ts:168:11-170:38:ConditionalExpression:false",
+        "src/_path.ts:168:11-171:38:LogicalOperator:(res.length < 2 || lastSegmentLength !== 2 || res[res.length - 1] !== \".\") && res[res.length - 2] !== \".\"",
+        "src/_path.ts:170:15-170:29:ArithmeticOperator:res.length + 1",
+        "src/_path.ts:180:68-180:71:StringLiteral:\"\"",
+        "src/_path.ts:274:16-274:35:ArithmeticOperator:segments.length + 1"
+      ],
+      "tests": {
+        "n_tests": 46,
+        "n_asserts": 53,
+        "sha256": "e0178760d359f01e114cb8758af169c599aa757c36475e243096f6a528d90560"
+      },
+      "prompt_file": "runs/pathe__path__C3__r3/raw/k5_a0_prompt.txt",
+      "response_file": "runs/pathe__path__C3__r3/raw/k5_a0_response.txt",
+      "best_k_so_far": 5,
+      "cost_cumulative": {
+        "calls": 12,
+        "repair_calls": 6,
+        "tokens_in": 77980,
+        "tokens_out": 25386,
+        "usd_ref": 0.017952,
+        "wall_s": 1940.34,
+        "stryker_s": 261.06
+      }
+    }
+  ],
+  "selected_iteration": 5,
+  "final": {
+    "scores": {
+      "ms_eval": 76.4103,
+      "ms_feedback": 72.2772,
+      "ms_all": 74.3073,
+      "ms_covered": 77.4278
+    },
+    "coverage": {
+      "line_cov": 98.07,
+      "branch_cov": 90.62
+    },
+    "cost": {
+      "calls": 12,
+      "repair_calls": 6,
+      "tokens_in": 77980,
+      "tokens_out": 25386,
+      "usd_ref": 0.017952,
+      "wall_s": 1940.34,
+      "stryker_s": 261.06
+    },
+    "tests": {
+      "n_tests": 46,
+      "n_asserts": 53,
+      "sha256": "e0178760d359f01e114cb8758af169c599aa757c36475e243096f6a528d90560"
+    },
+    "gap_cov_ms": 23.7627,
+    "valid_rate": 1,
+    "tokens_per_pp": 7198.69
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/pathe__path__C3__r3/raw"
+  }
+}

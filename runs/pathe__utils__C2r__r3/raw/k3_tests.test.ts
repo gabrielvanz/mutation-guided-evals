@@ -1,0 +1,103 @@
+import { describe, it, expect } from "vitest";
+import { normalizeAliases, resolveAlias, reverseResolveAlias, filename } from "../../src/utils";
+
+describe("normalizeAliases", () => {
+  it("should return the same object if already normalized", () => {
+    const aliases = { "@foo": "/foo" };
+    const normalized1 = normalizeAliases(aliases);
+    const normalized2 = normalizeAliases(normalized1);
+    expect(normalized2).toBe(normalized1);
+  });
+
+  it("should sort aliases from specific to general", () => {
+    const aliases = {
+      "fs": "/node_modules/fs",
+      "fs/promises": "/node_modules/fs/promises"
+    };
+    const result = normalizeAliases(aliases);
+    const keys = Object.keys(result);
+    expect(keys).toEqual(["fs/promises", "fs"]);
+  });
+
+  it("should resolve alias values in relation to each other recursively", () => {
+    const aliases = {
+      "@base": "/path/to/base",
+      "@app": "@base/app"
+    };
+    const result = normalizeAliases(aliases);
+    expect(result["@app"]).toBe("/path/to/base/app");
+  });
+
+  it("should not resolve cyclic or self aliases", () => {
+    const aliases = {
+      "@self": "@self/sub"
+    };
+    const result = normalizeAliases(aliases);
+    expect(result["@self"]).toBe("@self/sub");
+  });
+});
+
+describe("resolveAlias", () => {
+  it("should resolve matching alias with trailing slash separator", () => {
+    const aliases = { "@components": "/src/components" };
+    const result = resolveAlias("@components/Button.vue", aliases);
+    expect(result).toBe("/src/components/Button.vue");
+  });
+
+  it("should return the original path normalized if no alias matches", () => {
+    const aliases = { "@components": "/src/components" };
+    const result = resolveAlias("C:\\src\\index.ts", aliases);
+    expect(result).toBe("C:/src/index.ts");
+  });
+
+  it("should not match partial alias names without path separator boundary", () => {
+    const aliases = { "@comp": "/src/comp" };
+    const result = resolveAlias("@components/Button.vue", aliases);
+    expect(result).toBe("@components/Button.vue");
+  });
+
+  it("should resolve alias when alias has a trailing slash", () => {
+    const aliases = { "@components/": "/src/components" };
+    const result = resolveAlias("@components/Button.vue", aliases);
+    expect(result).toBe("/src/components/Button.vue");
+  });
+});
+
+describe("reverseResolveAlias", () => {
+  it("should return an array of possible alias resolutions sorted by specificity", () => {
+    const aliases = {
+      "@app": "/src",
+      "@components": "/src/components"
+    };
+    const result = reverseResolveAlias("/src/components/Button.vue", aliases);
+    expect(result).toEqual([
+      "@app/components/Button.vue",
+      "@components/Button.vue"
+    ]);
+  });
+
+  it("should return an empty array if no reverse alias matches", () => {
+    const aliases = { "@components": "/src/components" };
+    const result = reverseResolveAlias("/other/path.ts", aliases);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("filename", () => {
+  const testCases = [
+    { input: "/path/to/file.ts", expected: "file" },
+    { input: "C:\\path\\to\\file.tar.gz", expected: "file.tar" },
+    { input: "/path/to/.gitignore", expected: ".gitignore" },
+    { input: "file-only.js", expected: "file-only" },
+    { input: "no-extension", expected: "no-extension" },
+    { input: "", expected: undefined },
+    { input: "/", expected: undefined },
+    { input: "C:\\", expected: undefined }
+  ];
+
+  for (const { input, expected } of testCases) {
+    it(`should extract filename correctly for "${input}"`, () => {
+      expect(filename(input)).toBe(expected);
+    });
+  }
+});
