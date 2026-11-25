@@ -1,0 +1,33 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return basic ASCII strings unchanged", () => {
+    expect(toASCII("example.com")).toBe("example.com");
+    expect(toASCII("test")).toBe("test");
+  });
+
+  it("should handle domain separators correctly", () => {
+    expect(toASCII("ex\u3002ample\uFF0Ecom")).toBe("ex.ample.com");
+  });
+
+  it("should encode non-ASCII characters using punycode", () => {
+    expect(toASCII("münchen.de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("mañana.com")).toBe("xn--maana-pta.com");
+  });
+
+  it("should handle email addresses with domain parts", () => {
+    expect(toASCII("user@münchen.de")).toBe("user@xn--mnchen-3ya.de");
+  });
+
+  it("should handle supplementary Unicode characters", () => {
+    expect(toASCII("𤭢.com")).toBe("xn--ww6j.com");
+  });
+
+  it("should throw RangeError on overflow", () => {
+    const hugeString = "\ud800\udc00".repeat(100000);
+    expect(() => toASCII(hugeString)).toThrow(RangeError);
+  });
+});
+```

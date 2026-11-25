@@ -1,0 +1,31 @@
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    expect(toASCII("example.com")).toBe("example.com");
+    expect(toASCII("abc123-xyz")).toBe("abc123-xyz");
+  });
+
+  it("should handle domain separators correctly (dots and full-width dots)", () => {
+    expect(toASCII("example。com")).toBe("example.com");
+    expect(toASCII("example．com")).toBe("example.com");
+  });
+
+  it("should convert non-ASCII internationalized domain names to punycode with xn-- prefix", () => {
+    expect(toASCII("münchen.de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("中文.com")).toBe("xn--fiq228c.com");
+  });
+
+  it("should handle email addresses with domain parts", () => {
+    expect(toASCII("user@münchen.de")).toBe("user@xn--mnchen-3ya.de");
+  });
+
+  it("should handle surrogate pairs / astral code points", () => {
+    expect(toASCII("💩.com")).toBe("xn--ls8h.com");
+  });
+
+  it("should handle basic inputs correctly", () => {
+    expect(toASCII("test")).toBe("test");
+  });
+});

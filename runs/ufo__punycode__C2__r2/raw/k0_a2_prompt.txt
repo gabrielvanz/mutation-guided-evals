@@ -1,0 +1,202 @@
+The Vitest test file below for `src/punycode.ts` (import path: `../../src/punycode`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/punycode.ts`:
+```ts
+/* eslint-disable */
+// @ts-nocheck
+// Tree-shaked + Minified version of punycode@2.1.1/punycode.es6.js#toASCII
+const n = /[^\0-\x7E]/;
+const t = /[\x2E\u3002\uFF0E\uFF61]/g;
+const o = {
+  overflow: "Overflow Error",
+  "not-basic": "Illegal Input",
+  "invalid-input": "Invalid Input",
+};
+const e = Math.floor;
+const r = String.fromCharCode;
+function s(n) {
+  throw new RangeError(o[n]);
+}
+const c = function (n, t) {
+  return n + 22 + 75 * (n < 26) - ((t != 0) << 5);
+};
+const u = function (n, t, o) {
+  let r = 0;
+  for (n = o ? e(n / 700) : n >> 1, n += e(n / t); n > 455; r += 36) {
+    n = e(n / 35);
+  }
+  return e(r + (36 * n) / (n + 38));
+};
+export function toASCII(o) {
+  return (function (n, o) {
+    const e = n.split("@");
+    let r = "";
+    e.length > 1 && ((r = e[0] + "@"), (n = e[1]));
+    const s = (function (n, t) {
+      const o = [];
+      let e = n.length;
+      for (; e--; ) {
+        o[e] = t(n[e]);
+      }
+      return o;
+    })((n = n.replace(t, ".")).split("."), o).join(".");
+    return r + s;
+  })(o, function (t) {
+    return n.test(t)
+      ? "xn--" +
+          (function (n) {
+            const t = [];
+            const o = (n = (function (n) {
+              const t = [];
+              let o = 0;
+              const e = n.length;
+              for (; o < e; ) {
+                const r = n.charCodeAt(o++);
+                if (r >= 55296 && r <= 56319 && o < e) {
+                  const e = n.charCodeAt(o++);
+                  (64512 & e) == 56320
+                    ? t.push(((1023 & r) << 10) + (1023 & e) + 65536)
+                    : (t.push(r), o--);
+                } else {
+                  t.push(r);
+                }
+              }
+              return t;
+            })(n)).length;
+            let f = 128;
+            let i = 0;
+            let l = 72;
+            for (const o of n) {
+              o < 128 && t.push(r(o));
+            }
+            const h = t.length;
+            let p = h;
+            for (h && t.push("-"); p < o; ) {
+              let o = 2147483647;
+              for (const t of n) {
+                t >= f && t < o && (o = t);
+              }
+              const a = p + 1;
+              (o - f > e((2147483647 - i) / a) && s("overflow"),
+                (i += (o - f) * a),
+                (f = o));
+              for (const o of n) {
+                if ((o < f && ++i > 2147483647 && s("overflow"), o == f)) {
+                  let n = i;
+                  for (let o = 36; ; o += 36) {
+                    const s = o <= l ? 1 : o >= l + 26 ? 26 : o - l;
+                    if (n < s) {
+                      break;
+                    }
+                    const u = n - s;
+                    const f = 36 - s;
+                    (t.push(r(c(s + (u % f), 0))), (n = e(u / f)));
+                  }
+                  (t.push(r(c(n, 0))), (l = u(i, a, p == h)), (i = 0), ++p);
+                }
+              }
+              (++i, ++f);
+            }
+            return t.join("");
+          })(t)
+      : t;
+  });
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    const cases = [
+      { input: "example.com", expected: "example.com" },
+      { input: "test", expected: "test" },
+      { input: "123.456", expected: "123.456" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should convert non-ASCII domain names to punycode", () => {
+    const cases = [
+      { input: "münchen.de", expected: "xn--mnchen-3ya.de" },
+      { input: "test.ñ", expected: "test.xn--ida" },
+      { input: "пример.is", expected: "xn--e1afmkfd.is" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle email addresses with non-ASCII domain parts", () => {
+    const input = "user@münchen.de";
+    const expected = "user@xn--mnchen-3ya.de";
+    expect(toASCII(input)).toBe(expected);
+  });
+
+  it("should handle different dot separators", () => {
+    const cases = [
+      { input: "example。com", expected: "example.com" },
+      { input: "example．com", expected: "example.com" },
+      { input: "example｡com", expected: "example.com" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should throw RangeError on overflow input", () => {
+    const longString = "\u{10FFFF}".repeat(1000);
+    expect(() => toASCII(longString)).toThrow(RangeError);
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.5 /home/runner/work/_temp/ufo
+
+ ❯ test/__generated__/punycode.gen.test.ts (5 tests | 1 failed) 6ms
+     ✓ should return ASCII strings unchanged 1ms
+     ✓ should convert non-ASCII domain names to punycode 0ms
+     ✓ should handle email addresses with non-ASCII domain parts 0ms
+     ✓ should handle different dot separators 0ms
+     × should throw RangeError on overflow input 2ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  08:02:42
+   Duration  135ms (transform 22ms, setup 0ms, import 30ms, tests 6ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/punycode.gen.test.ts > toASCII > should throw RangeError on overflow input
+AssertionError: expected function to throw an error, but it didn't
+ ❯ test/__generated__/punycode.gen.test.ts:49:39
+     47|   it("should throw RangeError on overflow input", () => {
+     48|     const longString = "\u{10FFFF}".repeat(1000);
+     49|     expect(() => toASCII(longString)).toThrow(RangeError);
+       |                                       ^
+     50|   });
+     51| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

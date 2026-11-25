@@ -1,0 +1,262 @@
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  isRelative,
+  hasProtocol,
+  isScriptProtocol,
+  hasTrailingSlash,
+  withoutTrailingSlash,
+  withTrailingSlash,
+  hasLeadingSlash,
+  withoutLeadingSlash,
+  withLeadingSlash,
+  cleanDoubleSlashes,
+  withBase,
+  withoutBase,
+  withQuery,
+  filterQuery,
+  getQuery,
+  isEmptyURL,
+  isNonEmptyURL,
+  joinURL,
+  joinRelativeURL,
+  withHttp,
+  withHttps,
+  withoutProtocol,
+  withProtocol,
+  normalizeURL,
+  resolveURL,
+  isSamePath,
+  isEqual,
+  withFragment,
+  withoutFragment,
+  withoutHost,
+} from "../../src/utils";
+
+describe("src/utils", () => {
+  describe("isRelative", () => {
+    it("identifies relative paths", () => {
+      expect(isRelative("./foo")).toBe(true);
+      expect(isRelative("../foo")).toBe(true);
+      expect(isRelative("/foo")).toBe(false);
+      expect(isRelative("foo")).toBe(false);
+    });
+  });
+
+  describe("hasProtocol", () => {
+    it("checks for protocols", () => {
+      expect(hasProtocol("https://example.com")).toBe(true);
+      expect(hasProtocol("//example.com")).toBe(false);
+      expect(hasProtocol("//example.com", { acceptRelative: true })).toBe(true);
+      expect(hasProtocol("//example.com", true)).toBe(true);
+      expect(hasProtocol("ftp://example.com")).toBe(true);
+      expect(hasProtocol("data:text/plain")).toBe(true);
+      expect(hasProtocol("data:text/plain", { strict: true })).toBe(false);
+    });
+  });
+
+  describe("isScriptProtocol", () => {
+    it("identifies script protocols", () => {
+      expect(isScriptProtocol("javascript:alert(1)")).toBe(true);
+      expect(isScriptProtocol("data:text/html,hello")).toBe(true);
+      expect(isScriptProtocol("blob:hello")).toBe(true);
+      expect(isScriptProtocol("vbscript:alert(1)")).toBe(true);
+      expect(isScriptProtocol("https://example.com")).toBe(false);
+      expect(isScriptProtocol()).toBe(false);
+    });
+  });
+
+  describe("hasTrailingSlash", () => {
+    it("checks for trailing slashes", () => {
+      expect(hasTrailingSlash("/foo/")).toBe(true);
+      expect(hasTrailingSlash("/foo")).toBe(false);
+      expect(hasTrailingSlash("/foo?query=true", true)).toBe(false);
+      expect(hasTrailingSlash("/foo/?query=true", true)).toBe(true);
+    });
+  });
+
+  describe("withoutTrailingSlash", () => {
+    it("removes trailing slashes", () => {
+      expect(withoutTrailingSlash("/foo/")).toBe("/foo");
+      expect(withoutTrailingSlash("/path/?query=true", true)).toBe("/path?query=true");
+      expect(withoutTrailingSlash("")).toBe("/");
+    });
+  });
+
+  describe("withTrailingSlash", () => {
+    it("ensures trailing slashes", () => {
+      expect(withTrailingSlash("/foo")).toBe("/foo/");
+      expect(withTrailingSlash("/path?query=true", true)).toBe("/path/?query=true");
+      expect(withTrailingSlash("", true)).toBe("/");
+      expect(withTrailingSlash("#hash", true)).toBe("#hash");
+    });
+  });
+
+  describe("hasLeadingSlash", () => {
+    it("checks for leading slashes", () => {
+      expect(hasLeadingSlash("/foo")).toBe(true);
+      expect(hasLeadingSlash("foo")).toBe(false);
+      expect(hasLeadingSlash()).toBe(false);
+    });
+  });
+
+  describe("withoutLeadingSlash", () => {
+    it("removes leading slashes", () => {
+      expect(withoutLeadingSlash("/foo")).toBe("foo");
+      expect(withoutLeadingSlash("")).toBe("/");
+    });
+  });
+
+  describe("withLeadingSlash", () => {
+    it("ensures leading slashes", () => {
+      expect(withLeadingSlash("foo")).toBe("/foo");
+      expect(withLeadingSlash("/foo")).toBe("/foo");
+    });
+  });
+
+  describe("cleanDoubleSlashes", () => {
+    it("removes double slashes", () => {
+      expect(cleanDoubleSlashes("//foo//bar//")).toBe("/foo/bar/");
+      expect(
+        cleanDoubleSlashes("http://example.com/analyze//http://localhost:3000//"),
+      ).toBe("http://example.com/analyze/http://localhost:3000/");
+    });
+  });
+
+  describe("withBase", () => {
+    it("adds base to input", () => {
+      expect(withBase("/foo/bar", "/foo")).toBe("/foo/bar");
+      expect(withBase("/foo/bar", "/baz")).toBe("/baz/foo/bar");
+      expect(withBase("https://example.com", "/foo")).toBe("https://example.com");
+      expect(withBase("/admin-dashboard", "/admin")).toBe("/admin/admin-dashboard");
+    });
+  });
+
+  describe("withoutBase", () => {
+    it("removes base from input", () => {
+      expect(withoutBase("/foo/bar", "/foo")).toBe("/bar");
+      expect(withoutBase("/foo/bar", "")).toBe("/foo/bar");
+      expect(withoutBase("/admin-dashboard", "/admin")).toBe("/admin-dashboard");
+      expect(withoutBase("/legacy//evil.com", "/legacy")).toBe("/evil.com");
+    });
+  });
+
+  describe("withQuery", () => {
+    it("adds or replaces query parameters", () => {
+      expect(withQuery("/foo?page=a", { token: "secret" })).toBe("/foo?page=a&token=secret");
+    });
+  });
+
+  describe("filterQuery", () => {
+    it("filters query parameters", () => {
+      expect(filterQuery("/foo?bar=1&baz=2", (key) => key !== "bar")).toBe("/foo?baz=2");
+      expect(filterQuery("/foo", (key) => key !== "bar")).toBe("/foo");
+    });
+  });
+
+  describe("getQuery", () => {
+    it("gets query object", () => {
+      expect(getQuery("http://foo.com/foo?test=123&unicode=%E5%A5%BD")).toEqual({
+        test: "123",
+        unicode: "好",
+      });
+    });
+  });
+
+  describe("isEmptyURL and isNonEmptyURL", () => {
+    it("checks if URL is empty or not", () => {
+      expect(isEmptyURL("")).toBe(true);
+      expect(isEmptyURL("/")).toBe(true);
+      expect(isEmptyURL("/foo")).toBe(false);
+
+      expect(isNonEmptyURL("/foo")).toBe(true);
+      expect(isNonEmptyURL("")).toBe(false);
+      expect(isNonEmptyURL("/")).toBe(false);
+    });
+  });
+
+  describe("joinURL", () => {
+    it("joins URL segments", () => {
+      expect(joinURL("a", "/b", "/c")).toBe("a/b/c");
+      expect(joinURL("a", "", "c")).toBe("a/c");
+    });
+  });
+
+  describe("joinRelativeURL", () => {
+    it("joins relative URL segments", () => {
+      expect(joinRelativeURL("/a", "../b", "./c")).toBe("/b/c");
+      expect(joinRelativeURL()).toBe("");
+      expect(joinRelativeURL("/a", "", "/")).toBe("/a/");
+      expect(joinRelativeURL("./a", "..")).toBe("./");
+      expect(joinRelativeURL("http://example.com/a", "..")).toBe("http://example.com/");
+    });
+  });
+
+  describe("protocol helpers", () => {
+    it("modifies or removes protocols", () => {
+      expect(withHttp("https://example.com")).toBe("http://example.com");
+      expect(withHttps("http://example.com")).toBe("https://example.com");
+      expect(withoutProtocol("http://example.com")).toBe("example.com");
+      expect(withProtocol("example.com", "ftp://")).toBe("ftp://example.com");
+      expect(withProtocol("//example.com", "ftp://")).toBe("ftp://example.com");
+      expect(withProtocol("http://example.com", "https://")).toBe("https://example.com");
+    });
+  });
+
+  describe("normalizeURL", () => {
+    it("normalizes the URL", () => {
+      expect(normalizeURL("test?query=123 123#hash, test")).toBe(
+        "test?query=123%20123#hash,%20test",
+      );
+      expect(normalizeURL("http://localhost:3000")).toBe("http://localhost:3000");
+    });
+  });
+
+  describe("resolveURL", () => {
+    it("resolves multiple URL segments", () => {
+      expect(resolveURL("http://foo.com/foo?test=123#token", "bar", "baz")).toBe(
+        "http://foo.com/foo/bar/baz?test=123#token",
+      );
+      expect(resolveURL("http://foo.com", "")).toBe("http://foo.com");
+      expect(() => resolveURL(123 as any)).toThrow(TypeError);
+      expect(resolveURL("http://foo.com?a=1", "?b=2")).toBe("http://foo.com/?a=1&b=2");
+    });
+  });
+
+  describe("isSamePath", () => {
+    it("checks if two paths are the same", () => {
+      expect(isSamePath("/foo", "/foo/")).toBe(true);
+      expect(isSamePath("/foo%20bar", "/foo bar")).toBe(true);
+    });
+  });
+
+  describe("isEqual", () => {
+    it("compares URLs with various options", () => {
+      expect(isEqual("/foo", "foo")).toBe(true);
+      expect(isEqual("foo/", "foo")).toBe(true);
+      expect(isEqual("/foo bar", "/foo%20bar")).toBe(true);
+      expect(isEqual("/foo", "foo", { leadingSlash: true })).toBe(false);
+      expect(isEqual("foo/", "foo", { trailingSlash: true })).toBe(false);
+      expect(isEqual("/foo bar", "/foo%20bar", { encoding: true })).toBe(false);
+    });
+  });
+
+  describe("withFragment and withoutFragment", () => {
+    it("manages fragments", () => {
+      expect(withFragment("/foo", "bar")).toBe("/foo#bar");
+      expect(withFragment("/foo#bar", "baz")).toBe("/foo#baz");
+      expect(withFragment("/foo#bar", "")).toBe("/foo");
+      expect(withFragment("/foo", "#")).toBe("/foo");
+      expect(withoutFragment("http://example.com/foo?q=123#bar")).toBe(
+        "http://example.com/foo?q=123",
+      );
+    });
+  });
+
+  describe("withoutHost", () => {
+    it("removes the host from the URL", () => {
+      expect(withoutHost("http://example.com/foo?q=123#bar")).toBe("/foo?q=123#bar");
+    });
+  });
+});
+```

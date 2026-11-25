@@ -1,0 +1,136 @@
+{
+  "schema_version": "0.1",
+  "run_id": "ufo__query__C1__r2",
+  "started_at": "2026-11-25T02:14:36.743Z",
+  "finished_at": "2026-11-25T02:14:52.445Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "ufo",
+    "repo": "unjs/ufo",
+    "commit": "f06c800d0c59f2a4a1b9ba65eb6cb61a84419be6",
+    "license": "MIT",
+    "module_path": "src/query.ts",
+    "module_loc": 138,
+    "mutants_total": 78,
+    "human_test_files": [
+      "test/query.test.ts"
+    ]
+  },
+  "condition": "C1",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": null,
+    "git_sha_agent": "72b0a5e807add30b979e699f839b4bd5b8283257"
+  },
+  "memorization": {
+    "probe_similarity": 0.1892,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 86.1111,
+        "ms_feedback": 78.5714,
+        "ms_all": 82.0513,
+        "ms_covered": 83.1169
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 96
+      },
+      "mutants_eval": {
+        "killed": 31,
+        "survived": 5,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 33,
+        "survived": 8,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 17,
+        "sha256": "ed407cf00457307c4614fd59f9194618f9123c16eb9186806e51f2ad718cc074"
+      },
+      "prompt_file": "runs/ufo__query__C1__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs/ufo__query__C1__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 1,
+        "repair_calls": 0,
+        "tokens_in": 1350,
+        "tokens_out": 666,
+        "usd_ref": 0.000401,
+        "wall_s": 15.7,
+        "stryker_s": 10.34
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 86.1111,
+      "ms_feedback": 78.5714,
+      "ms_all": 82.0513,
+      "ms_covered": 83.1169
+    },
+    "coverage": {
+      "line_cov": 100,
+      "branch_cov": 96
+    },
+    "cost": {
+      "calls": 1,
+      "repair_calls": 0,
+      "tokens_in": 1350,
+      "tokens_out": 666,
+      "usd_ref": 0.000401,
+      "wall_s": 15.7,
+      "stryker_s": 10.34
+    },
+    "tests": {
+      "n_tests": 10,
+      "n_asserts": 17,
+      "sha256": "ed407cf00457307c4614fd59f9194618f9123c16eb9186806e51f2ad718cc074"
+    },
+    "gap_cov_ms": 17.9487,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/ufo__query__C1__r2/raw"
+  }
+}

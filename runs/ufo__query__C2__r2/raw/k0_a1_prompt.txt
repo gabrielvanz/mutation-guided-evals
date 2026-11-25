@@ -1,0 +1,291 @@
+The Vitest test file below for `src/query.ts` (import path: `../../src/query`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/query.ts`:
+```ts
+import {
+  decodeQueryKey,
+  decodeQueryValue,
+  encodeQueryKey,
+  encodeQueryValue,
+} from "./encoding";
+
+export type QueryValue =
+  | string
+  | number
+  | undefined
+  | null
+  | boolean
+  | Array<QueryValue>
+  | Record<string, any>;
+
+export type QueryObject = Record<string, QueryValue | QueryValue[]>;
+
+export type ParsedQuery = Record<string, string | string[]>;
+
+// const EmptyObject = /* @__PURE__ */ (() => {
+//   const C = function () {};
+//   C.prototype = Object.create(null);
+//   return C;
+// })() as unknown as { new (): any };
+
+/**
+ * Parses and decodes a query string into an object.
+ *
+ * The input can be a query string with or without the leading `?`.
+ *
+ * @example
+ *
+ * ```js
+ * parseQuery("?foo=bar&baz=qux");
+ * // { foo: "bar", baz: "qux" }
+ *
+ * parseQuery("tags=javascript&tags=web&tags=dev");
+ * // { tags: ["javascript", "web", "dev"] }
+ * ```
+ *
+ * @note
+ * The `__proto__` and `constructor` keys are ignored to prevent prototype pollution.
+ *
+ * @group Query_utils
+ */
+export function parseQuery<T extends ParsedQuery = ParsedQuery>(
+  parametersString = "",
+): T {
+  // TODO: Use new EmptyObject() instead of Object.create(null) for better performance in next major version
+  // https://github.com/unjs/ufo/pull/290
+  const object: ParsedQuery = Object.create(null);
+  if (parametersString[0] === "?") {
+    parametersString = parametersString.slice(1);
+  }
+  for (const parameter of parametersString.split("&")) {
+    const s = parameter.match(/([^=]+)=?(.*)/) || [];
+    if (s.length < 2) {
+      continue;
+    }
+    const key = decodeQueryKey(s[1]);
+    if (key === "__proto__" || key === "constructor") {
+      continue;
+    }
+    const value = decodeQueryValue(s[2] || "");
+    if (object[key] === undefined) {
+      object[key] = value;
+    } else if (Array.isArray(object[key])) {
+      (object[key] as string[]).push(value);
+    } else {
+      object[key] = [object[key] as string, value];
+    }
+  }
+  return object as T;
+}
+
+/**
+ * Encodes a pair of key and value into a url query string value.
+ *
+ * If the value is an array, it will be encoded as multiple key-value pairs with the same key.
+ *
+ * @example
+ *
+ * ```js
+ * encodeQueryItem('message', 'Hello World')
+ * // 'message=Hello+World'
+ *
+ * encodeQueryItem('tags', ['javascript', 'web', 'dev'])
+ * // 'tags=javascript&tags=web&tags=dev'
+ * ```
+ *
+ * @group Query_utils
+ */
+export function encodeQueryItem(
+  key: string,
+  value: QueryValue | QueryValue[],
+): string {
+  if (typeof value === "number" || typeof value === "boolean") {
+    value = String(value);
+  }
+  if (!value) {
+    return encodeQueryKey(key);
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map(
+        (_value: QueryValue) =>
+          `${encodeQueryKey(key)}=${encodeQueryValue(_value)}`,
+      )
+      .join("&");
+  }
+
+  return `${encodeQueryKey(key)}=${encodeQueryValue(value)}`;
+}
+
+/**
+ * Stringfies and encodes a query object into a query string.
+ *
+ * @example
+ *
+ * ```js
+ * stringifyQuery({ foo: 'bar', baz: 'qux' })
+ * // 'foo=bar&baz=qux'
+ *
+ * stringifyQuery({ foo: 'bar', baz: undefined })
+ * // 'foo=bar'
+ * ```
+ *
+ * @group Query_utils
+ */
+export function stringifyQuery(query: QueryObject): string {
+  return Object.keys(query)
+    .filter((k) => query[k] !== undefined)
+    .map((k) => encodeQueryItem(k, query[k]))
+    .filter(Boolean)
+    .join("&");
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import { parseQuery, encodeQueryItem, stringifyQuery } from "../../src/query";
+
+describe("parseQuery", () => {
+  it("should parse a basic query string", () => {
+    const input = "foo=bar&baz=qux";
+    const expected = { foo: "bar", baz: "qux" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should handle leading question mark", () => {
+    const input = "?foo=bar&baz=qux";
+    const expected = { foo: "bar", baz: "qux" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should parse repeated keys into an array", () => {
+    const input = "tags=javascript&tags=web&tags=dev";
+    const expected = { tags: ["javascript", "web", "dev"] };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should handle omitted arguments or empty strings", () => {
+    expect(parseQuery()).toEqual({});
+    expect(parseQuery("")).toEqual({});
+  });
+
+  it("should ignore prototype pollution keys (__proto__ and constructor)", () => {
+    const input = "__proto__[foo]=bar&constructor[prototype]=baz&safe=ok";
+    const expected = { safe: "ok" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should handle keys without values or empty values", () => {
+    const input = "foo=&bar";
+    const expected = { foo: "", bar: "" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+});
+
+describe("encodeQueryItem", () => {
+  it("should encode a simple key-value pair", () => {
+    const result = encodeQueryItem("message", "Hello World");
+    expect(result).toBe("message=Hello+World");
+  });
+
+  it("should encode an array of values with the same key", () => {
+    const result = encodeQueryItem("tags", ["javascript", "web", "dev"]);
+    expect(result).toBe("tags=javascript&tags=web&tags=dev");
+  });
+
+  it("should handle numbers and booleans", () => {
+    expect(encodeQueryItem("count", 42)).toBe("count=42");
+    expect(encodeQueryItem("active", true)).toBe("active=true");
+  });
+
+  it("should handle falsy/empty values by encoding only the key", () => {
+    expect(encodeQueryItem("empty", "")).toBe("empty");
+    expect(encodeQueryItem("missing", undefined)).toBe("missing");
+    expect(encodeQueryItem("nullVal", null)).toBe("nullVal");
+  });
+});
+
+describe("stringifyQuery", () => {
+  it("should stringify a query object", () => {
+    const query = { foo: "bar", baz: "qux" };
+    expect(stringifyQuery(query)).toBe("foo=bar&baz=qux");
+  });
+
+  it("should omit undefined values", () => {
+    const query = { foo: "bar", baz: undefined };
+    expect(stringifyQuery(query)).toBe("foo=bar");
+  });
+
+  it("should handle arrays and primitive values in query object", () => {
+    const query = { tags: ["javascript", "web"], count: 5 };
+    expect(stringifyQuery(query)).toBe("tags=javascript&tags=web&count=5");
+  });
+
+  it("should return an empty string for an empty query object", () => {
+    expect(stringifyQuery({})).toBe("");
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.5 /home/runner/work/_temp/ufo
+
+ ❯ test/__generated__/query.gen.test.ts (14 tests | 1 failed) 12ms
+     ✓ should parse a basic query string 2ms
+     ✓ should handle leading question mark 0ms
+     ✓ should parse repeated keys into an array 0ms
+     ✓ should handle omitted arguments or empty strings 0ms
+     × should ignore prototype pollution keys (__proto__ and constructor) 6ms
+     ✓ should handle keys without values or empty values 0ms
+     ✓ should encode a simple key-value pair 0ms
+     ✓ should encode an array of values with the same key 0ms
+     ✓ should handle numbers and booleans 0ms
+     ✓ should handle falsy/empty values by encoding only the key 0ms
+     ✓ should stringify a query object 0ms
+     ✓ should omit undefined values 0ms
+     ✓ should handle arrays and primitive values in query object 0ms
+     ✓ should return an empty string for an empty query object 0ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 13 passed (14)
+   Start at  02:15:54
+   Duration  206ms (transform 55ms, setup 0ms, import 71ms, tests 12ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/query.gen.test.ts > parseQuery > should ignore prototype pollution keys (__proto__ and constructor)
+AssertionError: expected { '__proto__[foo]': 'bar', …(2) } to deeply equal { safe: 'ok' }
+
+- Expected
++ Received
+
+  {
++   "__proto__[foo]": "bar",
++   "constructor[prototype]": "baz",
+    "safe": "ok",
+  }
+
+ ❯ test/__generated__/query.gen.test.ts:31:31
+     29|     const input = "__proto__[foo]=bar&constructor[prototype]=baz&safe=…
+     30|     const expected = { safe: "ok" };
+     31|     expect(parseQuery(input)).toEqual(expected);
+       |                               ^
+     32|   });
+     33|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.
