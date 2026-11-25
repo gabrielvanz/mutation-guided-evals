@@ -1,0 +1,106 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { normalizeAliases, resolveAlias, reverseResolveAlias, filename } from "../../src/utils";
+
+describe("normalizeAliases", () => {
+  it("should sort aliases from specific to general and resolve nested aliases", () => {
+    const input = {
+      "~/": "/root/",
+      "~/components/": "~/src/components/",
+    };
+    const result = normalizeAliases(input);
+    expect(result).toEqual({
+      "~/components/": "/root/src/components/",
+      "~/": "/root/",
+    });
+  });
+
+  it("should return already normalized aliases without reprocessing", () => {
+    const input = {
+      "~/": "/root/",
+    };
+    const normalized = normalizeAliases(input);
+    const result = normalizeAliases(normalized);
+    expect(result).toBe(normalized);
+  });
+});
+
+describe("resolveAlias", () => {
+  it("should resolve alias when path starts with alias and has a trailing slash separator", () => {
+    const aliases = {
+      "~": "/root",
+    };
+    const result = resolveAlias("~/file.ts", aliases);
+    expect(result).toBe("/root/file.ts");
+  });
+
+  it("should return normalized path when no alias matches", () => {
+    const aliases = {
+      "~": "/root",
+    };
+    const result = resolveAlias("/other/path.ts", aliases);
+    expect(result).toBe("/other/path.ts");
+  });
+
+  it("should handle Windows path style inputs", () => {
+    const aliases = {
+      "~": "/root",
+    };
+    const result = resolveAlias("~\\file.ts", aliases);
+    expect(result).toBe("/root/file.ts");
+  });
+
+  it("should not match partial alias prefixes without a path separator", () => {
+    const aliases = {
+      "~dir": "/root",
+    };
+    const result = resolveAlias("~directory/file.ts", aliases);
+    expect(result).toBe("~directory/file.ts");
+  });
+});
+
+describe("reverseResolveAlias", () => {
+  it("should return matching reverse alias resolutions sorted by length", () => {
+    const aliases = {
+      "~": "/root",
+      "@sub": "/root/sub",
+    };
+    const result = reverseResolveAlias("/root/sub/file.ts", aliases);
+    expect(result).toEqual(["~/sub/file.ts", "@sub/file.ts"]);
+  });
+
+  it("should return an empty array if no reverse alias matches", () => {
+    const aliases = {
+      "~": "/root",
+    };
+    const result = reverseResolveAlias("/other/file.ts", aliases);
+    expect(result).toEqual([]);
+  });
+
+  it("should not match partial reverse alias prefixes without a path separator", () => {
+    const aliases = {
+      "~dir": "/root",
+    };
+    const result = reverseResolveAlias("/rootectory/file.ts", aliases);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("filename", () => {
+  const cases = [
+    { input: "/path/to/file.ts", expected: "file" },
+    { input: "file.tar.gz", expected: "file.tar" },
+    { input: "README", expected: "README" },
+    { input: ".gitignore", expected: ".gitignore" },
+    { input: "", expected: undefined },
+    { input: "C:\\path\\to\\image.png", expected: "image" },
+    { input: "/path/to/dir/", expected: undefined },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should extract filename for input: ${input}`, () => {
+      expect(filename(input)).toBe(expected);
+    });
+  }
+});
+```

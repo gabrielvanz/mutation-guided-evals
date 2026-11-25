@@ -1,0 +1,464 @@
+{
+  "schema_version": "0.1",
+  "run_id": "pathe__utils__C3__r3",
+  "started_at": "2026-11-25T17:29:59.245Z",
+  "finished_at": "2026-11-25T17:53:48.904Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "pathe",
+    "repo": "unjs/pathe",
+    "commit": "bc7477a01f0bd60ada017add8142c9f9d69ccdc5",
+    "license": "MIT",
+    "module_path": "src/utils.ts",
+    "module_loc": 134,
+    "mutants_total": 89,
+    "human_test_files": [
+      "test/utils.spec.ts"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.9",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "5ebb2f98a932ff8147664dc21a859a82e30b5551489d4908c9bd4f1133a478d1",
+    "git_sha_agent": "9706339e44883aacd55b36a571cb0fa49476376a"
+  },
+  "memorization": {
+    "probe_similarity": 0.0791,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/pathe__utils__C3__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs/pathe__utils__C3__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 7952,
+        "tokens_out": 2788,
+        "usd_ref": 0.00191,
+        "wall_s": 737.67,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 45,
+        "ms_feedback": 59.1837,
+        "ms_all": 52.809,
+        "ms_covered": 58.0247
+      },
+      "coverage": {
+        "line_cov": 97.72,
+        "branch_cov": 86.2
+      },
+      "mutants_eval": {
+        "killed": 18,
+        "survived": 17,
+        "no_coverage": 5,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 29,
+        "survived": 17,
+        "no_coverage": 3,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 8,
+        "n_asserts": 8,
+        "sha256": "19b49996da96415d34a953c602599b283c37dbf20434f22bff54c3532ae4c4fb"
+      },
+      "prompt_file": "runs/pathe__utils__C3__r3/raw/k1_a0_prompt.txt",
+      "response_file": "runs/pathe__utils__C3__r3/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 4,
+        "tokens_in": 15440,
+        "tokens_out": 4993,
+        "usd_ref": 0.003541,
+        "wall_s": 857.11,
+        "stryker_s": 11
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 47.5,
+        "ms_feedback": 61.2245,
+        "ms_all": 55.0562,
+        "ms_covered": 60.4938
+      },
+      "coverage": {
+        "line_cov": 97.72,
+        "branch_cov": 86.2
+      },
+      "mutants_eval": {
+        "killed": 19,
+        "survived": 16,
+        "no_coverage": 5,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 30,
+        "survived": 16,
+        "no_coverage": 3,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/utils.ts:4:33-4:36:StringLiteral:\"\"",
+        "src/utils.ts:28:30-39:4:BlockStatement:{}",
+        "src/utils.ts:31:11-31:24:ConditionalExpression:false",
+        "src/utils.ts:31:11-31:24:EqualityOperator:alias !== key",
+        "src/utils.ts:31:11-31:49:ConditionalExpression:false",
+        "src/utils.ts:31:11-31:49:ConditionalExpression:true",
+        "src/utils.ts:31:28-31:49:MethodExpression:key.endsWith(alias)",
+        "src/utils.ts:35:11-35:35:OptionalChaining:aliases[key].startsWith",
+        "src/utils.ts:35:11-35:92:LogicalOperator:aliases[key]?.startsWith(alias) || pathSeparators.has(aliases[key][alias.length])",
+        "src/utils.ts:35:94-37:8:BlockStatement:{}",
+        "src/utils.ts:60:35-62:6:BlockStatement:{}",
+        "src/utils.ts:60:9-60:33:ConditionalExpression:false",
+        "src/utils.ts:65:61-65:63:UnaryOperator:+1",
+        "src/utils.ts:86:9-86:33:ConditionalExpression:false",
+        "src/utils.ts:91:46-91:64:MethodExpression:alias",
+        "src/utils.ts:99:23-99:52:ArrowFunction:() => undefined",
+        "src/utils.ts:99:33-99:52:ArithmeticOperator:b.length + a.length",
+        "src/utils.ts:127:40-127:43:StringLiteral:\"\"",
+        "src/utils.ts:133:10-133:26:EqualityOperator:lastChar !== \"/\"",
+        "src/utils.ts:133:43-133:47:StringLiteral:\"\""
+      ],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 10,
+        "sha256": "1df7faa2a9c3a57527b32c2b6043a01ea1bf4f3dd1af63f72e8347cbec0dcfd0"
+      },
+      "prompt_file": "runs/pathe__utils__C3__r3/raw/k2_a0_prompt.txt",
+      "response_file": "runs/pathe__utils__C3__r3/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 5,
+        "tokens_in": 22284,
+        "tokens_out": 6799,
+        "usd_ref": 0.004948,
+        "wall_s": 911.89,
+        "stryker_s": 21.11
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 47.5,
+        "ms_feedback": 61.2245,
+        "ms_all": 55.0562,
+        "ms_covered": 60.4938
+      },
+      "coverage": {
+        "line_cov": 97.72,
+        "branch_cov": 86.2
+      },
+      "mutants_eval": {
+        "killed": 19,
+        "survived": 16,
+        "no_coverage": 5,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 30,
+        "survived": 16,
+        "no_coverage": 3,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 19,
+      "survivor_ids": [
+        "src/utils.ts:4:33-4:36:StringLiteral:\"\"",
+        "src/utils.ts:28:30-39:4:BlockStatement:{}",
+        "src/utils.ts:31:11-31:24:ConditionalExpression:false",
+        "src/utils.ts:31:11-31:24:EqualityOperator:alias !== key",
+        "src/utils.ts:31:11-31:49:ConditionalExpression:false",
+        "src/utils.ts:31:11-31:49:ConditionalExpression:true",
+        "src/utils.ts:31:28-31:49:MethodExpression:key.endsWith(alias)",
+        "src/utils.ts:35:11-35:35:OptionalChaining:aliases[key].startsWith",
+        "src/utils.ts:35:94-37:8:BlockStatement:{}",
+        "src/utils.ts:60:35-62:6:BlockStatement:{}",
+        "src/utils.ts:60:9-60:33:ConditionalExpression:false",
+        "src/utils.ts:65:61-65:63:UnaryOperator:+1",
+        "src/utils.ts:86:9-86:33:ConditionalExpression:false",
+        "src/utils.ts:91:46-91:64:MethodExpression:alias",
+        "src/utils.ts:99:23-99:52:ArrowFunction:() => undefined",
+        "src/utils.ts:99:33-99:52:ArithmeticOperator:b.length + a.length",
+        "src/utils.ts:126:48-128:2:BlockStatement:{}",
+        "src/utils.ts:127:40-127:43:StringLiteral:\"\"",
+        "src/utils.ts:133:43-133:47:StringLiteral:\"\""
+      ],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 10,
+        "sha256": "1df7faa2a9c3a57527b32c2b6043a01ea1bf4f3dd1af63f72e8347cbec0dcfd0"
+      },
+      "prompt_file": "runs/pathe__utils__C3__r3/raw/k3_a0_prompt.txt",
+      "response_file": "runs/pathe__utils__C3__r3/raw/k3_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 10,
+        "repair_calls": 6,
+        "tokens_in": 29210,
+        "tokens_out": 8605,
+        "usd_ref": 0.006363,
+        "wall_s": 962.78,
+        "stryker_s": 31.37
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 47.5,
+        "ms_feedback": 61.2245,
+        "ms_all": 55.0562,
+        "ms_covered": 60.4938
+      },
+      "coverage": {
+        "line_cov": 97.72,
+        "branch_cov": 86.2
+      },
+      "mutants_eval": {
+        "killed": 19,
+        "survived": 16,
+        "no_coverage": 5,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 30,
+        "survived": 16,
+        "no_coverage": 3,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 19,
+      "survivor_ids": [
+        "src/utils.ts:4:33-4:36:StringLiteral:\"\"",
+        "src/utils.ts:28:30-39:4:BlockStatement:{}",
+        "src/utils.ts:31:11-31:24:ConditionalExpression:false",
+        "src/utils.ts:31:11-31:24:EqualityOperator:alias !== key",
+        "src/utils.ts:31:11-31:49:ConditionalExpression:false",
+        "src/utils.ts:31:11-31:49:ConditionalExpression:true",
+        "src/utils.ts:31:28-31:49:MethodExpression:key.endsWith(alias)",
+        "src/utils.ts:35:11-35:35:OptionalChaining:aliases[key].startsWith",
+        "src/utils.ts:35:94-37:8:BlockStatement:{}",
+        "src/utils.ts:60:35-62:6:BlockStatement:{}",
+        "src/utils.ts:60:9-60:33:ConditionalExpression:false",
+        "src/utils.ts:65:61-65:63:UnaryOperator:+1",
+        "src/utils.ts:86:9-86:33:ConditionalExpression:false",
+        "src/utils.ts:91:46-91:64:MethodExpression:alias",
+        "src/utils.ts:99:23-99:52:ArrowFunction:() => undefined",
+        "src/utils.ts:99:33-99:52:ArithmeticOperator:b.length + a.length",
+        "src/utils.ts:126:48-128:2:BlockStatement:{}",
+        "src/utils.ts:127:40-127:43:StringLiteral:\"\"",
+        "src/utils.ts:133:43-133:47:StringLiteral:\"\""
+      ],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 10,
+        "sha256": "1df7faa2a9c3a57527b32c2b6043a01ea1bf4f3dd1af63f72e8347cbec0dcfd0"
+      },
+      "prompt_file": "runs/pathe__utils__C3__r3/raw/k4_a0_prompt.txt",
+      "response_file": "runs/pathe__utils__C3__r3/raw/k4_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 12,
+        "repair_calls": 7,
+        "tokens_in": 36136,
+        "tokens_out": 10411,
+        "usd_ref": 0.007778,
+        "wall_s": 1309.94,
+        "stryker_s": 41.64
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 47.5,
+        "ms_feedback": 61.2245,
+        "ms_all": 55.0562,
+        "ms_covered": 60.4938
+      },
+      "coverage": {
+        "line_cov": 97.72,
+        "branch_cov": 86.2
+      },
+      "mutants_eval": {
+        "killed": 19,
+        "survived": 16,
+        "no_coverage": 5,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 30,
+        "survived": 16,
+        "no_coverage": 3,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 19,
+      "survivor_ids": [
+        "src/utils.ts:4:33-4:36:StringLiteral:\"\"",
+        "src/utils.ts:28:30-39:4:BlockStatement:{}",
+        "src/utils.ts:31:11-31:24:ConditionalExpression:false",
+        "src/utils.ts:31:11-31:24:EqualityOperator:alias !== key",
+        "src/utils.ts:31:11-31:49:ConditionalExpression:false",
+        "src/utils.ts:31:11-31:49:ConditionalExpression:true",
+        "src/utils.ts:31:28-31:49:MethodExpression:key.endsWith(alias)",
+        "src/utils.ts:35:11-35:35:OptionalChaining:aliases[key].startsWith",
+        "src/utils.ts:35:94-37:8:BlockStatement:{}",
+        "src/utils.ts:60:35-62:6:BlockStatement:{}",
+        "src/utils.ts:60:9-60:33:ConditionalExpression:false",
+        "src/utils.ts:65:61-65:63:UnaryOperator:+1",
+        "src/utils.ts:86:9-86:33:ConditionalExpression:false",
+        "src/utils.ts:91:46-91:64:MethodExpression:alias",
+        "src/utils.ts:99:23-99:52:ArrowFunction:() => undefined",
+        "src/utils.ts:99:33-99:52:ArithmeticOperator:b.length + a.length",
+        "src/utils.ts:126:48-128:2:BlockStatement:{}",
+        "src/utils.ts:127:40-127:43:StringLiteral:\"\"",
+        "src/utils.ts:133:43-133:47:StringLiteral:\"\""
+      ],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 10,
+        "sha256": "1df7faa2a9c3a57527b32c2b6043a01ea1bf4f3dd1af63f72e8347cbec0dcfd0"
+      },
+      "prompt_file": "runs/pathe__utils__C3__r3/raw/k5_a0_prompt.txt",
+      "response_file": "runs/pathe__utils__C3__r3/raw/k5_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 14,
+        "repair_calls": 8,
+        "tokens_in": 43062,
+        "tokens_out": 12217,
+        "usd_ref": 0.009193,
+        "wall_s": 1429.66,
+        "stryker_s": 51.88
+      }
+    }
+  ],
+  "selected_iteration": 2,
+  "final": {
+    "scores": {
+      "ms_eval": 47.5,
+      "ms_feedback": 61.2245,
+      "ms_all": 55.0562,
+      "ms_covered": 60.4938
+    },
+    "coverage": {
+      "line_cov": 97.72,
+      "branch_cov": 86.2
+    },
+    "cost": {
+      "calls": 14,
+      "repair_calls": 8,
+      "tokens_in": 43062,
+      "tokens_out": 12217,
+      "usd_ref": 0.009193,
+      "wall_s": 1429.66,
+      "stryker_s": 51.88
+    },
+    "tests": {
+      "n_tests": 10,
+      "n_asserts": 10,
+      "sha256": "1df7faa2a9c3a57527b32c2b6043a01ea1bf4f3dd1af63f72e8347cbec0dcfd0"
+    },
+    "gap_cov_ms": 42.6638,
+    "valid_rate": 0.8333,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/pathe__utils__C3__r3/raw"
+  }
+}
