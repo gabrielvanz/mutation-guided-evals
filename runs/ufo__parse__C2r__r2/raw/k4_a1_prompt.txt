@@ -1,0 +1,596 @@
+The Vitest test file below for `src/parse.ts` (import path: `../../src/parse`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/parse.ts`:
+```ts
+import { decode } from "./encoding";
+import { hasProtocol } from "./utils";
+
+const protocolRelative = Symbol.for("ufo:protocolRelative");
+
+export interface ParsedURL {
+  protocol?: string;
+  host?: string;
+  auth?: string;
+  href?: string;
+  pathname: string;
+  hash: string;
+  search: string;
+  [protocolRelative]?: boolean;
+}
+
+export type ParsedPath = Pick<ParsedURL, "pathname" | "hash" | "search">;
+
+export interface ParsedAuth {
+  username: string;
+  password: string;
+}
+
+export interface ParsedHost {
+  hostname: string;
+  port: string;
+}
+
+/**
+ * Takes a URL string and returns an object with the URL's `protocol`, `auth`, `host`, `pathname`, `search`, and `hash`.
+ *
+ * @example
+ *
+ * ```js
+ * parseURL("http://foo.com/foo?test=123#token");
+ * // { protocol: 'http:', auth: '', host: 'foo.com', pathname: '/foo', search: '?test=123', hash: '#token' }
+ *
+ * parseURL("foo.com/foo?test=123#token");
+ * // { pathname: 'foo.com/foo', search: '?test=123', hash: '#token' }
+ *
+ * parseURL("foo.com/foo?test=123#token", "https://");
+ * // { protocol: 'https:', auth: '', host: 'foo.com', pathname: '/foo', search: '?test=123', hash: '#token' }
+ * ```
+ *
+ * @group parsing_utils
+ *
+ * @param [input] - The URL to parse.
+ * @param [defaultProto] - The default protocol to use if the input doesn't have one.
+ * @returns A parsed URL object.
+ */
+export function parseURL(input = "", defaultProto?: string): ParsedURL {
+  const _specialProtoMatch = input.match(
+    /^[\s\0]*(blob:|data:|javascript:|vbscript:)(.*)/i,
+  );
+  if (_specialProtoMatch) {
+    const [, _proto, _pathname = ""] = _specialProtoMatch;
+    return {
+      protocol: _proto.toLowerCase(),
+      pathname: _pathname,
+      href: _proto + _pathname,
+      auth: "",
+      host: "",
+      search: "",
+      hash: "",
+    };
+  }
+
+  if (!hasProtocol(input, { acceptRelative: true })) {
+    return defaultProto ? parseURL(defaultProto + input) : parsePath(input);
+  }
+
+  const [, protocol = "", auth, hostAndPath = ""] =
+    input
+      .replace(/\\/g, "/")
+      .match(/^[\s\0]*([\w+.-]{2,}:)?\/\/([^/@]+@)?(.*)/) || [];
+
+  // eslint-disable-next-line prefer-const
+  let [, host = "", path = ""] = hostAndPath.match(/([^#/?]*)(.*)?/) || [];
+
+  if (protocol === "file:") {
+    path = path.replace(/\/(?=[A-Za-z]:)/, "");
+  }
+
+  const { pathname, search, hash } = parsePath(path);
+
+  return {
+    protocol: protocol.toLowerCase(),
+    auth: auth ? auth.slice(0, Math.max(0, auth.length - 1)) : "",
+    host,
+    pathname,
+    search,
+    hash,
+    [protocolRelative]: !protocol,
+  };
+}
+
+/**
+ * Splits the input string into three parts, and returns an object with those three parts.
+ *
+ * @example
+ *
+ * ```js
+ * parsePath("http://foo.com/foo?test=123#token");
+ * // { pathname: 'http://foo.com/foo', search: '?test=123', hash: '#token' }
+ * ```
+ *
+ * @group parsing_utils
+ *
+ * @param [input] - The URL to parse.
+ * @returns An object with three properties: `pathname`, `search`, and `hash`.
+ */
+export function parsePath(input = ""): ParsedPath {
+  const [pathname = "", search = "", hash = ""] = (
+    input.match(/([^#?]*)(\?[^#]*)?(#.*)?/) || []
+  ).splice(1);
+
+  return {
+    pathname,
+    search,
+    hash,
+  };
+}
+
+/**
+ * Takes a string of the form `username:password` and returns an object with the username and
+ * password decoded.
+ *
+ * @group parsing_utils
+ *
+ * @param [input] - The URL to parse.
+ * @returns An object with two properties: username and password.
+ */
+export function parseAuth(input = ""): ParsedAuth {
+  const [username, password] = input.split(":");
+  return {
+    username: decode(username),
+    password: decode(password),
+  };
+}
+
+/**
+ * Takes a string, and returns an object with two properties: `hostname` and `port`.
+ *
+ * @example
+ *
+ * ```js
+ * parseHost("foo.com:8080");
+ * // { hostname: 'foo.com', port: '8080' }
+ * ```
+ *
+ * @group parsing_utils
+ *
+ * @param [input] - The URL to parse.
+ * @returns A function that takes a string and returns an object with two properties: `hostname` and
+ * `port`.
+ */
+export function parseHost(input = ""): ParsedHost {
+  const [hostname, port] = (input.match(/([^/:]*):?(\d+)?/) || []).splice(1);
+  return {
+    hostname: decode(hostname),
+    port,
+  };
+}
+
+/**
+ * Takes a `ParsedURL` object and returns the stringified URL.
+ *
+ * @group parsing_utils
+ *
+ * @example
+ *
+ * ```js
+ * const obj = parseURL("http://foo.com/foo?test=123#token");
+ * obj.host = "bar.com";
+ *
+ * stringifyParsedURL(obj); // "http://bar.com/foo?test=123#token"
+ * ```
+ *
+ * @param [parsed] - The parsed URL
+ * @returns A stringified URL.
+ */
+export function stringifyParsedURL(parsed: Partial<ParsedURL>): string {
+  const pathname = parsed.pathname || "";
+  const search = parsed.search
+    ? (parsed.search.startsWith("?") ? "" : "?") + parsed.search
+    : "";
+  const hash = parsed.hash || "";
+  const auth = parsed.auth ? parsed.auth + "@" : "";
+  const host = parsed.host || "";
+  const proto =
+    parsed.protocol || parsed[protocolRelative]
+      ? (parsed.protocol || "") + "//"
+      : "";
+  return proto + auth + host + pathname + search + hash;
+}
+
+const FILENAME_STRICT_REGEX = /\/([^/]+\.[^/]+)$/;
+const FILENAME_REGEX = /\/([^/]+)$/;
+
+/**
+ * Parses a URL and returns last segment in path as filename.
+ *
+ * If `{ strict: true }` is passed as the second argument, it will only return the last segment only if ending with an extension.
+ *
+ * @group parsing_utils
+ *
+ * @example
+ *
+ * ```js
+ * // Result: filename.ext
+ * parseFilename("http://example.com/path/to/filename.ext");
+ *
+ * // Result: undefined
+ * parseFilename("/path/to/.hidden-file", { strict: true });
+ * ```
+ *
+ * @param [input] - The URL to parse.
+ * @param [opts]  - Options to use while parsing
+ */
+export function parseFilename(
+  input = "",
+  opts?: { strict?: boolean },
+): string | undefined {
+  const { pathname } = parseURL(input);
+  const matches = opts?.strict
+    ? pathname.match(FILENAME_STRICT_REGEX)
+    : pathname.match(FILENAME_REGEX);
+  return matches ? matches[1] : undefined;
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  parseURL,
+  parsePath,
+  parseAuth,
+  parseHost,
+  stringifyParsedURL,
+  parseFilename
+} from "../../src/parse";
+
+describe("parseURL", () => {
+  it("should parse absolute URLs with protocol, auth, host, pathname, search, and hash", () => {
+    const result = parseURL("http://user:pass@foo.com/foo?test=123#token");
+    expect(result).toEqual({
+      protocol: "http:",
+      auth: "user:pass",
+      host: "foo.com",
+      pathname: "/foo",
+      search: "?test=123",
+      hash: "#token"
+    });
+  });
+
+  it("should parse relative URLs without protocol", () => {
+    const result = parseURL("foo.com/foo?test=123#token");
+    expect(result).toEqual({
+      pathname: "foo.com/foo",
+      search: "?test=123",
+      hash: "#token",
+      auth: "",
+      host: "",
+      protocol: ""
+    });
+  });
+
+  it("should parse relative URLs with a default protocol", () => {
+    const result = parseURL("foo.com/foo?test=123#token", "https://");
+    expect(result).toEqual({
+      protocol: "https:",
+      auth: "",
+      host: "foo.com",
+      pathname: "/foo",
+      search: "?test=123",
+      hash: "#token"
+    });
+  });
+
+  it("should handle special protocols like blob, data, javascript, vbscript", () => {
+    const result = parseURL("data:text/plain;base64,SGVsbG8=");
+    expect(result).toEqual({
+      protocol: "data:",
+      pathname: "text/plain;base64,SGVsbG8=",
+      href: "data:text/plain;base64,SGVsbG8=",
+      auth: "",
+      host: "",
+      search: "",
+      hash: ""
+    });
+  });
+
+  it("should handle empty input", () => {
+    const result = parseURL("");
+    expect(result).toEqual({
+      pathname: "",
+      search: "",
+      hash: "",
+      auth: "",
+      host: "",
+      protocol: ""
+    });
+  });
+
+  it("should normalize backslashes to forward slashes", () => {
+    const result = parseURL("http://foo.com\\foo\\bar");
+    expect(result.pathname).toBe("/foo/bar");
+  });
+
+  it("should handle file protocols correctly", () => {
+    const result = parseURL("file:///C:/path/to/file");
+    expect(result.protocol).toBe("file:");
+    expect(result.pathname).toBe("C:/path/to/file");
+  });
+});
+
+describe("parsePath", () => {
+  it("should split path into pathname, search, and hash", () => {
+    const result = parsePath("http://foo.com/foo?test=123#token");
+    expect(result).toEqual({
+      pathname: "http://foo.com/foo",
+      search: "?test=123",
+      hash: "#token"
+    });
+  });
+
+  it("should handle empty path input", () => {
+    const result = parsePath("");
+    expect(result).toEqual({
+      pathname: "",
+      search: "",
+      hash: ""
+    });
+  });
+
+  it("should parse paths with only search and hash", () => {
+    const result = parsePath("?foo=bar#baz");
+    expect(result).toEqual({
+      pathname: "",
+      search: "?foo=bar",
+      hash: "#baz"
+    });
+  });
+});
+
+describe("parseAuth", () => {
+  it("should parse and decode username and password", () => {
+    const result = parseAuth("user%40name:pass%40word");
+    expect(result).toEqual({
+      username: "user@name",
+      password: "pass@word"
+    });
+  });
+
+  it("should handle empty auth string", () => {
+    const result = parseAuth("");
+    expect(result).toEqual({
+      username: "",
+      password: ""
+    });
+  });
+});
+
+describe("parseHost", () => {
+  it("should parse hostname and port", () => {
+    const result = parseHost("foo.com:8080");
+    expect(result).toEqual({
+      hostname: "foo.com",
+      port: "8080"
+    });
+  });
+
+  it("should handle host without port", () => {
+    const result = parseHost("foo.com");
+    expect(result).toEqual({
+      hostname: "foo.com",
+      port: undefined
+    });
+  });
+
+  it("should handle empty host input", () => {
+    const result = parseHost("");
+    expect(result).toEqual({
+      hostname: "",
+      port: undefined
+    });
+  });
+});
+
+describe("stringifyParsedURL", () => {
+  it("should stringify a fully parsed URL object", () => {
+    const parsed = {
+      protocol: "http:",
+      auth: "user:pass",
+      host: "bar.com",
+      pathname: "/foo",
+      search: "?test=123",
+      hash: "#token"
+    };
+    const result = stringifyParsedURL(parsed);
+    expect(result).toBe("http://user:pass@bar.com/foo?test=123#token");
+  });
+
+  it("should stringify a partial URL object without protocol or host", () => {
+    const parsed = {
+      pathname: "foo/bar",
+      search: "test=123",
+      hash: "#token"
+    };
+    const result = stringifyParsedURL(parsed);
+    expect(result).toBe("foo/bar?test=123#token");
+  });
+
+  it("should handle empty parsed object", () => {
+    const result = stringifyParsedURL({});
+    expect(result).toBe("");
+  });
+});
+
+describe("parseFilename", () => {
+  it("should return the last segment as filename", () => {
+    const filename = parseFilename("http://example.com/path/to/filename.ext");
+    expect(filename).toBe("filename.ext");
+  });
+
+  it("should return undefined when no filename is present", () => {
+    const filename = parseFilename("http://example.com/path/to/");
+    expect(filename).toBe(undefined);
+  });
+
+  it("should respect strict mode requiring a file extension", () => {
+    const filenameNoExt = parseFilename("/path/to/filename", { strict: true });
+    expect(filenameNoExt).toBe(undefined);
+
+    const filenameWithExt = parseFilename("/path/to/filename.ext", { strict: true });
+    expect(filenameWithExt).toBe("filename.ext");
+  });
+
+  it("should handle empty input", () => {
+    const filename = parseFilename("");
+    expect(filename).toBe(undefined);
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.5 /home/runner/work/_temp/ufo
+
+ ❯ test/__generated__/parse.gen.test.ts (22 tests | 4 failed) 20ms
+     × should parse absolute URLs with protocol, auth, host, pathname, search, and hash 9ms
+     × should parse relative URLs without protocol 2ms
+     × should parse relative URLs with a default protocol 1ms
+     ✓ should handle special protocols like blob, data, javascript, vbscript 0ms
+     × should handle empty input 1ms
+     ✓ should normalize backslashes to forward slashes 0ms
+     ✓ should handle file protocols correctly 0ms
+     ✓ should split path into pathname, search, and hash 0ms
+     ✓ should handle empty path input 0ms
+     ✓ should parse paths with only search and hash 0ms
+     ✓ should parse and decode username and password 0ms
+     ✓ should handle empty auth string 0ms
+     ✓ should parse hostname and port 0ms
+     ✓ should handle host without port 0ms
+     ✓ should handle empty host input 0ms
+     ✓ should stringify a fully parsed URL object 0ms
+     ✓ should stringify a partial URL object without protocol or host 0ms
+     ✓ should handle empty parsed object 0ms
+     ✓ should return the last segment as filename 0ms
+     ✓ should return undefined when no filename is present 0ms
+     ✓ should respect strict mode requiring a file extension 0ms
+     ✓ should handle empty input 0ms
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 18 passed (22)
+   Start at  12:54:19
+   Duration  290ms (transform 98ms, setup 0ms, import 119ms, tests 20ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/parse.gen.test.ts > parseURL > should parse absolute URLs with protocol, auth, host, pathname, search, and hash
+AssertionError: expected { protocol: 'http:', …(5), …(1) } to deeply equal { protocol: 'http:', …(5) }
+
+- Expected
++ Received
+
+@@ -3,6 +3,7 @@
+    "hash": "#token",
+    "host": "foo.com",
+    "pathname": "/foo",
+    "protocol": "http:",
+    "search": "?test=123",
++   Symbol(ufo:protocolRelative): false,
+  }
+
+ ❯ test/__generated__/parse.gen.test.ts:14:20
+     12|   it("should parse absolute URLs with protocol, auth, host, pathname, …
+     13|     const result = parseURL("http://user:pass@foo.com/foo?test=123#tok…
+     14|     expect(result).toEqual({
+       |                    ^
+     15|       protocol: "http:",
+     16|       auth: "user:pass",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  test/__generated__/parse.gen.test.ts > parseURL > should parse relative URLs without protocol
+AssertionError: expected { pathname: 'foo.com/foo', …(2) } to deeply equal { pathname: 'foo.com/foo', …(5) }
+
+- Expected
++ Received
+
+  {
+-   "auth": "",
+    "hash": "#token",
+-   "host": "",
+    "pathname": "foo.com/foo",
+-   "protocol": "",
+    "search": "?test=123",
+  }
+
+ ❯ test/__generated__/parse.gen.test.ts:26:20
+     24|   it("should parse relative URLs without protocol", () => {
+     25|     const result = parseURL("foo.com/foo?test=123#token");
+     26|     expect(result).toEqual({
+       |                    ^
+     27|       pathname: "foo.com/foo",
+     28|       search: "?test=123",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  test/__generated__/parse.gen.test.ts > parseURL > should parse relative URLs with a default protocol
+AssertionError: expected { Object (protocol, auth, ...) } to deeply equal { protocol: 'https:', auth: '', …(4) }
+
+- Expected
++ Received
+
+@@ -3,6 +3,7 @@
+    "hash": "#token",
+    "host": "foo.com",
+    "pathname": "/foo",
+    "protocol": "https:",
+    "search": "?test=123",
++   Symbol(ufo:protocolRelative): false,
+  }
+
+ ❯ test/__generated__/parse.gen.test.ts:38:20
+     36|   it("should parse relative URLs with a default protocol", () => {
+     37|     const result = parseURL("foo.com/foo?test=123#token", "https://");
+     38|     expect(result).toEqual({
+       |                    ^
+     39|       protocol: "https:",
+     40|       auth: "",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  test/__generated__/parse.gen.test.ts > parseURL > should handle empty input
+AssertionError: expected { pathname: '', search: '', hash: '' } to deeply equal { pathname: '', search: '', …(4) }
+
+- Expected
++ Received
+
+  {
+-   "auth": "",
+    "hash": "",
+-   "host": "",
+    "pathname": "",
+-   "protocol": "",
+    "search": "",
+  }
+
+ ❯ test/__generated__/parse.gen.test.ts:63:20
+     61|   it("should handle empty input", () => {
+     62|     const result = parseURL("");
+     63|     expect(result).toEqual({
+       |                    ^
+     64|       pathname: "",
+     65|       search: "",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

@@ -1,0 +1,52 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    const cases = [
+      { input: "example.com", expected: "example.com" },
+      { input: "test", expected: "test" },
+      { input: "123.456", expected: "123.456" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should convert non-ASCII domain names to punycode", () => {
+    const cases = [
+      { input: "münchen.de", expected: "xn--mnchen-3ya.de" },
+      { input: "العربية.مصر", expected: "xn--mgbcd4a2b0d2b.xn--wgbh1c" },
+      { input: "شبکه", expected: "xn--mgbh0fb" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle email addresses with non-ASCII domains", () => {
+    const input = "user@münchen.de";
+    const expected = "user@xn--mnchen-3ya.de";
+    expect(toASCII(input)).toBe(expected);
+  });
+
+  it("should handle different dot separators", () => {
+    const input = "münchen．de";
+    const expected = "xn--mnchen-3ya.de";
+    expect(toASCII(input)).toBe(expected);
+  });
+
+  it("should throw a RangeError on overflow or invalid input", () => {
+    const invalidInputs = [
+      "a".repeat(100000)
+    ];
+
+    for (const input of invalidInputs) {
+      expect(() => toASCII(input)).toThrow(RangeError);
+    }
+  });
+});
+```

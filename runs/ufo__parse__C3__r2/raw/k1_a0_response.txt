@@ -1,0 +1,268 @@
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  parseURL,
+  parsePath,
+  parseAuth,
+  parseHost,
+  stringifyParsedURL,
+  parseFilename
+} from "../../src/parse";
+
+describe("parseURL", () => {
+  it("should parse standard absolute URL", () => {
+    const result = parseURL("http://foo.com/foo?test=123#token");
+    expect(result).toMatchObject({
+      protocol: "http:",
+      auth: "",
+      host: "foo.com",
+      pathname: "/foo",
+      search: "?test=123",
+      hash: "#token"
+    });
+  });
+
+  it("should parse relative URL without default protocol", () => {
+    const result = parseURL("foo.com/foo?test=123#token");
+    expect(result).toEqual({
+      pathname: "foo.com/foo",
+      search: "?test=123",
+      hash: "#token"
+    });
+  });
+
+  it("should parse relative URL with default protocol", () => {
+    const result = parseURL("foo.com/foo?test=123#token", "https://");
+    expect(result).toMatchObject({
+      protocol: "https:",
+      auth: "",
+      host: "foo.com",
+      pathname: "/foo",
+      search: "?test=123",
+      hash: "#token"
+    });
+  });
+
+  it("should handle empty input", () => {
+    const result = parseURL("");
+    expect(result).toEqual({
+      pathname: "",
+      search: "",
+      hash: ""
+    });
+  });
+
+  it("should handle special protocols like data", () => {
+    const result = parseURL("data:text/plain;base64,SGVsbG8=");
+    expect(result).toEqual({
+      protocol: "data:",
+      pathname: "text/plain;base64,SGVsbG8=",
+      href: "data:text/plain;base64,SGVsbG8=",
+      auth: "",
+      host: "",
+      search: "",
+      hash: ""
+    });
+  });
+
+  it("should handle special protocol with leading whitespace/control characters", () => {
+    const result = parseURL(" \0data:text/plain,hello");
+    expect(result).toEqual({
+      protocol: "data:",
+      pathname: "text/plain,hello",
+      href: "data:text/plain,hello",
+      auth: "",
+      host: "",
+      search: "",
+      hash: ""
+    });
+  });
+
+  it("should handle absolute URL with leading whitespace/control characters", () => {
+    const result = parseURL(" \0http://foo.com/bar");
+    expect(result).toMatchObject({
+      protocol: "http:",
+      host: "foo.com",
+      pathname: "/bar"
+    });
+  });
+
+  it("should handle file protocol with drive letters", () => {
+    const result = parseURL("file:///C:/path/to/file");
+    expect(result.pathname).toBe("C:/path/to/file");
+    expect(result.protocol).toBe("file:");
+  });
+
+  it("should handle authentication in URL", () => {
+    const result = parseURL("http://user:pass@foo.com/");
+    expect(result.auth).toBe("user:pass");
+    expect(result.host).toBe("foo.com");
+  });
+
+  it("should set protocolRelative symbol correctly when protocol is missing", () => {
+    const result = parseURL("foo.com/path");
+    // Verify protocolRelative property via stringification or property check
+    const stringified = stringifyParsedURL(result);
+    expect(stringified).toBe("foo.com/path");
+  });
+});
+
+describe("parsePath", () => {
+  it("should parse path with search and hash", () => {
+    const result = parsePath("http://foo.com/foo?test=123#token");
+    expect(result).toEqual({
+      pathname: "http://foo.com/foo",
+      search: "?test=123",
+      hash: "#token"
+    });
+  });
+
+  it("should handle empty input", () => {
+    const result = parsePath("");
+    expect(result).toEqual({
+      pathname: "",
+      search: "",
+      hash: ""
+    });
+  });
+
+  it("should parse path without search or hash", () => {
+    const result = parsePath("/foo/bar");
+    expect(result).toEqual({
+      pathname: "/foo/bar",
+      search: "",
+      hash: ""
+    });
+  });
+
+  it("should parse path with optional search/hash components correctly", () => {
+    const result = parsePath("/foo#hash");
+    expect(result).toEqual({
+      pathname: "/foo",
+      search: "",
+      hash: "#hash"
+    });
+  });
+});
+
+describe("parseAuth", () => {
+  it("should parse username and password", () => {
+    const result = parseAuth("user:pass");
+    expect(result).toEqual({
+      username: "user",
+      password: "pass"
+    });
+  });
+
+  it("should handle encoded auth strings", () => {
+    const result = parseAuth("john%20doe:secret%40123");
+    expect(result).toEqual({
+      username: "john doe",
+      password: "secret@123"
+    });
+  });
+
+  it("should handle empty input", () => {
+    const result = parseAuth("");
+    expect(result).toEqual({
+      username: "",
+      password: ""
+    });
+  });
+});
+
+describe("parseHost", () => {
+  it("should parse hostname and port", () => {
+    const result = parseHost("foo.com:8080");
+    expect(result).toEqual({
+      hostname: "foo.com",
+      port: "8080"
+    });
+  });
+
+  it("should parse hostname without port", () => {
+    const result = parseHost("foo.com");
+    expect(result).toEqual({
+      hostname: "foo.com",
+      port: undefined
+    });
+  });
+
+  it("should handle empty input", () => {
+    const result = parseHost("");
+    expect(result).toEqual({
+      hostname: "",
+      port: undefined
+    });
+  });
+});
+
+describe("stringifyParsedURL", () => {
+  it("should stringify a parsed URL object", () => {
+    const parsed = {
+      protocol: "http:",
+      auth: "user:pass",
+      host: "foo.com",
+      pathname: "/foo",
+      search: "test=123",
+      hash: "#token"
+    };
+    const result = stringifyParsedURL(parsed);
+    expect(result).toBe("http://user:pass@foo.com/foo?test=123#token");
+  });
+
+  it("should stringify partial parsed URL", () => {
+    const parsed = {
+      host: "bar.com",
+      pathname: "/foo"
+    };
+    const result = stringifyParsedURL(parsed);
+    expect(result).toBe("bar.com/foo");
+  });
+
+  it("should handle missing search prefix question mark", () => {
+    const parsed = {
+      pathname: "/foo",
+      search: "a=1"
+    };
+    const result = stringifyParsedURL(parsed);
+    expect(result).toBe("/foo?a=1");
+  });
+
+  it("should handle search starting with question mark", () => {
+    const parsed = {
+      pathname: "/foo",
+      search: "?a=1"
+    };
+    const result = stringifyParsedURL(parsed);
+    expect(result).toBe("/foo?a=1");
+  });
+});
+
+describe("parseFilename", () => {
+  it("should extract filename from URL", () => {
+    const result = parseFilename("http://example.com/path/to/filename.ext");
+    expect(result).toBe("filename.ext");
+  });
+
+  it("should extract filename without extension in non-strict mode", () => {
+    const result = parseFilename("/path/to/.hidden-file");
+    expect(result).toBe(".hidden-file");
+  });
+
+  it("should return undefined in strict mode for files without extension", () => {
+    const result = parseFilename("/path/to/.hidden-file", { strict: true });
+    expect(result).toBeUndefined();
+  });
+
+  it("should return filename in strict mode when extension exists", () => {
+    const result = parseFilename("/path/to/filename.ext", { strict: true });
+    expect(result).toBe("filename.ext");
+  });
+
+  it("should handle empty input", () => {
+    const result = parseFilename("");
+    expect(result).toBeUndefined();
+  });
+});
+```
