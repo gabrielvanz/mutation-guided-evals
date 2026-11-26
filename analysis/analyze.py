@@ -476,6 +476,7 @@ def main() -> None:
     ap.add_argument("--out", default="analysis/out")
     ap.add_argument("--paper", default="paper")
     ap.add_argument("--include-flaky", action="store_true", help="análise de sensibilidade V4")
+    ap.add_argument("--stratum", choices=["low", "high"], help="V1: restringe aos módulos do estrato de memorização")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -483,6 +484,13 @@ def main() -> None:
     if not runs:
         raise SystemExit("nenhum result.json encontrado")
     df_all, its_all = runs_to_frames(runs)
+    if a.stratum:
+        # V1: o estrato vem do probe de memorização do módulo; C0 (sem memo no result.json) herda o do módulo
+        mod_stratum = df_all.dropna(subset=["stratum"]).groupby("module").stratum.first()
+        df_all["stratum"] = df_all["module"].map(mod_stratum)
+        df_all = df_all[df_all.stratum == a.stratum].copy()
+        its_all = its_all[its_all.run_id.isin(df_all.run_id)].copy()
+        print(f"V1: estrato '{a.stratum}': módulos {sorted(df_all.module.unique())}")
     ok = df_all.status.eq("ok")
     keep = ok & (True if a.include_flaky else ~df_all.flaky)
     df = df_all[keep].copy()
