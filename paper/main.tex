@@ -36,9 +36,15 @@ de bibliotecas TypeScript reais, o Stryker mede o \textit{mutation score} e os m
 agente em um laço executado no GitHub Actions. O desenho compara cinco condições (testes humanos, \textit{zero-shot},
 convenções de projeto, amostragem independente com o mesmo orçamento e laço com feedback), usa um \textit{split} de
 mutantes para separar o sinal de feedback do sinal de avaliação e define guardrails contra testes triviais. Apresentamos
-o arcabouço (código aberto, com testes unitários e validação de ponta a ponta), o protocolo estatístico e o
-\textit{baseline} humano medido em 9 módulos de 4 bibliotecas. As condições com LLM ainda não foram executadas: este
-texto \textbf{não reporta} resultados delas.
+o arcabouço (código aberto, com testes unitários e validação de ponta a ponta), o protocolo estatístico, o
+\textit{baseline} humano medido em 9 módulos de 4 bibliotecas e a primeira execução das quatro condições com LLM
+(\texttt{gemini-3.5-flash-lite}, 3 repetições por módulo). A condição com laço de feedback (C3) teve a maior mediana de
+\textit{mutation score} no grupo de avaliação (80,3\%, contra 70,0\% em C1, 76,1\% em C2 e 79,0\% em C2r). Porém, com o
+orçamento igualado, a vantagem sobre C2r (4,0 pontos percentuais) não se distingue de zero (Wilcoxon pareado unilateral,
+$p$ ajustado $=0{,}109$, $n=8$ módulos), de modo que H1 \textbf{não é sustentada}; só a comparação com C2 é
+significativa ($p$ ajustado $=0{,}047$, $n=6$). A cobertura de linha chega a 100\% em todas as condições com LLM, e a taxa de
+\textit{runs} com ao menos um teste válido varia de 63,0\% (C2) a 88,9\% (C2r). Com 9 módulos, os resultados têm baixo poder
+e devem ser lidos como exploratórios.
 \end{abstract}
 
 {\renewcommand{\abstractname}{Abstract}\begin{abstract}
@@ -47,8 +53,14 @@ without detecting faults. We present a mutation-guided continuous-evals loop for
 Vitest tests for real TypeScript libraries, Stryker computes the mutation score, and surviving mutants are fed back to
 the agent in a GitHub Actions pipeline. The design compares five conditions (human tests, zero-shot, project
 conventions, equal-budget independent sampling, and feedback loop), uses a mutant hold-out split and guardrails against
-trivial tests. We release the framework, the statistical protocol and a measured human baseline over 9 modules from 4
-libraries. LLM conditions have not been run yet; no results for them are reported here.
+trivial tests. We release the framework, the statistical protocol, a measured human baseline over 9 modules from 4
+libraries, and a first run of the four LLM conditions (\texttt{gemini-3.5-flash-lite}, 3 repetitions per module). The
+feedback loop (C3) had the highest median mutation score on the held-out mutants (80.3\%, versus 70.0\% for C1, 76.1\% for
+C2 and 79.0\% for C2r). With equal budget, however, the advantage over C2r (4.0 percentage points) is not distinguishable
+from zero (one-sided paired Wilcoxon, adjusted $p=0.109$, $n=8$ modules), so H1 is \textbf{not supported}; only the
+comparison with C2 is significant (adjusted $p=0.047$, $n=6$). Line coverage reaches 100\% in every LLM condition, and the
+share of runs with at least one valid test ranges from 63.0\% (C2) to 88.9\% (C2r). With 9 modules the results have low
+power and should be read as exploratory.
 \end{abstract}}
 
 \section{Introdução}
@@ -80,8 +92,8 @@ hipóteses:
 \noindent\textbf{Contribuições.} (i) Um arcabouço aberto e testado que implementa o laço, os guardrails e o registro de
 métricas por iteração; (ii) um desenho experimental com controle de orçamento (C2r) e \textit{hold-out} de mutantes, que
 evita que o agente seja avaliado no mesmo sinal que otimiza; (iii) o \textit{baseline} humano medido em 9 módulos reais,
-com achados de engenharia sobre a medição; e (iv) o protocolo estatístico para H1--H3. Não relatamos ainda resultados
-de LLM; a Seção~\ref{sec:resultados} separa explicitamente o que foi medido do que está pendente.
+com achados de engenharia sobre a medição; (iv) o protocolo estatístico para H1--H3; e (v) a primeira execução das
+quatro condições com LLM, com resultados que não sustentam H1 quando o orçamento é igualado (Seção~\ref{sec:resultados}).
 
 \section{Fundamentação e trabalhos relacionados}
 
@@ -147,7 +159,7 @@ teste). Em C3, os sobreviventes do grupo de feedback voltam ao prompt até o cri
 Usamos bibliotecas pequenas, em TypeScript, com suíte humana em Vitest, licença MIT e funções puras (sem rede, banco ou
 I/O): \texttt{ufo}, \texttt{defu}, \texttt{pathe} e \texttt{knitwork}, cada uma fixada em um \textit{commit}. A unidade de
 análise é o \textbf{módulo} (um arquivo \texttt{.ts}), pareado entre condições, porque quatro bibliotecas seriam
-poucas observações. Consideramos 16 módulos candidatos e medimos 13 com a suíte humana e o Stryker (\texttt{scule} e \texttt{ohash} não puderam ser medidos por falhas de ferramenta, e \texttt{pathe/\_glob} ficou de fora por tempo); aplicamos, \textbf{antes} de qualquer
+poucas observações. Consideramos 17 módulos candidatos e medimos 14 com a suíte humana e o Stryker (\texttt{scule} e \texttt{ohash} não puderam ser medidos por falhas de ferramenta, e \texttt{pathe/\_glob} ficou de fora por tempo); aplicamos, \textbf{antes} de qualquer
 execução de LLM, os critérios: pelo menos 50 mutantes válidos (para que cada metade do \textit{split} tenha $\geq 25$) e
 \textit{score} humano de no máximo 92\% (para haver espaço de melhoria). Restaram 9 módulos (Tabela~\ref{tab:sujeitos}).
 O \texttt{scule} usa Vitest 1.x, incompatível com o executor do Stryker usado.
@@ -200,10 +212,14 @@ Para expor o viés de sobrevivência, repetimos as comparações de H1 em uma an
 depois de observadas as primeiras execuções e, portanto, não prevista no protocolo original, em que um \textit{run} sem
 nenhum teste válido conta como \textit{score} zero.
 
+Três \textit{runs} de \texttt{pathe/path} além das três repetições previstas (C1 nas repetições 4 e 8, e C2 na 7) foram
+coletados em um lote anterior e excluídos da análise, para não dar a esse módulo mais repetições que aos demais; o
+desvio está registrado na seção 12 do protocolo.
+
 \subsection{Modelo, reprodutibilidade e uso de IA}
 
 O modelo é acessado por API de camada gratuita (Google AI Studio), com ID exato registrado em cada \textit{run}
-(\pendente{ID do modelo e data da coleta}), $T=0{,}7$ em todas as condições e saída máxima de 8192 tokens. Como modelos
+(\texttt{gemini-3.5-flash-lite}, coleta de 22 a 26 de novembro de 2026), $T=0{,}7$ em todas as condições e saída máxima de 8192 tokens. Como modelos
 gratuitos mudam, arquivamos todos os prompts, respostas brutas e relatórios do Stryker. O custo real é zero; reportamos
 um custo de referência com preços fixos para discussão. O código, o protocolo, os dados e a análise estão no repositório
 \pendente{URL do repositório público}.
@@ -211,7 +227,9 @@ um custo de referência com preços fixos para discussão. O código, o protocol
 \textbf{Uso de IA no desenvolvimento do trabalho.} Utilizamos o Claude (Anthropic) para propor o desenho experimental,
 escrever o código do arcabouço e dos scripts de análise, executar as medições de seleção e o \textit{baseline} C0 em ambiente
 isolado e redigir o rascunho deste texto. O registro detalhado, incluindo erros do assistente que foram detectados e
-corrigidos, está em \texttt{AI\_USAGE.md}. A IA não executou as condições com LLM e nenhum número delas aparece aqui. Os autores revisaram o
+corrigidos, está em \texttt{AI\_USAGE.md}. A IA não executou as condições com LLM: elas foram executadas pelos autores no
+GitHub Actions, e os números reportados aqui vêm dos \texttt{result.json} resultantes, processados por
+\texttt{analysis/analyze.py}. Os autores revisaram o
 conteúdo \pendente{confirmar revisão integral pelos autores antes da entrega}.
 
 \section{Resultados}
@@ -244,13 +262,17 @@ resultado experimental.
 
 \subsection{Condições com LLM (C1, C2, C2r, C3)}
 
-\pendente{executar a matriz do GitHub Actions com o modelo escolhido e reanalisar}. As Tabelas~\ref{tab:cond} e~\ref{tab:h1}
-são geradas automaticamente por \texttt{analysis/analyze.py} e, até a coleta, exibem ``n/d'' nas condições sem dados.
+Executamos C1, C2, C2r e C3 com 3 repetições por módulo (111 \textit{runs} coletados; 108 previstos mais 3 excluídos, ver
+a seção de Metodologia). As Tabelas~\ref{tab:cond} e~\ref{tab:h1} são geradas automaticamente por
+\texttt{analysis/analyze.py} a partir dos \texttt{result.json}. Como os \textit{runs} sem teste válido saem da análise
+principal, o número de módulos pareados em cada comparação é menor que 9, e os resultados abaixo devem ser lidos como
+exploratórios.
 
 \begin{table}[t]
 \centering\small
 \input{tables/tab_cond}
-\caption{Resumo por condição (medianas das execuções). ``n/d'': sem dados.}
+\caption{Resumo por condição (medianas das execuções válidas). $n$: \textit{runs} usados; tokens e custo de referência acumulados
+até a iteração selecionada, incluindo reparos.}
 \label{tab:cond}
 \end{table}
 
@@ -260,6 +282,24 @@ são geradas automaticamente por \texttt{analysis/analyze.py} e, até a coleta, 
 \caption{H1: comparações pareadas por módulo (Wilcoxon unilateral, Holm).}
 \label{tab:h1}
 \end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.78\linewidth]{figs/fig_ms_by_condition.pdf}
+\caption{\textit{Mutation score} no grupo de avaliação por condição (um ponto por módulo, mediana das repetições; losango verde:
+triângulo verde: média; pontos circulados: valores atípicos).}
+\label{fig:ms}
+\end{figure}
+
+\textbf{H1 (não sustentada).} A mediana de \textit{score} no grupo de avaliação é 80,3\% em C3, contra 70,0\% em C1, 76,1\% em
+C2 e 79,0\% em C2r (Tabela~\ref{tab:cond}). Só a comparação com C2 é significativa depois da correção de Holm (diferença
+mediana de 12,2 pontos percentuais, IC 95\% [5,1; 17,4], $p_{\text{Holm}}=0{,}047$, $n=6$ módulos). Contra C1 (7,6 pp,
+$p_{\text{Holm}}=0{,}109$, $n=8$) e contra C2r (4,0 pp, $p_{\text{Holm}}=0{,}109$, $n=8$) a diferença é positiva, mas os
+intervalos incluem zero. Como H1 exige C3 $>$ C2r, e C2r é a comparação com orçamento igualado, não a consideramos
+sustentada. Parte da vantagem de C3 sobre C1 e C2 é, portanto, compatível com o efeito de gastar mais chamadas: C2r e C3
+consomem cerca de 10 vezes mais tokens que C1 e C2 (medianas de 52 mil e 64 mil contra 5,3 mil e 5,9 mil). Na análise de
+sensibilidade, em que \textit{runs} sem teste válido contam como zero, o padrão se mantém (C3 $>$ C2 com $p_{\text{Holm}}=0{,}012$;
+C3 $>$ C2r com $p_{\text{Holm}}=0{,}156$).
 
 \textbf{Validade dos testes gerados.} A Tabela~\ref{tab:valid} mostra quanto do que o modelo gera é aproveitável.
 \input{tables/valid_text}
@@ -271,6 +311,57 @@ são geradas automaticamente por \texttt{analysis/analyze.py} e, até a coleta, 
 Falhas de infraestrutura (cota, \textit{timeout}) não são contadas.}
 \label{tab:valid}
 \end{table}
+
+\textbf{Por que os testes são inválidos.} Em uma inspeção manual dos \textit{runs} de C2 sem teste válido
+(\texttt{knitwork/string}, \texttt{ufo/url} e \texttt{ufo/utils}), todos terminaram com a mesma causa, testes que
+falham no código original após os dois reparos (G3), e não por limite de cota ou \textit{timeout}. As falhas são
+expectativas incorretas sobre o comportamento do código: por exemplo, o modelo supôs que \texttt{isAbsolute} devolve
+\texttt{true} quando o código devolve um valor numérico, que \texttt{href} termina em barra quando não termina, ou
+confundiu o escape de quebra de linha. Os reparos nem sempre ajudam: em um caso o modelo alterou a asserção errada e deixou a
+falha original. Como o código atual é o oráculo, essas falhas indicam que o modelo erra o que o código faz, e não que o teste
+seja inadequado.
+
+\textbf{H2 (não sustentada).} Em C3, o ganho de cobertura de linha entre $k=0$ e $k=5$ é pequeno (mediana de 1,1 pp), porque a
+cobertura já parte de valores altos (a mediana de C0 é 95,5\% e a de todas as condições com LLM, 100\%), enquanto o ganho de
+\textit{score} no grupo de avaliação tem mediana de 9,8 pp ($n=6$ módulos). Portanto a premissa de que a cobertura sobe sem que o
+\textit{score} suba na mesma proporção não se verifica (Figura~\ref{fig:h2}; $\Delta\text{cob}>\Delta\text{MS}$: $p=0{,}98$; Spearman entre os dois ganhos
+$\rho=-0{,}15$, $p=0{,}77$; ambos com $p_{\text{Holm}}=1{,}00$). A lacuna entre cobertura e \textit{score} (cob.\ de linha $-$ MS\textsubscript{all}) é maior em C1 que no
+\textit{baseline} humano (26,0 contra 19,5 pp; diferença mediana de 12,6 pp, $p_{\text{Holm}}=0{,}047$, $n=9$), isto é, testes
+\textit{zero-shot} cobrem mais do que detectam. Em C3 a lacuna cai para 16,7 pp e fica próxima da humana (C3 contra C0, 2,3 pp,
+$p_{\text{Holm}}=1{,}00$, $n=8$); a redução em relação a C2 ($-$9,2 pp, $n=6$) tem $p=0{,}031$ antes da correção, mas
+$p_{\text{Holm}}=0{,}156$ depois, e portanto não é confirmada. Aplicamos Holm sobre os seis testes da família H2 (os dois de
+ganhos e os quatro de lacuna). O critério de H2 (lacuna positiva que não diminui) não é atendido de forma consistente.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\linewidth]{figs/fig_h2_deltas.pdf}
+\caption{H2: ganho de cobertura de linha e de \textit{mutation score} (grupo de avaliação) entre $k=0$ e $k=5$ em C3, por módulo
+($n=6$). A diagonal marca ganhos iguais; cinco dos seis módulos ficam acima dela (o \textit{score} ganha mais que a
+cobertura) e um fica abaixo.}
+\label{fig:h2}
+\end{figure}
+
+\textbf{H3 (indício descritivo, sem significância).} A mediana do melhor \textit{score} até a iteração $k$ em C3 vai de 73,5\% em $k=0$
+a 77,3\% em $k=1$ e a 78,9\% em $k=5$: a maior parte do ganho vem da primeira iteração, e as seguintes acrescentam pouco. O
+custo por ponto percentual ganho cresce (mediana de cerca de 1,3 mil tokens por pp em $k=1$ para cerca de 4,8 mil em $k=5$), o
+que é coerente com retorno decrescente. Os testes, porém, não rejeitam a hipótese nula (Friedman, $p=0{,}28$; tendência de Page,
+$p=0{,}066$). As medianas por $k$ usam números diferentes de módulos (6 em $k=0$ e 8 em $k=5$, porque alguns módulos não tiveram
+teste válido na geração inicial), então a curva é descritiva (Figura~\ref{fig:curva}). Na curva, a mediana por módulo de C2r
+fica acima da de C3 em todas as iterações, inclusive em $k=5$ (79,5\% contra 78,9\%), o que difere da Tabela~\ref{tab:cond}
+(80,3\% contra 79,0\%) porque as duas agregam de modos diferentes: a tabela usa a mediana dos \textit{runs} e a figura, a mediana
+dos módulos que tiveram teste válido em cada $k$. As faixas interquartis se sobrepõem em grande parte, de modo que as duas
+condições não se distinguem nesta amostra.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.78\linewidth]{figs/fig_curve_k.pdf}
+\caption{Mediana por módulo do melhor \textit{mutation score} de avaliação até a iteração $k$, em C3 e C2r (faixa: intervalo
+interquartil).}
+\label{fig:curva}
+\end{figure}
+
+\textbf{Memorização.} A estratificação por memorização (V1) e as demais análises de sensibilidade (V2 a V4) ainda não foram
+executadas nesta versão. \pendente{executar V1 a V4 e reportar}
 
 \section{Discussão e ameaças à validade}
 \label{sec:ameacas}
@@ -298,7 +389,7 @@ um único modelo, não generalizam para código com estado, I/O ou outras lingua
 \textit{probe} que mede quanto da segunda metade do teste humano o modelo reproduz a partir da primeira, e estratificamos as
 análises em baixa e alta memorização.
 
-\textbf{Custo e governança.} O teste de mutação multiplica a execução da suíte; medimos de 20 s a 160 s por rodada em
+\textbf{Custo e governança.} O teste de mutação multiplica a execução da suíte; medimos de 23 s a 158 s por rodada em
 1 vCPU, e uma coleta completa exige centenas de rodadas. O tier gratuito pode usar dados para treino (código aberto, risco
 baixo) e impõe limites que podem forçar a coleta em vários dias. Há risco de alucinação de APIs e de testes frágeis; os
 guardrails e a exigência de que os testes passem no código original mitigam, sem eliminar.
@@ -307,8 +398,13 @@ guardrails e a exigência de que os testes passem no código original mitigam, s
 
 Apresentamos uma malha de \textit{continuous evals} guiada por mutação para geração de testes com LLM, com controle de
 orçamento, \textit{hold-out} de mutantes, guardrails, protocolo estatístico e \textit{baseline} humano medido em 9 módulos reais. O
-arcabouço está implementado, testado e validado de ponta a ponta; a coleta das condições com LLM é o próximo passo e
-determinará se H1--H3 se sustentam. Trabalhos futuros incluem uma revisão sistemática, mais bibliotecas e linguagens,
+arcabouço está implementado, testado e validado de ponta a ponta, e a primeira execução das condições com LLM (um modelo,
+9 módulos, 3 repetições) não sustenta H1: o laço de feedback supera C1 e C2, mas não se distingue da amostragem independente
+com o mesmo orçamento (C2r). Também não sustenta H2 (a cobertura já parte de valores altos e o \textit{score} ganha mais que ela; a redução da lacuna
+entre os dois com o laço não resiste à correção de Holm) e só dá
+indícios descritivos de retorno decrescente (H3). A principal limitação é o poder: com 6 a 8 módulos pareados por comparação,
+e com testes inválidos em até 37\% dos \textit{runs} de C2, diferenças pequenas não podem ser confirmadas nem descartadas.
+Trabalhos futuros incluem uma revisão sistemática, mais bibliotecas e linguagens,
 mais de um modelo, tratamento de mutantes equivalentes e avaliação com defeitos reais.
 
 \bibliographystyle{apalike}
