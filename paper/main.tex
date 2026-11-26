@@ -360,8 +360,52 @@ interquartil).}
 \label{fig:curva}
 \end{figure}
 
-\textbf{Memorização.} A estratificação por memorização (V1) e as demais análises de sensibilidade (V2 a V4) ainda não foram
-executadas nesta versão. \pendente{executar V1 a V4 e reportar}
+\subsection{Análises de sensibilidade}
+
+\textbf{V1: memorização.} O \textit{probe} de memorização (\texttt{gemini-3.5-flash-lite}) foi executado antes de qualquer
+\textit{run} de C1--C3, e o corte entre os estratos é a mediana da similaridade (0,141). Ficaram em baixa memorização
+\texttt{defu}, \texttt{pathe/\_path}, \texttt{pathe/utils}, \texttt{ufo/punycode} e \texttt{ufo/url} (5 módulos), e em alta
+\texttt{knitwork/string}, \texttt{ufo/parse}, \texttt{ufo/query} e \texttt{ufo/utils} (4 módulos). Com tão poucos módulos por
+estrato, quase nenhum teste de H1 pode ser executado (exigimos ao menos 5 pares): na baixa memorização, C3 $>$ C1 e C3 $>$ C2r
+(ambos com $n=5$) não são significativos ($p_{\text{Holm}}=0{,}44$), e na alta nenhuma comparação tem pares suficientes. A
+Tabela~\ref{tab:v1} traz as medianas, que são só descritivas. Em baixa memorização C3 e C2r empatam (79,0\%); em alta, C3 fica
+3,5 pontos percentuais acima de C2r, mas com $n$ de 3 a 4 módulos. C2 chega a 83,9\% na alta memorização, mas com só 6 de 12
+\textit{runs} válidos, o que é o viés de sobrevivência descrito acima. Não há, portanto, evidência de que a memorização altere as conclusões, nem de que
+não altere.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lrrrr}
+\toprule
+ & \multicolumn{2}{c}{Baixa (5 módulos)} & \multicolumn{2}{c}{Alta (4 módulos)} \\
+Cond. & $n$ & MS\textsubscript{eval} & $n$ & MS\textsubscript{eval} \\
+\midrule
+C0 & 5 & 82,1 & 4 & 70,0 \\
+C1 & 12 & 71,7 & 11 & 69,7 \\
+C2 & 11 & 63,6 & 6 & 83,9 \\
+C2r & 14 & 79,0 & 10 & 78,2 \\
+C3 & 14 & 79,0 & 9 & 81,7 \\
+\bottomrule
+\end{tabular}
+\caption{V1: mediana do \textit{score} de avaliação por estrato de memorização ($n$: \textit{runs} válidos; C0: módulos).}
+\label{tab:v1}
+\end{table}
+
+\textbf{V2: mutantes equivalentes.} Repetimos H1 sobre MS\textsubscript{killable}, o número de mutantes mortos dividido pela
+união dos mortos por qualquer condição no módulo. Com essa métrica, C3 supera as três outras condições
+(C3 $>$ C1: 9,8 pp, $p_{\text{Holm}}=0{,}047$, $n=8$; C3 $>$ C2: 12,7 pp, $p_{\text{Holm}}=0{,}047$, $n=6$; C3 $>$ C2r: 5,3 pp, IC 95\% [0,3; 10,6],
+$p_{\text{Holm}}=0{,}047$, $n=8$). \textbf{Não tomamos isso como suporte a H1.} MS\textsubscript{killable} é calculado sobre todos os
+mutantes, inclusive os do grupo de feedback que C3 otimiza e que C2r usa para escolher sua melhor amostra. Ela mistura exatamente
+o sinal que o \textit{split} existe para separar, e por construção favorece C3. A métrica de H1 permanece o \textit{score} no grupo de
+avaliação, em que C3 $>$ C2r não é significativo.
+
+\textbf{V4: \textit{runs} instáveis.} Nenhum dos 129 \textit{runs} teve reexecução com resultado diferente (G6), então incluir ou excluir
+\textit{runs} instáveis não altera nenhum resultado.
+
+\textbf{V3: operadores.} Não executamos a reavaliação com um segundo conjunto de mutantes. O Stryker já foi usado com todos os
+operadores padrão, e um segundo conjunto exigiria outra ferramenta ou definir operadores alternativos, o que ficou como trabalho
+futuro. Como o \textit{split} usa a mesma ferramenta nos dois grupos, o risco de \textit{overfitting} ao Stryker permanece (ver a seção de
+ameaças).
 
 \section{Discussão e ameaças à validade}
 \label{sec:ameacas}
@@ -373,7 +417,7 @@ mas atual passa e ``mata'' mutantes; não medimos corretude semântica das expec
 
 \textbf{Validade interna.} A estocasticidade do modelo é tratada com repetições e testes não paramétricos; o desvio de
 modelos gratuitos, com ID fixo e janela de coleta curta; o \textit{overfitting} ao Stryker, com o \textit{split} (mitigação
-parcial, pois a ferramenta é a mesma nos dois grupos; planejamos reavaliar com outros operadores); e a comparação
+parcial, pois a ferramenta é a mesma nos dois grupos; a reavaliação com outros operadores, planejada, não foi executada); e a comparação
 injusta entre C1/C2 e C3, com C2r. Ainda assim C1 e C2 usam menos orçamento por construção.
 
 \textbf{Viés de sobrevivência.} Runs em que nenhum teste gerado é válido não têm \textit{score} e saem da análise principal,
