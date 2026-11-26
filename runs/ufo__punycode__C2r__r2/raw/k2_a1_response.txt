@@ -1,0 +1,56 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    const cases = [
+      { input: "example.com", expected: "example.com" },
+      { input: "test", expected: "test" },
+      { input: "abc.123", expected: "abc.123" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should encode non-ASCII domain names to punycode", () => {
+    const cases = [
+      { input: "münchen.de", expected: "xn--mnchen-3ya.de" },
+      { input: "example.com.", expected: "example.com." },
+      { input: "☃.net", expected: "xn--n3h.net" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle email addresses with domain parts containing non-ASCII characters", () => {
+    const cases = [
+      { input: "user@münchen.de", expected: "user@xn--mnchen-3ya.de" },
+      { input: "test.user@example.com", expected: "test.user@example.com" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle various dot separators like ideographic full stop", () => {
+    const cases = [
+      { input: "example。com", expected: "example.com" },
+      { input: "münchen．de", expected: "xn--mnchen-3ya.de" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle basic ASCII input without throwing", () => {
+    expect(toASCII("test")).toBe("test");
+  });
+});
+```

@@ -1,0 +1,106 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { $URL, createURL } from "../../src/url";
+
+describe("$URL", () => {
+  it("should parse absolute URL correctly", () => {
+    const url = new $URL("https://example.com/path?foo=bar#hash");
+    expect(url.protocol).toBe("https:");
+    expect(url.host).toBe("example.com");
+    expect(url.pathname).toBe("/path");
+    expect(url.query).toEqual({ foo: "bar" });
+    expect(url.hash).toBe("#hash");
+    expect(url.href).toBe("https://example.com/path?foo=bar#hash");
+  });
+
+  it("should handle empty input with default value", () => {
+    const url = new $URL();
+    expect(url.protocol).toBe("");
+    expect(url.host).toBe("");
+    expect(url.pathname).toBe("");
+    expect(url.href).toBe("");
+  });
+
+  it("should throw TypeError when input is not a string", () => {
+    expect(() => new $URL(123 as any)).toThrow(TypeError);
+    expect(() => new $URL(123 as any)).toThrow("URL input should be string received number (123)");
+  });
+
+  it("should compute hostname and port correctly", () => {
+    const url = new $URL("http://localhost:8080/path");
+    expect(url.hostname).toBe("localhost");
+    expect(url.port).toBe("8080");
+  });
+
+  it("should compute username and password correctly", () => {
+    const url = new $URL("http://user:pass@example.com/");
+    expect(url.username).toBe("user");
+    expect(url.password).toBe("pass");
+    expect(url.encodedAuth).toBe("user:pass");
+  });
+
+  it("should check hasProtocol and isAbsolute", () => {
+    const absolute = new $URL("https://example.com");
+    expect(absolute.hasProtocol).toBe(true);
+    expect(absolute.isAbsolute).toBe(true);
+
+    const relative = new $URL("/path/to/somewhere");
+    expect(relative.hasProtocol).toBe(0);
+    expect(relative.isAbsolute).toBe(true);
+
+    const relativeNoSlash = new $URL("path/to/somewhere");
+    expect(relativeNoSlash.hasProtocol).toBe(0);
+    expect(relativeNoSlash.isAbsolute).toBe(false);
+  });
+
+  it("should generate search and searchParams", () => {
+    const url = new $URL("https://example.com/?a=1&b=2");
+    expect(url.search).toBe("?a=1&b=2");
+    expect(url.searchParams.get("a")).toBe("1");
+    expect(url.searchParams.get("b")).toBe("2");
+  });
+
+  it("should handle array values in query for searchParams", () => {
+    const url = new $URL("https://example.com/");
+    url.query = { tags: ["a", "b"] };
+    const params = url.searchParams;
+    expect(params.getAll("tags")).toEqual(["a", "b"]);
+  });
+
+  it("should compute origin correctly", () => {
+    const url = new $URL("https://example.com:8080/path");
+    expect(url.origin).toBe("https://example.com:8080");
+  });
+
+  it("should support toJSON and toString", () => {
+    const url = new $URL("https://example.com/test");
+    expect(url.toJSON()).toBe("https://example.com/test");
+    expect(url.toString()).toBe("https://example.com/test");
+  });
+
+  describe("append", () => {
+    it("should throw error when appending a URL with protocol", () => {
+      const url1 = new $URL("https://example.com/");
+      const url2 = new $URL("https://other.com/");
+      expect(() => url1.append(url2)).toThrow("Cannot append a URL with protocol");
+    });
+
+    it("should append pathname, query and hash correctly", () => {
+      const url1 = new $URL("https://example.com/foo/?a=1#hash1");
+      const url2 = new $URL("bar?b=2#hash2");
+      url1.append(url2);
+      expect(url1.pathname).toBe("/foo/bar");
+      expect(url1.query).toEqual({ a: "1", b: "2" });
+      expect(url1.hash).toBe("#hash2");
+    });
+  });
+});
+
+describe("createURL", () => {
+  it("should create an instance of $URL", () => {
+    const url = createURL("https://example.com/");
+    expect(url).toBeInstanceOf($URL);
+    expect(url.href).toBe("https://example.com/");
+  });
+});
+```

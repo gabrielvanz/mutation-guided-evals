@@ -1,0 +1,111 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { $URL, createURL } from "../../src/url";
+
+describe("$URL", () => {
+  it("should parse absolute URLs correctly", () => {
+    const url = new $URL("https://example.com/path?foo=bar#hash");
+    expect(url.protocol).toBe("https:");
+    expect(url.host).toBe("example.com");
+    expect(url.pathname).toBe("/path");
+    expect(url.query).toEqual({ foo: "bar" });
+    expect(url.hash).toBe("#hash");
+    expect(url.href).toBe("https://example.com/path?foo=bar#hash");
+  });
+
+  it("should handle empty constructor input", () => {
+    const url = new $URL();
+    expect(url.protocol).toBe("");
+    expect(url.host).toBe("");
+    expect(url.pathname).toBe("");
+    expect(url.query).toEqual({});
+    expect(url.hash).toBe("");
+    expect(url.href).toBe("");
+  });
+
+  it("should throw TypeError for non-string input", () => {
+    // @ts-expect-error testing invalid type
+    expect(() => new $URL(123)).toThrow(TypeError);
+    // @ts-expect-error testing invalid type
+    expect(() => new $URL(123)).toThrow("URL input should be string received number (123)");
+  });
+
+  it("should expose correct hostname and port", () => {
+    const url = new $URL("http://localhost:8080/test");
+    expect(url.hostname).toBe("localhost");
+    expect(url.port).toBe("8080");
+  });
+
+  it("should expose correct username and password from auth", () => {
+    const url = new $URL("http://user:pass@example.com/");
+    expect(url.username).toBe("user");
+    expect(url.password).toBe("pass");
+    expect(url.encodedAuth).toBe("user:pass");
+  });
+
+  it("should compute hasProtocol and isAbsolute correctly", () => {
+    const absUrl = new $URL("https://example.com");
+    expect(absUrl.hasProtocol).toBe(6);
+    expect(absUrl.isAbsolute).toBe(true);
+
+    const relUrl = new $URL("/foo/bar");
+    expect(relUrl.hasProtocol).toBe(0);
+    expect(relUrl.isAbsolute).toBe(true);
+
+    const relativePath = new $URL("foo/bar");
+    expect(relativePath.isAbsolute).toBe(false);
+  });
+
+  it("should generate search string and searchParams", () => {
+    const url = new $URL("http://example.com/?a=1&b=2");
+    expect(url.search).toBe("?a=1&b=2");
+    expect(url.searchParams.get("a")).toBe("1");
+    expect(url.searchParams.get("b")).toBe("2");
+  });
+
+  it("should handle array values in searchParams", () => {
+    const url = new $URL("http://example.com/?tag=a&tag=b");
+    const tags = url.searchParams.getAll("tag");
+    expect(tags).toEqual(["a", "b"]);
+  });
+
+  it("should compute origin and fullpath correctly", () => {
+    const url = new $URL("https://example.com:3000/path?q=1#hash");
+    expect(url.origin).toBe("https://example.com:3000");
+    expect(url.fullpath).toBe("/path?q=1#hash");
+  });
+
+  it("should support toJSON and toString", () => {
+    const url = new $URL("https://example.com/foo");
+    expect(url.toString()).toBe("https://example.com/foo");
+    expect(url.toJSON()).toBe("https://example.com/foo");
+  });
+
+  describe("append", () => {
+    it("should append relative URL path, query, and hash", () => {
+      const url = new $URL("https://example.com/base/?a=1#old");
+      const toAppend = new $URL("sub/path?b=2#new");
+      url.append(toAppend);
+
+      expect(url.pathname).toBe("/base/sub/path");
+      expect(url.query).toEqual({ a: "1", b: "2" });
+      expect(url.hash).toBe("#new");
+      expect(url.href).toBe("https://example.com/base/sub/path?a=1&b=2#new");
+    });
+
+    it("should throw an error when appending a URL with a protocol", () => {
+      const url = new $URL("https://example.com/base");
+      const other = new $URL("https://other.com/path");
+      expect(() => url.append(other)).toThrow("Cannot append a URL with protocol");
+    });
+  });
+});
+
+describe("createURL", () => {
+  it("should create a $URL instance from a string", () => {
+    const url = createURL("https://example.com/test");
+    expect(url).toBeInstanceOf($URL);
+    expect(url.href).toBe("https://example.com/test");
+  });
+});
+```

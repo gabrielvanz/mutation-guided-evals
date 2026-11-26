@@ -1,0 +1,335 @@
+{
+  "schema_version": "0.1",
+  "run_id": "ufo__url__C3__r3",
+  "started_at": "2026-11-26T08:20:23.120Z",
+  "finished_at": "2026-11-26T08:23:42.901Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "ufo",
+    "repo": "unjs/ufo",
+    "commit": "f06c800d0c59f2a4a1b9ba65eb6cb61a84419be6",
+    "license": "MIT",
+    "module_path": "src/url.ts",
+    "module_loc": 148,
+    "mutants_total": 90,
+    "human_test_files": [
+      "test/url.test.ts"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "fe67ae67ed930f60b3dd8e1afdf5aff76745522417116f7b5723c18190555635",
+    "git_sha_agent": "b0dedb690104ab74dbd119d5f449b123ff18bc62"
+  },
+  "memorization": {
+    "probe_similarity": 0.128,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__url__C3__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs/ufo__url__C3__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 7717,
+        "tokens_out": 3531,
+        "usd_ref": 0.002184,
+        "wall_s": 29.86,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 1,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__url__C3__r3/raw/k1_a0_prompt.txt",
+      "response_file": "runs/ufo__url__C3__r3/raw/k1_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 4,
+        "tokens_in": 15615,
+        "tokens_out": 6846,
+        "usd_ref": 0.0043,
+        "wall_s": 65.41,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 79.0698,
+        "ms_feedback": 85.1064,
+        "ms_all": 82.2222,
+        "ms_covered": 89.1566
+      },
+      "coverage": {
+        "line_cov": 100,
+        "branch_cov": 77.14
+      },
+      "mutants_eval": {
+        "killed": 34,
+        "survived": 5,
+        "no_coverage": 4,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 40,
+        "survived": 4,
+        "no_coverage": 3,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 9,
+        "n_asserts": 37,
+        "sha256": "618f9f8d9fe9cdf139dc9c586d7cca847c77ac60fb67f015d6d8cea6d526b3bd"
+      },
+      "prompt_file": "runs/ufo__url__C3__r3/raw/k2_a0_prompt.txt",
+      "response_file": "runs/ufo__url__C3__r3/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 5,
+        "tokens_in": 20481,
+        "tokens_out": 8792,
+        "usd_ref": 0.005565,
+        "wall_s": 99.83,
+        "stryker_s": 8.21
+      }
+    },
+    {
+      "k": 3,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 7,
+      "survivor_ids": [
+        "src/url.ts:61:32-61:56:EqualityOperator:this.pathname[0] !== \"/\"",
+        "src/url.ts:88:52-88:54:StringLiteral:\"Stryker was here!\"",
+        "src/url.ts:96:21-98:6:BlockStatement:{}",
+        "src/url.ts:96:9-96:19:ConditionalExpression:false",
+        "src/url.ts:102:56-102:58:StringLiteral:\"Stryker was here!\"",
+        "src/url.ts:109:47-109:49:StringLiteral:\"Stryker was here!\"",
+        "src/url.ts:112:12-112:47:ConditionalExpression:true"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__url__C3__r3/raw/k3_a0_prompt.txt",
+      "response_file": "runs/ufo__url__C3__r3/raw/k3_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 11,
+        "repair_calls": 7,
+        "tokens_in": 30363,
+        "tokens_out": 12634,
+        "usd_ref": 0.00809,
+        "wall_s": 130.21,
+        "stryker_s": 8.21
+      }
+    },
+    {
+      "k": 4,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 7,
+      "survivor_ids": [
+        "src/url.ts:61:32-61:56:EqualityOperator:this.pathname[0] !== \"/\"",
+        "src/url.ts:88:52-88:54:StringLiteral:\"Stryker was here!\"",
+        "src/url.ts:96:21-98:6:BlockStatement:{}",
+        "src/url.ts:96:9-96:19:ConditionalExpression:false",
+        "src/url.ts:102:56-102:58:StringLiteral:\"Stryker was here!\"",
+        "src/url.ts:109:47-109:49:StringLiteral:\"Stryker was here!\"",
+        "src/url.ts:112:12-112:47:ConditionalExpression:true"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__url__C3__r3/raw/k4_a0_prompt.txt",
+      "response_file": "runs/ufo__url__C3__r3/raw/k4_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 14,
+        "repair_calls": 9,
+        "tokens_in": 40389,
+        "tokens_out": 16677,
+        "usd_ref": 0.01071,
+        "wall_s": 165.4,
+        "stryker_s": 8.21
+      }
+    },
+    {
+      "k": 5,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 7,
+      "survivor_ids": [
+        "src/url.ts:61:32-61:56:EqualityOperator:this.pathname[0] !== \"/\"",
+        "src/url.ts:88:52-88:54:StringLiteral:\"Stryker was here!\"",
+        "src/url.ts:96:21-98:6:BlockStatement:{}",
+        "src/url.ts:96:9-96:19:ConditionalExpression:false",
+        "src/url.ts:102:56-102:58:StringLiteral:\"Stryker was here!\"",
+        "src/url.ts:109:47-109:49:StringLiteral:\"Stryker was here!\"",
+        "src/url.ts:112:12-112:47:ConditionalExpression:true"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__url__C3__r3/raw/k5_a0_prompt.txt",
+      "response_file": "runs/ufo__url__C3__r3/raw/k5_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 17,
+        "repair_calls": 11,
+        "tokens_in": 50169,
+        "tokens_out": 20394,
+        "usd_ref": 0.013174,
+        "wall_s": 199.78,
+        "stryker_s": 8.21
+      }
+    }
+  ],
+  "selected_iteration": 2,
+  "final": {
+    "scores": {
+      "ms_eval": 79.0698,
+      "ms_feedback": 85.1064,
+      "ms_all": 82.2222,
+      "ms_covered": 89.1566
+    },
+    "coverage": {
+      "line_cov": 100,
+      "branch_cov": 77.14
+    },
+    "cost": {
+      "calls": 17,
+      "repair_calls": 11,
+      "tokens_in": 50169,
+      "tokens_out": 20394,
+      "usd_ref": 0.013174,
+      "wall_s": 199.78,
+      "stryker_s": 8.21
+    },
+    "tests": {
+      "n_tests": 9,
+      "n_asserts": 37,
+      "sha256": "618f9f8d9fe9cdf139dc9c586d7cca847c77ac60fb67f015d6d8cea6d526b3bd"
+    },
+    "gap_cov_ms": 17.7778,
+    "valid_rate": 0.1667,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/ufo__url__C3__r3/raw"
+  }
+}

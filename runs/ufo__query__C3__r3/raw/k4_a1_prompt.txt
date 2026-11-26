@@ -1,0 +1,322 @@
+The Vitest test file below for `src/query.ts` (import path: `../../src/query`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/query.ts`:
+```ts
+import {
+  decodeQueryKey,
+  decodeQueryValue,
+  encodeQueryKey,
+  encodeQueryValue,
+} from "./encoding";
+
+export type QueryValue =
+  | string
+  | number
+  | undefined
+  | null
+  | boolean
+  | Array<QueryValue>
+  | Record<string, any>;
+
+export type QueryObject = Record<string, QueryValue | QueryValue[]>;
+
+export type ParsedQuery = Record<string, string | string[]>;
+
+// const EmptyObject = /* @__PURE__ */ (() => {
+//   const C = function () {};
+//   C.prototype = Object.create(null);
+//   return C;
+// })() as unknown as { new (): any };
+
+/**
+ * Parses and decodes a query string into an object.
+ *
+ * The input can be a query string with or without the leading `?`.
+ *
+ * @example
+ *
+ * ```js
+ * parseQuery("?foo=bar&baz=qux");
+ * // { foo: "bar", baz: "qux" }
+ *
+ * parseQuery("tags=javascript&tags=web&tags=dev");
+ * // { tags: ["javascript", "web", "dev"] }
+ * ```
+ *
+ * @note
+ * The `__proto__` and `constructor` keys are ignored to prevent prototype pollution.
+ *
+ * @group Query_utils
+ */
+export function parseQuery<T extends ParsedQuery = ParsedQuery>(
+  parametersString = "",
+): T {
+  // TODO: Use new EmptyObject() instead of Object.create(null) for better performance in next major version
+  // https://github.com/unjs/ufo/pull/290
+  const object: ParsedQuery = Object.create(null);
+  if (parametersString[0] === "?") {
+    parametersString = parametersString.slice(1);
+  }
+  for (const parameter of parametersString.split("&")) {
+    const s = parameter.match(/([^=]+)=?(.*)/) || [];
+    if (s.length < 2) {
+      continue;
+    }
+    const key = decodeQueryKey(s[1]);
+    if (key === "__proto__" || key === "constructor") {
+      continue;
+    }
+    const value = decodeQueryValue(s[2] || "");
+    if (object[key] === undefined) {
+      object[key] = value;
+    } else if (Array.isArray(object[key])) {
+      (object[key] as string[]).push(value);
+    } else {
+      object[key] = [object[key] as string, value];
+    }
+  }
+  return object as T;
+}
+
+/**
+ * Encodes a pair of key and value into a url query string value.
+ *
+ * If the value is an array, it will be encoded as multiple key-value pairs with the same key.
+ *
+ * @example
+ *
+ * ```js
+ * encodeQueryItem('message', 'Hello World')
+ * // 'message=Hello+World'
+ *
+ * encodeQueryItem('tags', ['javascript', 'web', 'dev'])
+ * // 'tags=javascript&tags=web&tags=dev'
+ * ```
+ *
+ * @group Query_utils
+ */
+export function encodeQueryItem(
+  key: string,
+  value: QueryValue | QueryValue[],
+): string {
+  if (typeof value === "number" || typeof value === "boolean") {
+    value = String(value);
+  }
+  if (!value) {
+    return encodeQueryKey(key);
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map(
+        (_value: QueryValue) =>
+          `${encodeQueryKey(key)}=${encodeQueryValue(_value)}`,
+      )
+      .join("&");
+  }
+
+  return `${encodeQueryKey(key)}=${encodeQueryValue(value)}`;
+}
+
+/**
+ * Stringfies and encodes a query object into a query string.
+ *
+ * @example
+ *
+ * ```js
+ * stringifyQuery({ foo: 'bar', baz: 'qux' })
+ * // 'foo=bar&baz=qux'
+ *
+ * stringifyQuery({ foo: 'bar', baz: undefined })
+ * // 'foo=bar'
+ * ```
+ *
+ * @group Query_utils
+ */
+export function stringifyQuery(query: QueryObject): string {
+  return Object.keys(query)
+    .filter((k) => query[k] !== undefined)
+    .map((k) => encodeQueryItem(k, query[k]))
+    .filter(Boolean)
+    .join("&");
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import { parseQuery, encodeQueryItem, stringifyQuery } from "../../src/query";
+
+describe("parseQuery", () => {
+  const cases = [
+    { input: "", expected: {} },
+    { input: "?foo=bar", expected: { foo: "bar" } },
+    { input: "foo=bar&baz=qux", expected: { foo: "bar", baz: "qux" } },
+    { input: "?foo=bar&baz=qux", expected: { foo: "bar", baz: "qux" } },
+    { input: "tags=javascript&tags=web&tags=dev", expected: { tags: ["javascript", "web", "dev"] } },
+    { input: "foo=bar&foo=baz", expected: { foo: ["bar", "baz"] } },
+    { input: "foo&bar=baz", expected: { foo: "", bar: "baz" } },
+    { input: "__proto__=polluted&constructor=polluted&safe=val", expected: { safe: "val" } },
+    { input: "a=1&b=true&c=false", expected: { a: "1", b: "true", c: "false" } },
+    { input: "message=Hello+World", expected: { message: "Hello World" } },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should parse "${input}" correctly`, () => {
+      expect(parseQuery(input)).toEqual(expected);
+    });
+  }
+
+  it("should use default empty string when parametersString is omitted", () => {
+    expect(parseQuery()).toEqual({});
+  });
+
+  it("should handle segments without equals sign or empty value correctly", () => {
+    expect(parseQuery("invalidsegment")).toEqual({ invalidsegment: "" });
+    expect(parseQuery("key=")).toEqual({ key: "" });
+  });
+
+  it("should ignore prototype pollution keys", () => {
+    const result = parseQuery("__proto__[foo]=bar&constructor[prototype]=bad");
+    expect(result.__proto__).toBeUndefined();
+    expect(result.constructor).toBeUndefined();
+  });
+
+  it("should ignore empty parameters from empty segments or ampersands", () => {
+    expect(parseQuery("&foo=bar&")).toEqual({ foo: "bar" });
+    expect(parseQuery("&&")).toEqual({});
+  });
+
+  it("should handle unmatched segments correctly without fallback default arrays", () => {
+    expect(parseQuery("=")).toEqual({ "": "" });
+  });
+});
+
+describe("encodeQueryItem", () => {
+  const cases = [
+    { key: "message", value: "Hello World", expected: "message=Hello+World" },
+    { key: "tags", value: ["javascript", "web", "dev"], expected: "tags=javascript&tags=web&tags=dev" },
+    { key: "count", value: 42, expected: "count=42" },
+    { key: "active", value: true, expected: "active=true" },
+    { key: "active", value: false, expected: "active=false" },
+    { key: "empty", value: "", expected: "empty" },
+    { key: "nullVal", value: null, expected: "nullVal" },
+    { key: "undefVal", value: undefined, expected: "undefVal" },
+  ];
+
+  for (const { key, value, expected } of cases) {
+    it(`should encode item ${key}=${JSON.stringify(value)} correctly`, () => {
+      expect(encodeQueryItem(key, value as any)).toBe(expected);
+    });
+  }
+
+  it("should handle number zero and boolean false correctly without treating them as falsy", () => {
+    expect(encodeQueryItem("num", 0)).toBe("num=0");
+    expect(encodeQueryItem("bool", false)).toBe("bool=false");
+  });
+});
+
+describe("stringifyQuery", () => {
+  const cases = [
+    { input: { foo: "bar", baz: "qux" }, expected: "foo=bar&baz=qux" },
+    { input: { foo: "bar", baz: undefined }, expected: "foo=bar" },
+    { input: { tags: ["javascript", "web", "dev"] }, expected: "tags=javascript&tags=web&tags=dev" },
+    { input: {}, expected: "" },
+    { input: { a: 1, b: true, c: false }, expected: "a=1&b=true&c=false" },
+    { input: { message: "Hello World" }, expected: "message=Hello+World" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should stringify query object correctly`, () => {
+      expect(stringifyQuery(input)).toBe(expected);
+    });
+  }
+
+  it("should filter out falsy encoded items produced by empty keys or values", () => {
+    expect(stringifyQuery({ foo: "bar" })).toBe("foo=bar");
+  });
+
+  it("should filter out empty string encoded items", () => {
+    expect(stringifyQuery({ "": "", foo: "bar" })).toBe("foo=bar");
+    expect(stringifyQuery({ "": "" })).toBe("");
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.5 /home/runner/work/_temp/ufo
+
+ ❯ test/__generated__/query.gen.test.ts (32 tests | 1 failed) 12ms
+     ✓ should parse "" correctly 2ms
+     ✓ should parse "?foo=bar" correctly 0ms
+     ✓ should parse "foo=bar&baz=qux" correctly 0ms
+     ✓ should parse "?foo=bar&baz=qux" correctly 0ms
+     ✓ should parse "tags=javascript&tags=web&tags=dev" correctly 0ms
+     ✓ should parse "foo=bar&foo=baz" correctly 0ms
+     ✓ should parse "foo&bar=baz" correctly 0ms
+     ✓ should parse "__proto__=polluted&constructor=polluted&safe=val" correctly 0ms
+     ✓ should parse "a=1&b=true&c=false" correctly 0ms
+     ✓ should parse "message=Hello+World" correctly 0ms
+     ✓ should use default empty string when parametersString is omitted 0ms
+     ✓ should handle segments without equals sign or empty value correctly 0ms
+     ✓ should ignore prototype pollution keys 0ms
+     ✓ should ignore empty parameters from empty segments or ampersands 0ms
+     × should handle unmatched segments correctly without fallback default arrays 5ms
+     ✓ should encode item message="Hello World" correctly 0ms
+     ✓ should encode item tags=["javascript","web","dev"] correctly 0ms
+     ✓ should encode item count=42 correctly 0ms
+     ✓ should encode item active=true correctly 0ms
+     ✓ should encode item active=false correctly 0ms
+     ✓ should encode item empty="" correctly 0ms
+     ✓ should encode item nullVal=null correctly 0ms
+     ✓ should encode item undefVal=undefined correctly 0ms
+     ✓ should handle number zero and boolean false correctly without treating them as falsy 0ms
+     ✓ should stringify query object correctly 0ms
+     ✓ should stringify query object correctly 0ms
+     ✓ should stringify query object correctly 0ms
+     ✓ should stringify query object correctly 0ms
+     ✓ should stringify query object correctly 0ms
+     ✓ should stringify query object correctly 0ms
+     ✓ should filter out falsy encoded items produced by empty keys or values 0ms
+     ✓ should filter out empty string encoded items 0ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 31 passed (32)
+   Start at  19:20:19
+   Duration  185ms (transform 49ms, setup 0ms, import 63ms, tests 12ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/query.gen.test.ts > parseQuery > should handle unmatched segments correctly without fallback default arrays
+AssertionError: expected {} to deeply equal { '': '' }
+
+- Expected
++ Received
+
+- {
+-   "": "",
+- }
++ {}
+
+ ❯ test/__generated__/query.gen.test.ts:45:29
+     43|
+     44|   it("should handle unmatched segments correctly without fallback defa…
+     45|     expect(parseQuery("=")).toEqual({ "": "" });
+       |                             ^
+     46|   });
+     47| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

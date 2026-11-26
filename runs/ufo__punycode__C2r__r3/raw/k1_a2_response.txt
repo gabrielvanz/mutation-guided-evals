@@ -1,0 +1,48 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    expect(toASCII("example.com")).toBe("example.com");
+  });
+
+  it("should convert non-ASCII domain names to punycode", () => {
+    expect(toASCII("münchen.de")).toBe("xn--mnchen-3ya.de");
+  });
+
+  it("should handle email addresses with non-ASCII domains", () => {
+    expect(toASCII("user@münchen.de")).toBe("user@xn--mnchen-3ya.de");
+  });
+
+  it("should handle empty strings", () => {
+    expect(toASCII("")).toBe("");
+  });
+
+  it("should normalize different dot separators", () => {
+    expect(toASCII("example。com")).toBe("example.com");
+    expect(toASCII("example．com")).toBe("example.com");
+    expect(toASCII("example｡com")).toBe("example.com");
+  });
+
+  it("should throw RangeError on invalid input or overflow", () => {
+    // Calling internal error via a specific condition or ensuring we can test RangeError behavior
+    // Since the overflow test didn't throw with repeat(500), let's call s('overflow') via internal helper if possible, 
+    // or test a scenario that actually hits the overflow branch if any, or invoke s directly if exported (it's not exported).
+    // Wait, we can test that the function handles basic inputs, and to test the error branch, 
+    // let's look at how s is triggered. s is triggered when `o - f > e((2147483647 - i) / a)`.
+    // Since we cannot modify source and the overflow test failed, we can trigger the error by supplying a string 
+    // that produces an overflow in the delta calculation, or inspect what the code throws. 
+    // Wait, if `\u{10FFFF}` repeat doesn't overflow, let's see what does or if we can test an error.
+    // Let's pass a string that causes an overflow or invalid input if applicable, or check if we can trigger "overflow" or "invalid-input".
+    // Actually, let's check what `s("overflow")` requires. It requires `o - f > e((2147483647 - i) / a)`.
+    // If repeat(500) didn't do it, maybe repeat(100000) or something larger? But that might be slow or deterministic issues.
+    // Wait, can we test the error throwing by passing a specific string or does the module throw for something else?
+    // Let's check if there's any input that throws RangeError. If not, can we check if `toASCII` throws when expected?
+    // Wait! Let's check what `toASCII` does when given a surrogate pair or specific code points.
+    // Let's test a very large string of unique high code points:
+    const hugeString = Array.from({ length: 10000 }, (_, i) => String.fromCodePoint(0x10000 + i)).join("");
+    expect(() => toASCII(hugeString)).toThrow(RangeError);
+  });
+});
+```

@@ -1,0 +1,378 @@
+{
+  "schema_version": "0.1",
+  "run_id": "ufo__utils__C3__r1",
+  "started_at": "2026-11-26T08:31:42.365Z",
+  "finished_at": "2026-11-26T08:37:36.651Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "ufo",
+    "repo": "unjs/ufo",
+    "commit": "f06c800d0c59f2a4a1b9ba65eb6cb61a84419be6",
+    "license": "MIT",
+    "module_path": "src/utils.ts",
+    "module_loc": 775,
+    "mutants_total": 470,
+    "human_test_files": [
+      "test/base.test.ts",
+      "test/double-slash.test.ts",
+      "test/is-same.test.ts",
+      "test/join.test.ts",
+      "test/normalize.test.ts",
+      "test/resolve.test.ts",
+      "test/trailing-slash.test.ts",
+      "test/utilities.test.ts"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 1,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "fe67ae67ed930f60b3dd8e1afdf5aff76745522417116f7b5723c18190555635",
+    "git_sha_agent": "b0dedb690104ab74dbd119d5f449b123ff18bc62"
+  },
+  "memorization": {
+    "probe_similarity": 0.485,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__utils__C3__r1/raw/k0_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r1/raw/k0_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 29411,
+        "tokens_out": 10903,
+        "usd_ref": 0.007302,
+        "wall_s": 34.76,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 1,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__utils__C3__r1/raw/k1_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r1/raw/k1_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 4,
+        "tokens_in": 59385,
+        "tokens_out": 22750,
+        "usd_ref": 0.015039,
+        "wall_s": 71.03,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 2,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__utils__C3__r1/raw/k2_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r1/raw/k2_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 9,
+        "repair_calls": 6,
+        "tokens_in": 88216,
+        "tokens_out": 33237,
+        "usd_ref": 0.022116,
+        "wall_s": 106.36,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 66.6667,
+        "ms_feedback": 70.2929,
+        "ms_all": 68.5106,
+        "ms_covered": 80.0995
+      },
+      "coverage": {
+        "line_cov": 91.22,
+        "branch_cov": 80.62
+      },
+      "mutants_eval": {
+        "killed": 154,
+        "survived": 45,
+        "no_coverage": 32,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 168,
+        "survived": 35,
+        "no_coverage": 36,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 38,
+        "n_asserts": 67,
+        "sha256": "116045d8c088ffa62894f0aa3b21ef93c3dead5f43a6b7e34c5aeee2fa15a3e0"
+      },
+      "prompt_file": "runs/ufo__utils__C3__r1/raw/k3_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r1/raw/k3_a0_response.txt",
+      "best_k_so_far": 3,
+      "cost_cumulative": {
+        "calls": 12,
+        "repair_calls": 8,
+        "tokens_in": 117845,
+        "tokens_out": 44690,
+        "usd_ref": 0.029661,
+        "wall_s": 194.93,
+        "stryker_s": 49.32
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 74.8918,
+        "ms_feedback": 79.9163,
+        "ms_all": 77.4468,
+        "ms_covered": 81.7978
+      },
+      "coverage": {
+        "line_cov": 97.66,
+        "branch_cov": 93.12
+      },
+      "mutants_eval": {
+        "killed": 173,
+        "survived": 46,
+        "no_coverage": 12,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 191,
+        "survived": 35,
+        "no_coverage": 13,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/utils.ts:12:24-12:54:Regex:/[\\s\\w\\0+.-]{2,}:([/\\\\]{2})?/",
+        "src/utils.ts:14:28-14:72:Regex:/[\\s\\0]*(blob|data|javascript|vbscript):$/i",
+        "src/utils.ts:198:31-198:35:BooleanLiteral:false",
+        "src/utils.ts:220:41-220:43:StringLiteral:\"Stryker was here!\"",
+        "src/utils.ts:467:26-469:6:BlockStatement:{}",
+        "src/utils.ts:467:9-467:24:LogicalOperator:!i && i === \"/\"",
+        "src/utils.ts:475:13-475:34:EqualityOperator:segments.length !== 1",
+        "src/utils.ts:479:9-479:24:UpdateOperator:segmentsDepth++",
+        "src/utils.ts:484:9-484:49:AssignmentOperator:segments[segments.length - 1] -= \"/\" + s",
+        "src/utils.ts:496:9-496:58:LogicalOperator:input[0]?.startsWith(\"/\") || !url.startsWith(\"/\")",
+        "src/utils.ts:498:16-498:67:ConditionalExpression:false",
+        "src/utils.ts:498:47-498:67:MethodExpression:url.endsWith(\"./\")",
+        "src/utils.ts:503:24-503:26:UnaryOperator:+1",
+        "src/utils.ts:508:13-508:29:ArithmeticOperator:input.length + 1",
+        "src/utils.ts:508:49-508:67:BooleanLiteral:url.endsWith(\"/\")",
+        "src/utils.ts:508:7-508:40:OptionalChaining:input[input.length - 1].endsWith",
+        "src/utils.ts:508:7-508:45:MethodExpression:input[input.length - 1]?.startsWith(\"/\")",
+        "src/utils.ts:649:30-649:55:EqualityOperator:urlSegment.search === \"?\"",
+        "src/utils.ts:650:11-650:43:ConditionalExpression:true",
+        "src/utils.ts:655:67-655:69:StringLiteral:\"Stryker was here!\""
+      ],
+      "tests": {
+        "n_tests": 38,
+        "n_asserts": 78,
+        "sha256": "7286a0035f5158d30479c80284d9b6ee846c87ef643792d8856f9820e3ab7bd3"
+      },
+      "prompt_file": "runs/ufo__utils__C3__r1/raw/k4_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r1/raw/k4_a0_response.txt",
+      "best_k_so_far": 4,
+      "cost_cumulative": {
+        "calls": 15,
+        "repair_calls": 10,
+        "tokens_in": 152903,
+        "tokens_out": 56962,
+        "usd_ref": 0.038075,
+        "wall_s": 301.98,
+        "stryker_s": 104.63
+      }
+    },
+    {
+      "k": 5,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/utils.ts:12:24-12:54:Regex:/[\\s\\w\\0+.-]{2,}:([/\\\\]{2})?/",
+        "src/utils.ts:14:28-14:72:Regex:/^[\\S\\0]*(blob|data|javascript|vbscript):$/i",
+        "src/utils.ts:156:7-156:31:ConditionalExpression:false",
+        "src/utils.ts:198:31-198:35:BooleanLiteral:false",
+        "src/utils.ts:319:7-319:23:ConditionalExpression:false",
+        "src/utils.ts:333:53-333:59:Regex:/\\/+/",
+        "src/utils.ts:467:15-467:24:ConditionalExpression:false",
+        "src/utils.ts:467:26-469:6:BlockStatement:{}",
+        "src/utils.ts:467:9-467:24:LogicalOperator:!i && i === \"/\"",
+        "src/utils.ts:479:9-479:24:UpdateOperator:segmentsDepth++",
+        "src/utils.ts:498:47-498:67:MethodExpression:url.endsWith(\"./\")",
+        "src/utils.ts:503:24-503:26:UnaryOperator:+1",
+        "src/utils.ts:508:7-508:40:OptionalChaining:input[input.length - 1].endsWith",
+        "src/utils.ts:569:15-571:4:BlockStatement:{}",
+        "src/utils.ts:618:35-618:37:StringLiteral:\"Stryker was here!\"",
+        "src/utils.ts:627:36-629:4:BlockStatement:{}",
+        "src/utils.ts:649:30-649:55:ConditionalExpression:true",
+        "src/utils.ts:649:9-649:55:LogicalOperator:urlSegment.search || urlSegment.search !== \"?\"",
+        "src/utils.ts:655:47-655:50:StringLiteral:\"\"",
+        "src/utils.ts:655:67-655:69:StringLiteral:\"Stryker was here!\""
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__utils__C3__r1/raw/k5_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r1/raw/k5_a0_response.txt",
+      "best_k_so_far": 4,
+      "cost_cumulative": {
+        "calls": 18,
+        "repair_calls": 12,
+        "tokens_in": 189420,
+        "tokens_out": 70950,
+        "usd_ref": 0.047322,
+        "wall_s": 354.29,
+        "stryker_s": 104.63
+      }
+    }
+  ],
+  "selected_iteration": 4,
+  "final": {
+    "scores": {
+      "ms_eval": 74.8918,
+      "ms_feedback": 79.9163,
+      "ms_all": 77.4468,
+      "ms_covered": 81.7978
+    },
+    "coverage": {
+      "line_cov": 97.66,
+      "branch_cov": 93.12
+    },
+    "cost": {
+      "calls": 18,
+      "repair_calls": 12,
+      "tokens_in": 189420,
+      "tokens_out": 70950,
+      "usd_ref": 0.047322,
+      "wall_s": 354.29,
+      "stryker_s": 104.63
+    },
+    "tests": {
+      "n_tests": 38,
+      "n_asserts": 78,
+      "sha256": "7286a0035f5158d30479c80284d9b6ee846c87ef643792d8856f9820e3ab7bd3"
+    },
+    "gap_cov_ms": 20.2132,
+    "valid_rate": 0.3333,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/ufo__utils__C3__r1/raw"
+  }
+}

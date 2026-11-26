@@ -1,0 +1,62 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { parseQuery, encodeQueryItem, stringifyQuery } from "../../src/query";
+
+describe("parseQuery", () => {
+  it("should parse basic query strings", () => {
+    const cases = [
+      { input: "foo=bar&baz=qux", expected: { foo: "bar", baz: "qux" } },
+      { input: "?foo=bar&baz=qux", expected: { foo: "bar", baz: "qux" } },
+      { input: "tags=javascript&tags=web&tags=dev", expected: { tags: ["javascript", "web", "dev"] } },
+      { input: "", expected: {} },
+      { input: "?", expected: {} },
+      { input: "foo=bar=baz", expected: { foo: "bar=baz" } },
+      { input: "foo", expected: {} },
+      { input: "foo=&bar=qux", expected: { foo: "", bar: "qux" } },
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(parseQuery(input)).toEqual(expected);
+    }
+  });
+
+  it("should ignore prototype pollution keys", () => {
+    const input = "__proto__[foo]=bar&constructor[prototype]=baz&safe=value";
+    const expected = { safe: "value" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+});
+
+describe("encodeQueryItem", () => {
+  it("should encode keys and values properly", () => {
+    const cases = [
+      { key: "message", value: "Hello World", expected: "message=Hello+World" },
+      { key: "tags", value: ["javascript", "web", "dev"], expected: "tags=javascript&tags=web&tags=dev" },
+      { key: "count", value: 42, expected: "count=42" },
+      { key: "active", value: true, expected: "active=true" },
+      { key: "empty", value: "", expected: "empty=" },
+      { key: "nullVal", value: null, expected: "nullVal" },
+    ];
+
+    for (const { key, value, expected } of cases) {
+      expect(encodeQueryItem(key, value)).toBe(expected);
+    }
+  });
+});
+
+describe("stringifyQuery", () => {
+  it("should stringify query objects into query strings", () => {
+    const cases = [
+      { query: { foo: "bar", baz: "qux" }, expected: "foo=bar&baz=qux" },
+      { query: { foo: "bar", baz: undefined }, expected: "foo=bar" },
+      { query: { tags: ["javascript", "web"] }, expected: "tags=javascript&tags=web" },
+      { query: {}, expected: "" },
+      { query: { a: 1, b: false }, expected: "a=1&b=false" },
+    ];
+
+    for (const { query, expected } of cases) {
+      expect(stringifyQuery(query)).toBe(expected);
+    }
+  });
+});
+```

@@ -1,0 +1,247 @@
+Improve the Vitest test file for the module `src/query.ts` (import path: `../../src/query`).
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: ufo (utilitários de URL)
+
+- Entradas típicas: URLs absolutas, caminhos relativos, `//host`, strings com `?query` e `#hash`, protocolos (`http:`, `file:`, `data:`), strings vazias.
+- Os testes originais usam tabelas `{ input, out }` e comparam strings completas de saída com `toBe`/`toEqual`.
+- Cubra variações com e sem barra final, barras duplicadas e percent-encoding.
+</conventions>
+
+Source of `src/query.ts`:
+```ts
+import {
+  decodeQueryKey,
+  decodeQueryValue,
+  encodeQueryKey,
+  encodeQueryValue,
+} from "./encoding";
+
+export type QueryValue =
+  | string
+  | number
+  | undefined
+  | null
+  | boolean
+  | Array<QueryValue>
+  | Record<string, any>;
+
+export type QueryObject = Record<string, QueryValue | QueryValue[]>;
+
+export type ParsedQuery = Record<string, string | string[]>;
+
+// const EmptyObject = /* @__PURE__ */ (() => {
+//   const C = function () {};
+//   C.prototype = Object.create(null);
+//   return C;
+// })() as unknown as { new (): any };
+
+/**
+ * Parses and decodes a query string into an object.
+ *
+ * The input can be a query string with or without the leading `?`.
+ *
+ * @example
+ *
+ * ```js
+ * parseQuery("?foo=bar&baz=qux");
+ * // { foo: "bar", baz: "qux" }
+ *
+ * parseQuery("tags=javascript&tags=web&tags=dev");
+ * // { tags: ["javascript", "web", "dev"] }
+ * ```
+ *
+ * @note
+ * The `__proto__` and `constructor` keys are ignored to prevent prototype pollution.
+ *
+ * @group Query_utils
+ */
+export function parseQuery<T extends ParsedQuery = ParsedQuery>(
+  parametersString = "",
+): T {
+  // TODO: Use new EmptyObject() instead of Object.create(null) for better performance in next major version
+  // https://github.com/unjs/ufo/pull/290
+  const object: ParsedQuery = Object.create(null);
+  if (parametersString[0] === "?") {
+    parametersString = parametersString.slice(1);
+  }
+  for (const parameter of parametersString.split("&")) {
+    const s = parameter.match(/([^=]+)=?(.*)/) || [];
+    if (s.length < 2) {
+      continue;
+    }
+    const key = decodeQueryKey(s[1]);
+    if (key === "__proto__" || key === "constructor") {
+      continue;
+    }
+    const value = decodeQueryValue(s[2] || "");
+    if (object[key] === undefined) {
+      object[key] = value;
+    } else if (Array.isArray(object[key])) {
+      (object[key] as string[]).push(value);
+    } else {
+      object[key] = [object[key] as string, value];
+    }
+  }
+  return object as T;
+}
+
+/**
+ * Encodes a pair of key and value into a url query string value.
+ *
+ * If the value is an array, it will be encoded as multiple key-value pairs with the same key.
+ *
+ * @example
+ *
+ * ```js
+ * encodeQueryItem('message', 'Hello World')
+ * // 'message=Hello+World'
+ *
+ * encodeQueryItem('tags', ['javascript', 'web', 'dev'])
+ * // 'tags=javascript&tags=web&tags=dev'
+ * ```
+ *
+ * @group Query_utils
+ */
+export function encodeQueryItem(
+  key: string,
+  value: QueryValue | QueryValue[],
+): string {
+  if (typeof value === "number" || typeof value === "boolean") {
+    value = String(value);
+  }
+  if (!value) {
+    return encodeQueryKey(key);
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map(
+        (_value: QueryValue) =>
+          `${encodeQueryKey(key)}=${encodeQueryValue(_value)}`,
+      )
+      .join("&");
+  }
+
+  return `${encodeQueryKey(key)}=${encodeQueryValue(value)}`;
+}
+
+/**
+ * Stringfies and encodes a query object into a query string.
+ *
+ * @example
+ *
+ * ```js
+ * stringifyQuery({ foo: 'bar', baz: 'qux' })
+ * // 'foo=bar&baz=qux'
+ *
+ * stringifyQuery({ foo: 'bar', baz: undefined })
+ * // 'foo=bar'
+ * ```
+ *
+ * @group Query_utils
+ */
+export function stringifyQuery(query: QueryObject): string {
+  return Object.keys(query)
+    .filter((k) => query[k] !== undefined)
+    .map((k) => encodeQueryItem(k, query[k]))
+    .filter(Boolean)
+    .join("&");
+}
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect } from "vitest";
+import { parseQuery, encodeQueryItem, stringifyQuery } from "../../src/query";
+
+describe("parseQuery", () => {
+  it.each([
+    { input: "", expected: {} },
+    { input: "?foo=bar&baz=qux", expected: { foo: "bar", baz: "qux" } },
+    { input: "foo=bar&baz=qux", expected: { foo: "bar", baz: "qux" } },
+    { input: "tags=javascript&tags=web&tags=dev", expected: { tags: ["javascript", "web", "dev"] } },
+    { input: "foo", expected: { foo: "" } },
+    { input: "foo=", expected: { foo: "" } },
+    { input: "?", expected: {} },
+    { input: "foo=bar&__proto__=polluted&constructor=bad", expected: { foo: "bar" } },
+  ])("should parse $input correctly", ({ input, expected }) => {
+    const result = parseQuery(input);
+    expect(result).toEqual(expected);
+  });
+});
+
+describe("encodeQueryItem", () => {
+  it.each([
+    { key: "message", value: "Hello World", expected: "message=Hello+World" },
+    { key: "tags", value: ["javascript", "web", "dev"], expected: "tags=javascript&tags=web&tags=dev" },
+    { key: "count", value: 42, expected: "count=42" },
+    { key: "active", value: true, expected: "active=true" },
+    { key: "empty", value: "", expected: "empty" },
+    { key: "missing", value: undefined, expected: "missing" },
+  ])("should encode query item for key $key", ({ key, value, expected }) => {
+    const result = encodeQueryItem(key, value);
+    expect(result).toBe(expected);
+  });
+});
+
+describe("stringifyQuery", () => {
+  it.each([
+    { input: { foo: "bar", baz: "qux" }, expected: "foo=bar&baz=qux" },
+    { input: { foo: "bar", baz: undefined }, expected: "foo=bar" },
+    { input: { tags: ["javascript", "web", "dev"] }, expected: "tags=javascript&tags=web&tags=dev" },
+    { input: {}, expected: "" },
+  ])("should stringify query object correctly", ({ input, expected }) => {
+    const result = stringifyQuery(input);
+    expect(result).toBe(expected);
+  });
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 7 changes below (7 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. line 48, operator StringLiteral (no test executes this code)
+   line: parametersString = "",
+   original fragment: "\"\""
+   mutated fragment:  "\"Stryker was here!\""
+2. line 57, operator ArrayDeclaration
+   line: const s = parameter.match(/([^=]+)=?(.*)/) || [];
+   original fragment: "[]"
+   mutated fragment:  "[\"Stryker was here\"]"
+3. line 58, operator EqualityOperator
+   line: if (s.length < 2) {
+   original fragment: "s.length < 2"
+   mutated fragment:  "s.length <= 2"
+4. line 98, operator StringLiteral
+   line: if (typeof value === "number" || typeof value === "boolean") {
+   original fragment: "\"number\""
+   mutated fragment:  "\"\""
+5. line 98, operator ConditionalExpression
+   line: if (typeof value === "number" || typeof value === "boolean") {
+   original fragment: "typeof value === \"boolean\""
+   mutated fragment:  "false"
+6. line 98, operator ConditionalExpression
+   line: if (typeof value === "number" || typeof value === "boolean") {
+   original fragment: "typeof value === \"number\""
+   mutated fragment:  "false"
+7. line 133, operator MethodExpression
+   line: return Object.keys(query)
+   original fragment: "Object.keys(query)\n    .filter((k) => query[k] !== undefined)\n    .map((k) => encodeQueryItem(k, query[k]))\n    .filter(Boolean)"
+   mutated fragment:  "Object.keys(query).filter(k => query[k] !== undefined).map(k => encodeQueryItem(k, query[k]))"
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.

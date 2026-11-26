@@ -1,0 +1,26 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    expect(toASCII("example.com")).toBe("example.com");
+  });
+
+  it("should convert unicode domain names to punycode", () => {
+    expect(toASCII("ñandu.com")).toBe("xn--andu-fqa.com");
+  });
+
+  it("should handle email addresses with unicode domain parts", () => {
+    expect(toASCII("user@ñandu.com")).toBe("user@xn--andu-fqa.com");
+  });
+
+  it("should handle various dot separators", () => {
+    expect(toASCII("test\u3002com")).toBe("test.com");
+  });
+
+  it("should handle empty strings", () => {
+    expect(toASCII("")).toBe("");
+  });
+});
+```

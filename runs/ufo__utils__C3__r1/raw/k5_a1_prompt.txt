@@ -1,0 +1,1375 @@
+The Vitest test file below for `src/utils.ts` (import path: `../../src/utils`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/utils.ts`:
+```ts
+import { parseURL, stringifyParsedURL } from "./parse";
+import { QueryObject, parseQuery, stringifyQuery, ParsedQuery } from "./query";
+import {
+  decode,
+  decodePath,
+  encodeHash,
+  encodeHost,
+  encodePath,
+} from "./encoding";
+
+const PROTOCOL_STRICT_REGEX = /^[\s\w\0+.-]{2,}:([/\\]{1,2})/;
+const PROTOCOL_REGEX = /^[\s\w\0+.-]{2,}:([/\\]{2})?/;
+const PROTOCOL_RELATIVE_REGEX = /^([/\\]\s*){2,}[^/\\]/;
+const PROTOCOL_SCRIPT_RE = /^[\s\0]*(blob|data|javascript|vbscript):$/i;
+const TRAILING_SLASH_RE = /\/$|\/\?|\/#/;
+const JOIN_LEADING_SLASH_RE = /^\.?\//;
+
+/**
+ * Check if a path starts with `./` or `../`.
+ *
+ * @example
+ * ```js
+ * isRelative("./foo"); // true
+ * ```
+ *
+ * @group utils
+ */
+export function isRelative(inputString: string) {
+  return ["./", "../"].some((string_) => inputString.startsWith(string_));
+}
+
+export interface HasProtocolOptions {
+  acceptRelative?: boolean;
+  strict?: boolean;
+}
+
+export function hasProtocol(
+  inputString: string,
+  opts?: HasProtocolOptions,
+): boolean;
+
+/** @deprecated Same as { hasProtocol(inputString, { acceptRelative: true }) */
+export function hasProtocol(
+  inputString: string,
+  acceptRelative: boolean,
+): boolean;
+
+/**
+ * Checks if the input has a protocol.
+ *
+ * You can use `{ acceptRelative: true }` to accept relative URLs as valid protocol.
+ *
+ * @example
+ *
+ * ```js
+ * hasProtocol('https://example.com'); // true
+ *
+ * hasProtocol("//example.com"); // false
+ *
+ * hasProtocol('//example.com', { acceptRelative: true });  // true
+ *
+ * hasProtocol("ftp://example.com"); // true
+ *
+ * hasProtocol('data:text/plain'); // true
+ *
+ * hasProtocol('data:text/plain', { strict: true }); // false
+ * ```
+ *
+ * @group utils
+ */
+export function hasProtocol(
+  inputString: string,
+  opts: boolean | HasProtocolOptions = {},
+): boolean {
+  if (typeof opts === "boolean") {
+    opts = { acceptRelative: opts };
+  }
+  if (opts.strict) {
+    return PROTOCOL_STRICT_REGEX.test(inputString);
+  }
+  return (
+    PROTOCOL_REGEX.test(inputString) ||
+    (opts.acceptRelative ? PROTOCOL_RELATIVE_REGEX.test(inputString) : false)
+  );
+}
+
+/**
+ * Checks if the input protocol is any of the dangerous `blob:`, `data:`, `javascript`: or `vbscript:` protocols.
+ *
+ * @example
+ *
+ * ```js
+ * isScriptProtocol("javascript:alert(1)"); // true
+ *
+ * isScriptProtocol("data:text/html,hello"); // true
+ *
+ * isScriptProtocol("blob:hello"); // true
+ *
+ * isScriptProtocol("vbscript:alert(1)"); // true
+ *
+ * isScriptProtocol("https://example.com"); // false
+ * ```
+ *
+ * @group utils
+ */
+export function isScriptProtocol(protocol?: string) {
+  return !!protocol && PROTOCOL_SCRIPT_RE.test(protocol);
+}
+
+/**
+ * Checks if the input has a trailing slash.
+ *
+ * @example
+ *
+ * ```js
+ * hasTrailingSlash("/foo/"); // true
+ *
+ * hasTrailingSlash("/foo"); // false
+ *
+ * hasTrailingSlash("/foo?query=true", true); // false
+ *
+ * hasTrailingSlash("/foo/?query=true", true); // true
+ * ```
+ *
+ * @group utils
+ */
+export function hasTrailingSlash(
+  input = "",
+  respectQueryAndFragment?: boolean,
+): boolean {
+  if (!respectQueryAndFragment) {
+    return input.endsWith("/");
+  }
+  return TRAILING_SLASH_RE.test(input);
+}
+
+/**
+ * Removes the trailing slash from the URL or pathname.
+ *
+ * If second argument is `true`, it will only remove the trailing slash if it's not part of the query or fragment with cost of more expensive operations.
+ *
+ * @example
+ *
+ * ```js
+ * withoutTrailingSlash("/foo/"); // "/foo"
+ *
+ * withoutTrailingSlash("/path/?query=true", true); // "/path?query=true"
+ * ```
+ *
+ * @group utils
+ */
+export function withoutTrailingSlash(
+  input = "",
+  respectQueryAndFragment?: boolean,
+): string {
+  if (!respectQueryAndFragment) {
+    return (hasTrailingSlash(input) ? input.slice(0, -1) : input) || "/";
+  }
+  if (!hasTrailingSlash(input, true)) {
+    return input || "/";
+  }
+  let path = input;
+  let fragment = "";
+  const fragmentIndex = input.indexOf("#");
+  if (fragmentIndex !== -1) {
+    path = input.slice(0, fragmentIndex);
+    fragment = input.slice(fragmentIndex);
+  }
+  const [s0, ...s] = path.split("?");
+  const cleanPath = s0.endsWith("/") ? s0.slice(0, -1) : s0;
+  return (
+    (cleanPath || "/") + (s.length > 0 ? `?${s.join("?")}` : "") + fragment
+  );
+}
+
+/**
+ * Ensures the URL ends with a trailing slash.
+ *
+ * If second argument is `true`, it will only add the trailing slash if it's not part of the query or fragment with cost of more expensive operation.
+ *
+ * @example
+ *
+ * ```js
+ * withTrailingSlash("/foo"); // "/foo/"
+ *
+ * withTrailingSlash("/path?query=true", true); // "/path/?query=true"
+ * ```
+ *
+ * @group utils
+ */
+export function withTrailingSlash(
+  input = "",
+  respectQueryAndFragment?: boolean,
+): string {
+  if (!respectQueryAndFragment) {
+    return input.endsWith("/") ? input : input + "/";
+  }
+  if (hasTrailingSlash(input, true)) {
+    return input || "/";
+  }
+  let path = input;
+  let fragment = "";
+  const fragmentIndex = input.indexOf("#");
+  if (fragmentIndex !== -1) {
+    path = input.slice(0, fragmentIndex);
+    fragment = input.slice(fragmentIndex);
+    if (!path) {
+      return fragment;
+    }
+  }
+  const [s0, ...s] = path.split("?");
+  return s0 + "/" + (s.length > 0 ? `?${s.join("?")}` : "") + fragment;
+}
+
+/**
+ * Checks if the input has a leading slash (e.g. `/foo`).
+ *
+ * @group utils
+ */
+export function hasLeadingSlash(input = ""): boolean {
+  return input.startsWith("/");
+}
+
+/**
+ * Removes leading slash from the URL or pathname.
+ *
+ * @example
+ *
+ * ```js
+ * withoutLeadingSlash("/foo"); // "foo"
+ * ```
+ *
+ * @group utils
+ */
+export function withoutLeadingSlash(input = ""): string {
+  return (hasLeadingSlash(input) ? input.slice(1) : input) || "/";
+}
+
+/**
+ * Ensures the URL or pathname has a leading slash.
+ *
+ * @example
+ *
+ * ```js
+ * withLeadingSlash("foo"); // "/foo"
+ * ```
+ *
+ * @group utils
+ */
+export function withLeadingSlash(input = ""): string {
+  return hasLeadingSlash(input) ? input : "/" + input;
+}
+
+/**
+ * Removes double slashes from the URL.
+ *
+ * @example
+ *
+ * ```js
+ * cleanDoubleSlashes("//foo//bar//"); // "/foo/bar/"
+ *
+ * cleanDoubleSlashes("http://example.com/analyze//http://localhost:3000//");
+ * // Returns "http://example.com/analyze/http://localhost:3000/"
+ * ```
+ *
+ * @group utils
+ */
+export function cleanDoubleSlashes(input = ""): string {
+  return input
+    .split("://")
+    .map((string_) => string_.replace(/\/{2,}/g, "/"))
+    .join("://");
+}
+
+/**
+ * Ensures the URL or pathname starts with base.
+ *
+ * If input already starts with base, it will not be added again.
+ *
+ * @example
+ *
+ * ```js
+ * withBase("/foo/bar", "/foo"); // "/foo/bar"
+ *
+ * withBase("/foo/bar", "/baz"); // "/baz/foo/bar"
+ * ```
+ *
+ * @group utils
+ */
+export function withBase(input: string, base: string) {
+  if (isEmptyURL(base) || hasProtocol(input)) {
+    return input;
+  }
+  const _base = withoutTrailingSlash(base);
+  if (input.startsWith(_base)) {
+    const nextChar = input[_base.length];
+    // Ensure '/admin-dashboard' is not considered as having base '/admin/'
+    if (!nextChar || nextChar === "/" || nextChar === "?") {
+      return input;
+    }
+  }
+  return joinURL(_base, input);
+}
+
+/**
+ * Removes the base from the URL or pathname.
+ *
+ * If input does not start with base, it will not be removed.
+ *
+ * @example
+ *
+ * ```js
+ * withoutBase("/foo/bar", "/foo"); // "/bar"
+ * ```
+ *
+ * @group utils
+ */
+export function withoutBase(input: string, base: string) {
+  if (isEmptyURL(base)) {
+    return input;
+  }
+  const _base = withoutTrailingSlash(base);
+  if (!input.startsWith(_base)) {
+    return input;
+  }
+  // Ensure '/admin-dashboard' is not considered as having base '/admin/'
+  const nextChar = input[_base.length];
+  if (nextChar && nextChar !== "/" && nextChar !== "?") {
+    return input;
+  }
+  // Collapse leading slashes to prevent protocol-relative URL injection
+  // e.g. withoutBase("/legacy//evil.com", "/legacy") must not return "//evil.com"
+  const trimmed = input.slice(_base.length).replace(/^\/+/, "");
+  return "/" + trimmed;
+}
+
+/**
+ * Add/Replace the query section of the URL.
+ *
+ * @example
+ *
+ * ```js
+ * withQuery("/foo?page=a", { token: "secret" }); // "/foo?page=a&token=secret"
+ * ```
+ *
+ * @group utils
+ */
+export function withQuery(input: string, query: QueryObject): string {
+  const parsed = parseURL(input);
+  const mergedQuery = { ...parseQuery(parsed.search), ...query };
+  parsed.search = stringifyQuery(mergedQuery);
+  return stringifyParsedURL(parsed);
+}
+
+/**
+ * Removes the query section of the URL.
+ *
+ * @example
+ *
+ * ```js
+ * filterQuery("/foo?bar=1&baz=2", (key) => key !== "bar"); // "/foo?baz=2"
+ * ```
+ *
+ * @group utils
+ */
+export function filterQuery(
+  input: string,
+  predicate: (key: string, value: string | string[]) => boolean,
+): string {
+  if (!input.includes("?")) {
+    return input;
+  }
+
+  const parsed = parseURL(input);
+  const query = parseQuery(parsed.search);
+  const filteredQuery = Object.fromEntries(
+    Object.entries(query).filter(([key, value]) => predicate(key, value)),
+  );
+  parsed.search = stringifyQuery(filteredQuery);
+  return stringifyParsedURL(parsed);
+}
+
+/**
+ * Parses and decodes the query object of an input URL into an object.
+ *
+ * @example
+ *
+ * ```js
+ * getQuery("http://foo.com/foo?test=123&unicode=%E5%A5%BD");
+ * // { test: "123", unicode: "好" }
+ * ```
+ * @group utils
+ */
+export function getQuery<T extends ParsedQuery = ParsedQuery>(
+  input: string,
+): T {
+  return parseQuery<T>(parseURL(input).search);
+}
+
+/**
+ * Checks if the input URL is empty or `/`.
+ *
+ * @group utils
+ */
+export function isEmptyURL(url: string) {
+  return !url || url === "/";
+}
+
+/**
+ * Checks if the input URL is neither empty nor `/`.
+ *
+ * @group utils
+ */
+export function isNonEmptyURL(url: string) {
+  return url && url !== "/";
+}
+
+/**
+ * Joins multiple URL segments into a single URL.
+ *
+ * @example
+ *
+ * ```js
+ * joinURL("a", "/b", "/c"); // "a/b/c"
+ * ```
+ *
+ * @group utils
+ */
+export function joinURL(base: string, ...input: string[]): string {
+  let url = base || "";
+
+  for (const segment of input.filter((url) => isNonEmptyURL(url))) {
+    if (url) {
+      // TODO: Handle .. when joining
+      const _segment = segment.replace(JOIN_LEADING_SLASH_RE, "");
+      url = withTrailingSlash(url) + _segment;
+    } else {
+      url = segment;
+    }
+  }
+
+  return url;
+}
+
+/**
+ * Joins multiple URL segments into a single URL and also handles relative paths with `./` and `../`.
+ *
+ * @example
+ *
+ * ```js
+ * joinRelativeURL("/a", "../b", "./c"); // "/b/c"
+ * ```
+ *
+ * @group utils
+ */
+export function joinRelativeURL(..._input: string[]): string {
+  // Inlined regex to increase browser compatibility
+  const JOIN_SEGMENT_SPLIT_RE = /\/(?!\/)/;
+
+  const input = _input.filter(Boolean);
+
+  const segments: string[] = [];
+
+  let segmentsDepth = 0;
+
+  for (const i of input) {
+    if (!i || i === "/") {
+      continue;
+    }
+    for (const [sindex, s] of i.split(JOIN_SEGMENT_SPLIT_RE).entries()) {
+      if (!s || s === ".") {
+        continue;
+      }
+      if (s === "..") {
+        if (segments.length === 1 && hasProtocol(segments[0])) {
+          continue;
+        }
+        segments.pop();
+        segmentsDepth--;
+        continue;
+      }
+      // eslint-disable-next-line unicorn/prefer-at
+      if (sindex === 1 && segments[segments.length - 1]?.endsWith(":/")) {
+        segments[segments.length - 1] += "/" + s;
+        continue;
+      }
+      segments.push(s);
+      segmentsDepth++;
+    }
+  }
+
+  let url = segments.join("/");
+
+  if (segmentsDepth >= 0) {
+    // Preserve leading slash
+    if (input[0]?.startsWith("/") && !url.startsWith("/")) {
+      url = "/" + url;
+    } else if (input[0]?.startsWith("./") && !url.startsWith("./")) {
+      url = "./" + url;
+    }
+  } else {
+    // Add relative prefix
+    url = "../".repeat(-1 * segmentsDepth) + url;
+  }
+
+  // Preserve trailing slash
+  // eslint-disable-next-line unicorn/prefer-at
+  if (input[input.length - 1]?.endsWith("/") && !url.endsWith("/")) {
+    url += "/";
+  }
+
+  return url;
+}
+
+/**
+ * Adds or replaces the URL protocol to `http://`.
+ *
+ * @example
+ *
+ * ```js
+ * withHttp("https://example.com"); // http://example.com
+ * ```
+ *
+ * @group utils
+ */
+export function withHttp(input: string): string {
+  return withProtocol(input, "http://");
+}
+
+/**
+ * Adds or replaces the URL protocol to `https://`.
+ *
+ * @example
+ *
+ * ```js
+ * withHttps("http://example.com"); // https://example.com
+ * ```
+ *
+ * @group utils
+ */
+export function withHttps(input: string): string {
+  return withProtocol(input, "https://");
+}
+
+/**
+ * Removes the protocol from the input.
+ *
+ * @example
+ * ```js
+ * withoutProtocol("http://example.com"); // "example.com"
+ * ```
+ */
+export function withoutProtocol(input: string): string {
+  return withProtocol(input, "");
+}
+
+/**
+ * Adds or replaces protocol of the input URL.
+ *
+ * @example
+ * ```js
+ * withProtocol("http://example.com", "ftp://"); // "ftp://example.com"
+ * ```
+ *
+ * @group utils
+ */
+export function withProtocol(input: string, protocol: string): string {
+  let match = input.match(PROTOCOL_REGEX);
+  if (!match) {
+    match = input.match(/^\/{2,}/);
+  }
+  if (!match) {
+    return protocol + input;
+  }
+  return protocol + input.slice(match[0].length);
+}
+
+/**
+ * Normalizes the input URL:
+ *
+ * - Ensures the URL is properly encoded
+ * - Ensures pathname starts with a slash
+ * - Preserves protocol/host if provided
+ *
+ * @example
+ *
+ * ```js
+ * normalizeURL("test?query=123 123#hash, test");
+ * // Returns "test?query=123%20123#hash,%20test"
+ *
+ * normalizeURL("http://localhost:3000");
+ * // Returns "http://localhost:3000"
+ * ```
+ *
+ * @group utils
+ */
+export function normalizeURL(input: string): string {
+  const parsed = parseURL(input);
+  parsed.pathname = encodePath(decodePath(parsed.pathname));
+  parsed.hash = encodeHash(decode(parsed.hash));
+  parsed.host = encodeHost(decode(parsed.host));
+  parsed.search = stringifyQuery(parseQuery(parsed.search));
+  return stringifyParsedURL(parsed);
+}
+
+/**
+ * Resolves multiple URL segments into a single URL.
+ *
+ * @example
+ *
+ * ```js
+ * resolveURL("http://foo.com/foo?test=123#token", "bar", "baz");
+ * // Returns "http://foo.com/foo/bar/baz?test=123#token"
+ * ```
+ *
+ * @group utils
+ */
+export function resolveURL(base = "", ...inputs: string[]): string {
+  if (typeof base !== "string") {
+    throw new TypeError(
+      `URL input should be string received ${typeof base} (${base})`,
+    );
+  }
+
+  const filteredInputs = inputs.filter((input) => isNonEmptyURL(input));
+
+  if (filteredInputs.length === 0) {
+    return base;
+  }
+
+  const url = parseURL(base);
+
+  for (const inputSegment of filteredInputs) {
+    const urlSegment = parseURL(inputSegment);
+
+    // Append path
+    if (urlSegment.pathname) {
+      url.pathname =
+        withTrailingSlash(url.pathname) +
+        withoutLeadingSlash(urlSegment.pathname);
+    }
+
+    // Override hash
+    if (urlSegment.hash && urlSegment.hash !== "#") {
+      url.hash = urlSegment.hash;
+    }
+
+    // Append search
+    if (urlSegment.search && urlSegment.search !== "?") {
+      if (url.search && url.search !== "?") {
+        const queryString = stringifyQuery({
+          ...parseQuery(url.search),
+          ...parseQuery(urlSegment.search),
+        });
+        url.search = queryString.length > 0 ? "?" + queryString : "";
+      } else {
+        url.search = urlSegment.search;
+      }
+    }
+  }
+
+  return stringifyParsedURL(url);
+}
+
+/**
+ * Check if two paths are equal or not. Trailing slash and encoding are normalized before comparison.
+ *
+ * @example
+ * ```js
+ * isSamePath("/foo", "/foo/"); // true
+ * ```
+ *
+ * @group utils
+ */
+export function isSamePath(p1: string, p2: string) {
+  return decode(withoutTrailingSlash(p1)) === decode(withoutTrailingSlash(p2));
+}
+
+interface CompareURLOptions {
+  trailingSlash?: boolean;
+  leadingSlash?: boolean;
+  encoding?: boolean;
+}
+
+/**
+ *  Checks if two paths are equal regardless of encoding, trailing slash, and leading slash differences.
+ *
+ * You can make slash check strict by setting `{ trailingSlash: true, leadingSlash: true }` as options.
+ *
+ * You can make encoding check strict by setting `{ encoding: true }` as options.
+ *
+ * @example
+ *
+ * ```js
+ * isEqual("/foo", "foo"); // true
+ * isEqual("foo/", "foo"); // true
+ * isEqual("/foo bar", "/foo%20bar"); // true
+ *
+ * // Strict compare
+ * isEqual("/foo", "foo", { leadingSlash: true }); // false
+ * isEqual("foo/", "foo", { trailingSlash: true }); // false
+ * isEqual("/foo bar", "/foo%20bar", { encoding: true }); // false
+ * ```
+ *
+ * @group utils
+ */
+export function isEqual(a: string, b: string, options: CompareURLOptions = {}) {
+  if (!options.trailingSlash) {
+    a = withTrailingSlash(a);
+    b = withTrailingSlash(b);
+  }
+  if (!options.leadingSlash) {
+    a = withLeadingSlash(a);
+    b = withLeadingSlash(b);
+  }
+  if (!options.encoding) {
+    a = decode(a);
+    b = decode(b);
+  }
+  return a === b;
+}
+
+/**
+ * Adds or replaces the fragment section of the URL.
+ *
+ * @example
+ *
+ * ```js
+ * withFragment("/foo", "bar"); // "/foo#bar"
+ * withFragment("/foo#bar", "baz"); // "/foo#baz"
+ * withFragment("/foo#bar", ""); // "/foo"
+ * ```
+ *
+ * @group utils
+ */
+export function withFragment(input: string, hash: string): string {
+  if (!hash || hash === "#") {
+    return input;
+  }
+  const parsed = parseURL(input);
+  parsed.hash = hash === "" ? "" : "#" + encodeHash(hash);
+  return stringifyParsedURL(parsed);
+}
+
+/**
+ * Removes the fragment section from the URL.
+ *
+ * @example
+ *
+ * ```js
+ * withoutFragment("http://example.com/foo?q=123#bar")
+ * // Returns "http://example.com/foo?q=123"
+ * ```
+ *
+ * @group utils
+ */
+export function withoutFragment(input: string): string {
+  return stringifyParsedURL({ ...parseURL(input), hash: "" });
+}
+
+/**
+ * Removes the host from the URL while preserving everything else.
+ *
+ * @example
+ * ```js
+ * withoutHost("http://example.com/foo?q=123#bar")
+ * // Returns "/foo?q=123#bar"
+ * ```
+ *
+ * @group utils
+ */
+export function withoutHost(input: string) {
+  const parsed = parseURL(input);
+  return (parsed.pathname || "/") + parsed.search + parsed.hash;
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import {
+  isRelative,
+  hasProtocol,
+  isScriptProtocol,
+  hasTrailingSlash,
+  withoutTrailingSlash,
+  withTrailingSlash,
+  hasLeadingSlash,
+  withoutLeadingSlash,
+  withLeadingSlash,
+  cleanDoubleSlashes,
+  withBase,
+  withoutBase,
+  withQuery,
+  filterQuery,
+  getQuery,
+  isEmptyURL,
+  isNonEmptyURL,
+  joinURL,
+  joinRelativeURL,
+  withHttp,
+  withHttps,
+  withoutProtocol,
+  withProtocol,
+  normalizeURL,
+  resolveURL,
+  isSamePath,
+  isEqual,
+  withFragment,
+  withoutFragment,
+  withoutHost,
+} from "../../src/utils";
+
+describe("isRelative", () => {
+  const cases = [
+    { input: "./foo", expected: true },
+    { input: "../foo", expected: true },
+    { input: "/foo", expected: false },
+    { input: "foo", expected: false },
+    { input: "", expected: false },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for "${input}"`, () => {
+      expect(isRelative(input)).toBe(expected);
+    });
+  }
+});
+
+describe("hasProtocol", () => {
+  const cases = [
+    { input: "https://example.com", expected: true },
+    { input: "ftp://example.com", expected: true },
+    { input: "data:text/plain", expected: true },
+    { input: "a:b", expected: false },
+    { input: "//example.com", expected: false },
+    { input: "/foo/bar", expected: false },
+    { input: "", expected: false },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for "${input}"`, () => {
+      expect(hasProtocol(input)).toBe(expected);
+    });
+  }
+
+  it("should accept relative URLs when acceptRelative option is true", () => {
+    expect(hasProtocol("//example.com", { acceptRelative: true })).toBe(true);
+    expect(hasProtocol("//example.com", true)).toBe(true);
+  });
+
+  it("should respect strict option for protocols", () => {
+    expect(hasProtocol("data:text/plain", { strict: true })).toBe(false);
+    expect(hasProtocol("https://example.com", { strict: true })).toBe(true);
+    expect(hasProtocol("http://example.com", { strict: true })).toBe(true);
+  });
+
+  it("should correctly handle strict protocol anchors (missing caret check)", () => {
+    expect(hasProtocol("abc https://example.com", { strict: true })).toBe(false);
+  });
+});
+
+describe("isScriptProtocol", () => {
+  const cases = [
+    { input: "javascript:", expected: true },
+    { input: "data:", expected: true },
+    { input: "blob:", expected: true },
+    { input: "vbscript:", expected: true },
+    { input: "HTTPS:", expected: false },
+    { input: "https://example.com", expected: false },
+    { input: "", expected: false },
+    { input: undefined, expected: false },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for protocol "${input}"`, () => {
+      expect(isScriptProtocol(input)).toBe(expected);
+    });
+  }
+
+  it("should be case-insensitive and strict about whitespace (detect uppercase/whitespace mismatch)", () => {
+    expect(isScriptProtocol("JAVASCRIPT:")).toBe(true);
+    expect(isScriptProtocol("\tjavascript:")).toBe(true);
+    expect(isScriptProtocol(" SCRIPT:javascript:")).toBe(false);
+  });
+});
+
+describe("hasTrailingSlash", () => {
+  const cases = [
+    { input: "/foo/", expected: true },
+    { input: "/foo", expected: false },
+    { input: "", expected: false },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for "${input}" without respecting query`, () => {
+      expect(hasTrailingSlash(input)).toBe(expected);
+    });
+  }
+
+  it("should respect query and fragment when specified", () => {
+    expect(hasTrailingSlash("/foo?query=true", true)).toBe(false);
+    expect(hasTrailingSlash("/foo/?query=true", true)).toBe(true);
+    expect(hasTrailingSlash("/foo/#hash", true)).toBe(true);
+    expect(hasTrailingSlash("/foo/#", true)).toBe(true);
+  });
+});
+
+describe("withoutTrailingSlash", () => {
+  const cases = [
+    { input: "/foo/", expected: "/foo" },
+    { input: "/foo", expected: "/foo" },
+    { input: "", expected: "/" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return "${expected}" for "${input}"`, () => {
+      expect(withoutTrailingSlash(input)).toBe(expected);
+    });
+  }
+
+  it("should respect query and fragment when specified", () => {
+    expect(withoutTrailingSlash("/path/?query=true", true)).toBe("/path?query=true");
+    expect(withoutTrailingSlash("/path/#hash", true)).toBe("/path#hash");
+    expect(withoutTrailingSlash("/path/", true)).toBe("/path");
+    expect(withoutTrailingSlash("", true)).toBe("/");
+    expect(withoutTrailingSlash("/path?q=1/", true)).toBe("/path?q=1/");
+  });
+
+  it("should bypass respectQueryAndFragment when false or omitted", () => {
+    expect(withoutTrailingSlash("/foo/?bar=1", false)).toBe("/foo/?bar=1");
+  });
+});
+
+describe("withTrailingSlash", () => {
+  const cases = [
+    { input: "/foo", expected: "/foo/" },
+    { input: "/foo/", expected: "/foo/" },
+    { input: "", expected: "/" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return "${expected}" for "${input}"`, () => {
+      expect(withTrailingSlash(input)).toBe(expected);
+    });
+  }
+
+  it("should respect query and fragment when specified", () => {
+    expect(withTrailingSlash("/path?query=true", true)).toBe("/path/?query=true");
+    expect(withTrailingSlash("/path#hash", true)).toBe("/path/#hash");
+    expect(withTrailingSlash("#hash", true)).toBe("#hash");
+    expect(withTrailingSlash("", true)).toBe("/");
+    expect(withTrailingSlash("/path/", true)).toBe("/path/");
+  });
+
+  it("should return false correctly if already has trailing slash with respectQueryAndFragment", () => {
+    expect(withTrailingSlash("/path/?q=1", true)).toBe("/path/?q=1");
+  });
+});
+
+describe("hasLeadingSlash", () => {
+  const cases = [
+    { input: "/foo", expected: true },
+    { input: "foo", expected: false },
+    { input: "", expected: false },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for "${input}"`, () => {
+      expect(hasLeadingSlash(input)).toBe(expected);
+    });
+  }
+});
+
+describe("withoutLeadingSlash", () => {
+  const cases = [
+    { input: "/foo", expected: "foo" },
+    { input: "foo", expected: "foo" },
+    { input: "", expected: "/" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return "${expected}" for "${input}"`, () => {
+      expect(withoutLeadingSlash(input)).toBe(expected);
+    });
+  }
+});
+
+describe("withLeadingSlash", () => {
+  const cases = [
+    { input: "foo", expected: "/foo" },
+    { input: "/foo", expected: "/foo" },
+    { input: "", expected: "/" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return "${expected}" for "${input}"`, () => {
+      expect(withLeadingSlash(input)).toBe(expected);
+    });
+  }
+});
+
+describe("cleanDoubleSlashes", () => {
+  const cases = [
+    { input: "//foo//bar//", expected: "/foo/bar/" },
+    { input: "http://example.com/analyze//http://localhost:3000//", expected: "http://example.com/analyze/http://localhost:3000/" },
+    { input: "", expected: "" },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return "${expected}" for "${input}"`, () => {
+      expect(cleanDoubleSlashes(input)).toBe(expected);
+    });
+  }
+});
+
+describe("withBase", () => {
+  const cases = [
+    { input: "/foo/bar", base: "/foo", expected: "/foo/bar" },
+    { input: "/foo/bar", base: "/baz", expected: "/baz/foo/bar" },
+    { input: "https://example.com", base: "/foo", expected: "https://example.com" },
+    { input: "/admin-dashboard", base: "/admin/", expected: "/admin/admin-dashboard" },
+  ];
+
+  for (const { input, base, expected } of cases) {
+    it(`should return "${expected}" for input "${input}" with base "${base}"`, () => {
+      expect(withBase(input, base)).toBe(expected);
+    });
+  }
+});
+
+describe("withoutBase", () => {
+  const cases = [
+    { input: "/foo/bar", base: "/foo", expected: "/bar" },
+    { input: "/baz/foo", base: "/foo", expected: "/baz/foo" },
+    { input: "/admin-dashboard", base: "/admin/", expected: "/admin-dashboard" },
+    { input: "/legacy//evil.com", base: "/legacy", expected: "/evil.com" },
+    { input: "/foo", base: "", expected: "/foo" },
+  ];
+
+  for (const { input, base, expected } of cases) {
+    it(`should return "${expected}" for input "${input}" without base "${base}"`, () => {
+      expect(withoutBase(input, base)).toBe(expected);
+    });
+  }
+
+  it("should not strip global slashes if base is empty string or empty URL", () => {
+    expect(withoutBase("/foo", "")).toBe("/foo");
+    expect(withoutBase("/foo", "/")).toBe("/foo");
+  });
+
+  it("should strip multiple consecutive leading slashes correctly (detecting /^+/ vs /\\/+/)", () => {
+    expect(withoutBase("/legacy///evil.com", "/legacy")).toBe("/evil.com");
+  });
+});
+
+describe("withQuery", () => {
+  it("should add or replace the query section of the URL", () => {
+    expect(withQuery("/foo?page=a", { token: "secret" })).toBe("/foo?page=a&token=secret");
+    expect(withQuery("/foo?page=a", { page: "b" })).toBe("/foo?page=b");
+  });
+});
+
+describe("filterQuery", () => {
+  it("should filter query keys using predicate", () => {
+    expect(filterQuery("/foo?bar=1&baz=2", (key) => key !== "bar")).toBe("/foo?baz=2");
+    expect(filterQuery("/foo", (key) => key !== "bar")).toBe("/foo");
+  });
+});
+
+describe("getQuery", () => {
+  it("should parse and decode the query object", () => {
+    expect(getQuery("http://foo.com/foo?test=123&unicode=%E5%A5%BD")).toEqual({
+      test: "123",
+      unicode: "好",
+    });
+  });
+});
+
+describe("isEmptyURL", () => {
+  const cases = [
+    { input: "", expected: true },
+    { input: "/", expected: true },
+    { input: "/foo", expected: false },
+  ];
+
+  for (const { input, expected } of cases) {
+    it(`should return ${expected} for "${input}"`, () => {
+      expect(isEmptyURL(input)).toBe(expected);
+    });
+  }
+});
+
+describe("isNonEmptyURL", () => {
+  it("should return false for empty or slash URL", () => {
+    expect(isNonEmptyURL("")).toBeFalsy();
+    expect(isNonEmptyURL("/")).toBeFalsy();
+    expect(isNonEmptyURL("/foo")).toBe(true);
+  });
+});
+
+describe("joinURL", () => {
+  it("should join multiple URL segments into a single URL", () => {
+    expect(joinURL("a", "/b", "/c")).toBe("a/b/c");
+    expect(joinURL("http://example.com", "/foo", "bar")).toBe("http://example.com/foo/bar");
+  });
+});
+
+describe("joinRelativeURL", () => {
+  it("should join relative URL segments", () => {
+    expect(joinRelativeURL("/a", "../b", "./c")).toBe("/b/c");
+    expect(joinRelativeURL("/", "a")).toBe("/a");
+    expect(joinRelativeURL("/a/b", "..")).toBe("/a");
+    expect(joinRelativeURL("http://example.com", "a", "..", "b")).toBe("http://example.com/b");
+    expect(joinRelativeURL("./a", "../b")).toBe("./b");
+    expect(joinRelativeURL("a/", "b/")).toBe("a/b/");
+  });
+
+  it("should handle single slash segment inputs correctly without skipping or mutating condition", () => {
+    expect(joinRelativeURL("/a", "/", "b")).toBe("/b");
+    expect(joinRelativeURL("/a/b/c", "../..")).toBe("/");
+    expect(joinRelativeURL("./a", "./b")).toBe("./a/b");
+    expect(joinRelativeURL("../a", "b")).toBe("../a/b");
+  });
+});
+
+describe("withHttp", () => {
+  it("should add or replace protocol to http://", () => {
+    expect(withHttp("https://example.com")).toBe("http://example.com");
+    expect(withHttp("example.com")).toBe("http://example.com");
+  });
+});
+
+describe("withHttps", () => {
+  it("should add or replace protocol to https://", () => {
+    expect(withHttps("http://example.com")).toBe("https://example.com");
+    expect(withHttps("example.com")).toBe("https://example.com");
+  });
+});
+
+describe("withoutProtocol", () => {
+  it("should remove protocol from the input", () => {
+    expect(withoutProtocol("http://example.com")).toBe("example.com");
+    expect(withoutProtocol("example.com")).toBe("example.com");
+  });
+});
+
+describe("withProtocol", () => {
+  it("should add or replace protocol of the input URL", () => {
+    expect(withProtocol("http://example.com", "ftp://")).toBe("ftp://example.com");
+    expect(withProtocol("example.com", "https://")).toBe("https://example.com");
+  });
+
+  it("should handle protocol-relative paths or missing matches correctly", () => {
+    expect(withProtocol("//example.com", "https://")).toBe("https://example.com");
+    expect(withProtocol("foo/bar", "http://")).toBe("http://foo/bar");
+  });
+});
+
+describe("normalizeURL", () => {
+  it("should normalize the input URL", () => {
+    expect(normalizeURL("test?query=123%20123#hash,%20test")).toBe("test?query=123+123#hash,%20test");
+    expect(normalizeURL("http://localhost:3000")).toBe("http://localhost:3000");
+  });
+});
+
+describe("resolveURL", () => {
+  it("should resolve multiple URL segments", () => {
+    expect(resolveURL("http://foo.com/foo?test=123#token", "bar", "baz")).toBe("http://foo.com/foo/bar/baz?test=123#token");
+    expect(resolveURL("http://foo.com/foo?a=1", "?b=2")).toBe("http://foo.com/foo?a=1&b=2");
+    expect(resolveURL("http://foo.com/foo", "bar?a=1")).toBe("http://foo.com/foo/bar?a=1");
+  });
+
+  it("should throw TypeError if base is not a string", () => {
+    expect(() => resolveURL(123 as any, "bar")).toThrow(TypeError);
+  });
+
+  it("should return base when no valid input segments are provided", () => {
+    expect(resolveURL("http://foo.com", "", "/")).toBe("http://foo.com");
+  });
+
+  it("should correctly handle merging search queries with short-circuit and non-empty checks", () => {
+    expect(resolveURL("http://foo.com?a=1", "bar?b=2")).toBe("http://foo.com/bar?a=1&b=2");
+    expect(resolveURL("http://foo.com", "?b=2")).toBe("http://foo.com/?b=2");
+  });
+});
+
+describe("isSamePath", () => {
+  it("should check if two paths are equal", () => {
+    expect(isSamePath("/foo", "/foo/")).toBe(true);
+    expect(isSamePath("/foo%20bar", "/foo bar/")).toBe(true);
+    expect(isSamePath("/foo", "/bar")).toBe(false);
+  });
+});
+
+describe("isEqual", () => {
+  it("should check if two paths are equal with default options", () => {
+    expect(isEqual("/foo", "foo")).toBe(true);
+    expect(isEqual("foo/", "foo")).toBe(true);
+    expect(isEqual("/foo bar", "/foo%20bar")).toBe(true);
+  });
+
+  it("should support strict compare options", () => {
+    expect(isEqual("/foo", "foo", { leadingSlash: true })).toBe(false);
+    expect(isEqual("foo/", "foo", { trailingSlash: true })).toBe(false);
+    expect(isEqual("/foo bar", "/foo%20bar", { encoding: true })).toBe(false);
+  });
+});
+
+describe("withFragment", () => {
+  it("should add or replace the fragment section of the URL", () => {
+    expect(withFragment("/foo", "bar")).toBe("/foo#bar");
+    expect(withFragment("/foo#bar", "baz")).toBe("/foo#baz");
+    expect(withFragment("/foo#bar", "")).toBe("/foo#bar");
+    expect(withFragment("/foo", "#")).toBe("/foo");
+  });
+});
+
+describe("withoutFragment", () => {
+  it("should remove the fragment section from the URL", () => {
+    expect(withoutFragment("http://example.com/foo?q=123#bar")).toBe("http://example.com/foo?q=123");
+  });
+});
+
+describe("withoutHost", () => {
+  it("should remove the host from the URL", () => {
+    expect(withoutHost("http://example.com/foo?q=123#bar")).toBe("/foo?q=123#bar");
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.5 /home/runner/work/_temp/ufo
+
+ ❯ test/__generated__/utils.gen.test.ts (87 tests | 3 failed) 30ms
+     ✓ should return true for "./foo" 2ms
+     ✓ should return true for "../foo" 0ms
+     ✓ should return false for "/foo" 0ms
+     ✓ should return false for "foo" 0ms
+     ✓ should return false for "" 0ms
+     ✓ should return true for "https://example.com" 0ms
+     ✓ should return true for "ftp://example.com" 0ms
+     ✓ should return true for "data:text/plain" 0ms
+     ✓ should return false for "a:b" 1ms
+     ✓ should return false for "//example.com" 0ms
+     ✓ should return false for "/foo/bar" 0ms
+     ✓ should return false for "" 0ms
+     ✓ should accept relative URLs when acceptRelative option is true 0ms
+     ✓ should respect strict option for protocols 0ms
+     × should correctly handle strict protocol anchors (missing caret check) 7ms
+     ✓ should return true for protocol "javascript:" 0ms
+     ✓ should return true for protocol "data:" 0ms
+     ✓ should return true for protocol "blob:" 0ms
+     ✓ should return true for protocol "vbscript:" 0ms
+     ✓ should return false for protocol "HTTPS:" 0ms
+     ✓ should return false for protocol "https://example.com" 0ms
+     ✓ should return false for protocol "" 0ms
+     ✓ should return false for protocol "undefined" 0ms
+     ✓ should be case-insensitive and strict about whitespace (detect uppercase/whitespace mismatch) 0ms
+     ✓ should return true for "/foo/" without respecting query 0ms
+     ✓ should return false for "/foo" without respecting query 0ms
+     ✓ should return false for "" without respecting query 0ms
+     ✓ should respect query and fragment when specified 0ms
+     ✓ should return "/foo" for "/foo/" 0ms
+     ✓ should return "/foo" for "/foo" 0ms
+     ✓ should return "/" for "" 0ms
+     ✓ should respect query and fragment when specified 0ms
+     ✓ should bypass respectQueryAndFragment when false or omitted 0ms
+     ✓ should return "/foo/" for "/foo" 0ms
+     ✓ should return "/foo/" for "/foo/" 1ms
+     ✓ should return "/" for "" 0ms
+     ✓ should respect query and fragment when specified 0ms
+     ✓ should return false correctly if already has trailing slash with respectQueryAndFragment 0ms
+     ✓ should return true for "/foo" 0ms
+     ✓ should return false for "foo" 0ms
+     ✓ should return false for "" 0ms
+     ✓ should return "foo" for "/foo" 0ms
+     ✓ should return "foo" for "foo" 0ms
+     ✓ should return "/" for "" 0ms
+     ✓ should return "/foo" for "foo" 0ms
+     ✓ should return "/foo" for "/foo" 0ms
+     ✓ should return "/" for "" 0ms
+     ✓ should return "/foo/bar/" for "//foo//bar//" 0ms
+     ✓ should return "http://example.com/analyze/http://localhost:3000/" for "http://example.com/analyze//http://localhost:3000//" 0ms
+     ✓ should return "" for "" 0ms
+     ✓ should return "/foo/bar" for input "/foo/bar" with base "/foo" 0ms
+     ✓ should return "/baz/foo/bar" for input "/foo/bar" with base "/baz" 0ms
+     ✓ should return "https://example.com" for input "https://example.com" with base "/foo" 0ms
+     ✓ should return "/admin/admin-dashboard" for input "/admin-dashboard" with base "/admin/" 0ms
+     ✓ should return "/bar" for input "/foo/bar" without base "/foo" 0ms
+     ✓ should return "/baz/foo" for input "/baz/foo" without base "/foo" 0ms
+     ✓ should return "/admin-dashboard" for input "/admin-dashboard" without base "/admin/" 0ms
+     ✓ should return "/evil.com" for input "/legacy//evil.com" without base "/legacy" 0ms
+     ✓ should return "/foo" for input "/foo" without base "" 0ms
+     ✓ should not strip global slashes if base is empty string or 
+...[truncado 1405 caracteres]...
+ strict compare options 0ms
+     ✓ should add or replace the fragment section of the URL 0ms
+     ✓ should remove the fragment section from the URL 0ms
+     ✓ should remove the host from the URL 0ms
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 84 passed (87)
+   Start at  08:37:09
+   Duration  320ms (transform 109ms, setup 0ms, import 133ms, tests 30ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/utils.gen.test.ts > hasProtocol > should correctly handle strict protocol anchors (missing caret check)
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ test/__generated__/utils.gen.test.ts:80:70
+     78|
+     79|   it("should correctly handle strict protocol anchors (missing caret c…
+     80|     expect(hasProtocol("abc https://example.com", { strict: true })).t…
+       |                                                                      ^
+     81|   });
+     82| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/__generated__/utils.gen.test.ts > joinRelativeURL > should handle single slash segment inputs correctly without skipping or mutating condition
+AssertionError: expected '/a/b' to be '/b' // Object.is equality
+
+Expected: "/b"
+Received: "/a/b"
+
+ ❯ test/__generated__/utils.gen.test.ts:341:45
+    339|
+    340|   it("should handle single slash segment inputs correctly without skip…
+    341|     expect(joinRelativeURL("/a", "/", "b")).toBe("/b");
+       |                                             ^
+    342|     expect(joinRelativeURL("/a/b/c", "../..")).toBe("/");
+    343|     expect(joinRelativeURL("./a", "./b")).toBe("./a/b");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/__generated__/utils.gen.test.ts > resolveURL > should correctly handle merging search queries with short-circuit and non-empty checks
+AssertionError: expected 'http://foo.com?b=2' to be 'http://foo.com/?b=2' // Object.is equality
+
+Expected: "http://foo.com/?b=2"
+Received: "http://foo.com?b=2"
+
+ ❯ test/__generated__/utils.gen.test.ts:405:50
+    403|   it("should correctly handle merging search queries with short-circui…
+    404|     expect(resolveURL("http://foo.com?a=1", "bar?b=2")).toBe("http://f…
+    405|     expect(resolveURL("http://foo.com", "?b=2")).toBe("http://foo.com/…
+       |                                                  ^
+    406|   });
+    407| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

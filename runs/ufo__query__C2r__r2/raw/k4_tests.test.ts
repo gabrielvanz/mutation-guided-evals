@@ -1,0 +1,71 @@
+import { describe, it, expect } from "vitest";
+import { parseQuery, encodeQueryItem, stringifyQuery } from "../../src/query";
+
+describe("parseQuery", () => {
+  it("should parse a basic query string", () => {
+    const input = "foo=bar&baz=qux";
+    const expected = { foo: "bar", baz: "qux" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should handle leading question mark", () => {
+    const input = "?foo=bar&baz=qux";
+    const expected = { foo: "bar", baz: "qux" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should parse repeated keys into arrays", () => {
+    const input = "tags=javascript&tags=web&tags=dev";
+    const expected = { tags: ["javascript", "web", "dev"] };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should handle empty or omitted input", () => {
+    expect(parseQuery()).toEqual({});
+    expect(parseQuery("")).toEqual({});
+  });
+
+  it("should ignore prototype pollution keys", () => {
+    const input = "__proto__=polluted&constructor=polluted&safe=val";
+    const expected = { safe: "val" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+});
+
+describe("encodeQueryItem", () => {
+  it("should encode key and string value", () => {
+    expect(encodeQueryItem("message", "Hello World")).toBe("message=Hello+World");
+  });
+
+  it("should encode arrays into multiple pairs", () => {
+    expect(encodeQueryItem("tags", ["javascript", "web", "dev"])).toBe(
+      "tags=javascript&tags=web&tags=dev",
+    );
+  });
+
+  it("should handle number and boolean values", () => {
+    expect(encodeQueryItem("count", 42)).toBe("count=42");
+    expect(encodeQueryItem("active", true)).toBe("active=true");
+  });
+
+  it("should handle falsy values", () => {
+    expect(encodeQueryItem("key", "")).toBe("key");
+  });
+});
+
+describe("stringifyQuery", () => {
+  it("should stringify a query object", () => {
+    const input = { foo: "bar", baz: "qux" };
+    expect(stringifyQuery(input)).toBe("foo=bar&baz=qux");
+  });
+
+  it("should filter out undefined values", () => {
+    const input = { foo: "bar", baz: undefined };
+    expect(stringifyQuery(input)).toBe("foo=bar");
+  });
+
+  it("should handle arrays and numbers", () => {
+    const input = { tags: ["a", "b"], count: 5 };
+    expect(stringifyQuery(input)).toBe("tags=a&tags=b&count=5");
+  });
+});

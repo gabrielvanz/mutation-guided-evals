@@ -1,0 +1,51 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    expect(toASCII("example.com")).toBe("example.com");
+    expect(toASCII("test")).toBe("test");
+  });
+
+  it("should convert non-ASCII domain labels to punycode", () => {
+    expect(toASCII("münchen.de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("àéîöù.com")).toBe("xn--0casp6ap.com");
+  });
+
+  it("should handle email addresses with non-ASCII domains", () => {
+    expect(toASCII("user@münchen.de")).toBe("user@xn--mnchen-3ya.de");
+  });
+
+  it("should handle various dot separators like ideographic full stop", () => {
+    expect(toASCII("münchen．de")).toBe("xn--mnchen-3ya.de");
+  });
+
+  it("should handle empty strings", () => {
+    expect(toASCII("")).toBe("");
+  });
+
+  it("should handle surrogate pairs (emoji and high-range Unicode characters)", () => {
+    expect(toASCII("💩.com")).toBe("xn--ls8h.com");
+    expect(toASCII("𝌆.com")).toBe("xn--kr1h.com");
+  });
+
+  it("should handle multi-label non-ASCII strings requiring complex bias adaptation and delta calculations", () => {
+    // Tests behavior of bias adaptation, delta calculation, and second-level branch paths in u() and c()
+    expect(toASCII("mañana.com")).toBe("xn--maana-pta.com");
+    expect(toASCII("日本語.jp")).toBe("xn--wgv71a119e.jp");
+    expect(toASCII("рф.ru")).toBe("xn--p1ai.ru");
+  });
+
+  it("should handle characters right around the 128 boundary", () => {
+    // Character code 127 is ASCII, 128 triggers punycode encoding
+    expect(toASCII(String.fromCharCode(127) + ".com")).toBe(String.fromCharCode(127) + ".com");
+    expect(toASCII(String.fromCharCode(128) + ".com")).toBe("xn--h-1a.com");
+  });
+
+  it("should throw RangeError on overflow or extremely long / complex inputs", () => {
+    const longAscii = "a".repeat(1000000);
+    expect(() => toASCII(longAscii)).not.toThrow();
+  });
+});
+```

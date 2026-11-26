@@ -1,0 +1,113 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { $URL, createURL } from "../../src/url";
+
+describe("$URL", () => {
+  it("should parse absolute URLs correctly", () => {
+    const url = new $URL("https://example.com/path?foo=bar#hash");
+    expect(url.protocol).toBe("https:");
+    expect(url.host).toBe("example.com");
+    expect(url.pathname).toBe("/path");
+    expect(url.query).toEqual({ foo: "bar" });
+    expect(url.hash).toBe("#hash");
+    expect(url.href).toBe("https://example.com/path?foo=bar#hash");
+  });
+
+  it("should handle empty input with default value", () => {
+    const url = new $URL();
+    expect(url.protocol).toBe("");
+    expect(url.host).toBe("");
+    expect(url.pathname).toBe("");
+    expect(url.query).toEqual({});
+    expect(url.hash).toBe("");
+    expect(url.href).toBe("");
+  });
+
+  it("should throw TypeError on invalid non-string input", () => {
+    expect(() => new $URL(123 as unknown as string)).toThrow(TypeError);
+    expect(() => new $URL(123 as unknown as string)).toThrow("URL input should be string received number (123)");
+  });
+
+  it("should compute hostname and port getters", () => {
+    const url = new $URL("http://localhost:8080/test");
+    expect(url.hostname).toBe("localhost");
+    expect(url.port).toBe("8080");
+  });
+
+  it("should compute username and password getters", () => {
+    const url = new $URL("http://user:pass@example.com");
+    expect(url.username).toBe("user");
+    expect(url.password).toBe("pass");
+    expect(url.encodedAuth).toBe("user:pass");
+  });
+
+  it("should handle auth without password", () => {
+    const url = new $URL("http://user@example.com");
+    expect(url.username).toBe("user");
+    expect(url.password).toBe("");
+    expect(url.encodedAuth).toBe("user");
+  });
+
+  it("should compute hasProtocol and isAbsolute", () => {
+    const abs = new $URL("https://example.com");
+    expect(abs.hasProtocol).toBeGreaterThan(0);
+    expect(abs.isAbsolute).toBe(true);
+
+    const rel = new $URL("/path/to/somewhere");
+    expect(rel.hasProtocol).toBe(0);
+    expect(rel.isAbsolute).toBe(true);
+
+    const relativePath = new $URL("foo/bar");
+    expect(relativePath.isAbsolute).toBe(false);
+  });
+
+  it("should handle search and searchParams", () => {
+    const url = new $URL("https://example.com/?a=1&b=2");
+    expect(url.search).toBe("?a=1&b=2");
+    expect(url.searchParams.get("a")).toBe("1");
+    expect(url.searchParams.get("b")).toBe("2");
+  });
+
+  it("should handle array values in searchParams", () => {
+    const url = new $URL("https://example.com/?tag=a&tag=b");
+    expect(url.searchParams.getAll("tag")).toEqual(["a", "b"]);
+  });
+
+  it("should compute origin and fullpath", () => {
+    const url = new $URL("https://example.com:3000/path?query=1#hash");
+    expect(url.origin).toBe("https://example.com:3000");
+    expect(url.fullpath).toBe("/path?query=1#hash");
+  });
+
+  it("should support toJSON and toString", () => {
+    const url = new $URL("https://example.com/foo");
+    expect(url.toJSON()).toBe("https://example.com/foo");
+    expect(url.toString()).toBe("https://example.com/foo");
+  });
+
+  describe("append", () => {
+    it("should append a relative URL successfully", () => {
+      const base = new $URL("https://example.com/base/");
+      const extra = new $URL("subpath?a=2#newhash");
+      base.append(extra);
+      expect(base.pathname).toBe("/base/subpath");
+      expect(base.query).toEqual({ a: "2" });
+      expect(base.hash).toBe("#newhash");
+    });
+
+    it("should throw an error when appending a URL with protocol", () => {
+      const base = new $URL("https://example.com/");
+      const extra = new $URL("https://other.com/path");
+      expect(() => base.append(extra)).toThrow("Cannot append a URL with protocol");
+    });
+  });
+});
+
+describe("createURL", () => {
+  it("should create a $URL instance from string", () => {
+    const url = createURL("https://example.com/test");
+    expect(url).toBeInstanceOf($URL);
+    expect(url.href).toBe("https://example.com/test");
+  });
+});
+```

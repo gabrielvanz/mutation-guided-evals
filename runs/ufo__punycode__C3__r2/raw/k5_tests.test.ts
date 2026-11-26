@@ -1,0 +1,63 @@
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    expect(toASCII("example.com")).toBe("example.com");
+    expect(toASCII("test")).toBe("test");
+  });
+
+  it("should convert non-ASCII domain labels to punycode", () => {
+    expect(toASCII("münchen.de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("àéîöù.com")).toBe("xn--0casp6ap.com");
+  });
+
+  it("should handle email addresses with non-ASCII domains", () => {
+    expect(toASCII("user@münchen.de")).toBe("user@xn--mnchen-3ya.de");
+  });
+
+  it("should handle various dot separators like ideographic full stop", () => {
+    expect(toASCII("münchen．de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("münchen。de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("münchen．de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("münchenꮴde")).toBe("xn--mnchende-65a95184b");
+  });
+
+  it("should handle empty strings", () => {
+    expect(toASCII("")).toBe("");
+  });
+
+  it("should handle surrogate pairs (emoji and high-range Unicode characters)", () => {
+    expect(toASCII("💩.com")).toBe("xn--ls8h.com");
+    expect(toASCII("𝌆.com")).toBe("xn--kr1h.com");
+  });
+
+  it("should handle multi-label non-ASCII strings requiring complex bias adaptation and delta calculations", () => {
+    expect(toASCII("mañana.com")).toBe("xn--maana-pta.com");
+    expect(toASCII("日本語.jp")).toBe("xn--wgv71a119e.jp");
+    expect(toASCII("рф.ru")).toBe("xn--p1ai.ru");
+  });
+
+  it("should handle characters right around the 128 boundary", () => {
+    expect(toASCII(String.fromCharCode(128) + ".com")).toBe("xn--a.com");
+  });
+
+  it("should handle surrogate pairs correctly with an unpaired high surrogate", () => {
+    const unpaired = String.fromCharCode(55296) + "abc.com";
+    expect(() => toASCII(unpaired)).not.toThrow();
+  });
+
+  it("should correctly handle high surrogate lower boundary (55296) and upper boundary (56319)", () => {
+    const lowBoundary = String.fromCharCode(55296, 56320) + ".com";
+    expect(toASCII(lowBoundary)).toBe("xn--2n7c.com");
+
+    const highBoundary = String.fromCharCode(55295) + "abc.com";
+    expect(() => toASCII(highBoundary)).not.toThrow();
+  });
+
+  it("should throw RangeError with correct error message on overflow", () => {
+    const heavyInput = "a".repeat(20000) + "\u{1F4A9}".repeat(10000);
+    expect(() => toASCII(heavyInput)).toThrow(RangeError);
+    expect(() => toASCII(heavyInput)).toThrow("Overflow Error");
+  });
+});

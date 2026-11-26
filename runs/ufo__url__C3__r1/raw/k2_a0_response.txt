@@ -1,0 +1,115 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { $URL, createURL } from "../../src/url";
+
+describe("$URL", () => {
+  it("should parse absolute URL with protocol, host, pathname, query and hash", () => {
+    const url = new $URL("https://example.com:8080/path/to/page?foo=bar#hash");
+
+    expect(url.protocol).toBe("https:");
+    expect(url.host).toBe("example.com:8080");
+    expect(url.hostname).toBe("example.com");
+    expect(url.port).toBe("8080");
+    expect(url.pathname).toBe("/path/to/page");
+    expect(url.query).toEqual({ foo: "bar" });
+    expect(url.hash).toBe("#hash");
+    expect(url.hasProtocol).toBe(7);
+    expect(url.isAbsolute).toBe(true);
+    expect(url.search).toBe("?foo=bar");
+    expect(url.origin).toBe("https://example.com:8080");
+    expect(url.fullpath).toBe("/path/to/page?foo=bar#hash");
+    expect(url.href).toBe("https://example.com:8080/path/to/page?foo=bar#hash");
+    expect(url.toString()).toBe("https://example.com:8080/path/to/page?foo=bar#hash");
+    expect(url.toJSON()).toBe("https://example.com:8080/path/to/page?foo=bar#hash");
+  });
+
+  it("should handle empty input with default value", () => {
+    const url = new $URL();
+
+    expect(url.protocol).toBe("");
+    expect(url.host).toBe("");
+    expect(url.hostname).toBe("");
+    expect(url.port).toBe("");
+    expect(url.pathname).toBe("");
+    expect(url.query).toEqual({});
+    expect(url.hash).toBe("");
+    expect(url.hasProtocol).toBe(0);
+    expect(url.isAbsolute).toBe(false);
+    expect(url.search).toBe("");
+    expect(url.origin).toBe("");
+    expect(url.fullpath).toBe("");
+    expect(url.href).toBe("");
+  });
+
+  it("should throw TypeError for non-string input", () => {
+    expect(() => new $URL(123 as any)).toThrow(TypeError);
+    expect(() => new $URL(123 as any)).toThrow(
+      "URL input should be string received number (123)"
+    );
+  });
+
+  it("should parse username and password from auth", () => {
+    const url = new $URL("https://user:pass@example.com");
+
+    expect(url.username).toBe("user");
+    expect(url.password).toBe("pass");
+    expect(url.auth).toBe("user:pass");
+    expect(url.encodedAuth).toBe("user:pass");
+    expect(url.href).toBe("https://user:pass@example.com/");
+  });
+
+  it("should handle username without password in auth", () => {
+    const url = new $URL("https://user@example.com");
+
+    expect(url.username).toBe("user");
+    expect(url.password).toBe("");
+    expect(url.auth).toBe("user");
+    expect(url.encodedAuth).toBe("user");
+  });
+
+  it("should handle empty auth", () => {
+    const url = new $URL("https://example.com");
+
+    expect(url.username).toBe("");
+    expect(url.password).toBe("");
+    expect(url.auth).toBe("");
+    expect(url.encodedAuth).toBe("");
+  });
+
+  it("should handle searchParams with arrays and non-string values", () => {
+    const url = new $URL("https://example.com/?a=1&a=2&b=true");
+
+    expect(url.searchParams.get("a")).toBe("1");
+    expect(url.searchParams.getAll("a")).toEqual(["1", "2"]);
+    expect(url.searchParams.get("b")).toBe("true");
+  });
+
+  it("should append another $URL correctly", () => {
+    const base = new $URL("https://example.com/base?x=1#old");
+    const extra = new $URL("/sub/path?y=2#new");
+
+    base.append(extra);
+
+    expect(base.pathname).toBe("/base/sub/path");
+    expect(base.query).toEqual({ x: "1", y: "2" });
+    expect(base.hash).toBe("#new");
+    expect(base.href).toBe("https://example.com/base/sub/path?x=1&y=2#new");
+  });
+
+  it("should throw error when appending a URL with protocol", () => {
+    const base = new $URL("https://example.com/base");
+    const extra = new $URL("https://other.com/path");
+
+    expect(() => base.append(extra)).toThrow("Cannot append a URL with protocol");
+  });
+});
+
+describe("createURL", () => {
+  it("should create a $URL instance from string input", () => {
+    const url = createURL("https://example.com/test");
+
+    expect(url).toBeInstanceOf($URL);
+    expect(url.href).toBe("https://example.com/test");
+  });
+});
+```

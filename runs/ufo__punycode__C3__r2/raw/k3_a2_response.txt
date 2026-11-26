@@ -1,0 +1,62 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    expect(toASCII("example.com")).toBe("example.com");
+    expect(toASCII("test")).toBe("test");
+  });
+
+  it("should convert non-ASCII domain labels to punycode", () => {
+    expect(toASCII("münchen.de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("àéîöù.com")).toBe("xn--0casp6ap.com");
+  });
+
+  it("should handle email addresses with non-ASCII domains", () => {
+    expect(toASCII("user@münchen.de")).toBe("user@xn--mnchen-3ya.de");
+  });
+
+  it("should handle various dot separators like ideographic full stop", () => {
+    expect(toASCII("münchen．de")).toBe("xn--mnchen-3ya.de");
+  });
+
+  it("should handle empty strings", () => {
+    expect(toASCII("")).toBe("");
+  });
+
+  it("should handle surrogate pairs (emoji and high-range Unicode characters)", () => {
+    expect(toASCII("💩.com")).toBe("xn--ls8h.com");
+    expect(toASCII("𝌆.com")).toBe("xn--kr1h.com");
+  });
+
+  it("should correctly process surrogate pairs with unpaired highs or lows", () => {
+    // Unpaired high surrogate followed by ASCII or invalid sequence
+    const unpairedHigh = String.fromCharCode(55296) + "a.com";
+    expect(toASCII(unpairedHigh)).toBe("xn--a-qc4g.com");
+
+    // Unpaired low surrogate
+    const unpairedLow = String.fromCharCode(56320) + "a.com";
+    expect(toASCII(unpairedLow)).toBe("xn--a-8z5g.com");
+  });
+
+  it("should handle multi-label non-ASCII strings requiring complex bias adaptation and delta calculations", () => {
+    expect(toASCII("mañana.com")).toBe("xn--maana-pta.com");
+    expect(toASCII("日本語.jp")).toBe("xn--wgv71a119e.jp");
+    expect(toASCII("рф.ru")).toBe("xn--p1ai.ru");
+  });
+
+  it("should handle inputs that trigger the large loop / overflow path in u() and integer checks", () => {
+    // String with many repeated non-ASCII characters to trigger n > 455 and large delta/bias calculations
+    const repeated = "あ".repeat(500) + ".com";
+    const result = toASCII(repeated);
+    expect(result.startsWith("xn--")).toBe(true);
+    expect(result.endsWith(".com")).toBe(true);
+  });
+
+  it("should handle characters right around the 128 boundary", () => {
+    expect(toASCII(String.fromCharCode(128) + ".com")).toBe("xn--a.com");
+    expect(toASCII(String.fromCharCode(127) + ".com")).toBe(String.fromCharCode(127) + ".com");
+  });
+});
+```

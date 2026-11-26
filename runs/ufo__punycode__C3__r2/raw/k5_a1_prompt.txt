@@ -1,0 +1,240 @@
+The Vitest test file below for `src/punycode.ts` (import path: `../../src/punycode`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/punycode.ts`:
+```ts
+/* eslint-disable */
+// @ts-nocheck
+// Tree-shaked + Minified version of punycode@2.1.1/punycode.es6.js#toASCII
+const n = /[^\0-\x7E]/;
+const t = /[\x2E\u3002\uFF0E\uFF61]/g;
+const o = {
+  overflow: "Overflow Error",
+  "not-basic": "Illegal Input",
+  "invalid-input": "Invalid Input",
+};
+const e = Math.floor;
+const r = String.fromCharCode;
+function s(n) {
+  throw new RangeError(o[n]);
+}
+const c = function (n, t) {
+  return n + 22 + 75 * (n < 26) - ((t != 0) << 5);
+};
+const u = function (n, t, o) {
+  let r = 0;
+  for (n = o ? e(n / 700) : n >> 1, n += e(n / t); n > 455; r += 36) {
+    n = e(n / 35);
+  }
+  return e(r + (36 * n) / (n + 38));
+};
+export function toASCII(o) {
+  return (function (n, o) {
+    const e = n.split("@");
+    let r = "";
+    e.length > 1 && ((r = e[0] + "@"), (n = e[1]));
+    const s = (function (n, t) {
+      const o = [];
+      let e = n.length;
+      for (; e--; ) {
+        o[e] = t(n[e]);
+      }
+      return o;
+    })((n = n.replace(t, ".")).split("."), o).join(".");
+    return r + s;
+  })(o, function (t) {
+    return n.test(t)
+      ? "xn--" +
+          (function (n) {
+            const t = [];
+            const o = (n = (function (n) {
+              const t = [];
+              let o = 0;
+              const e = n.length;
+              for (; o < e; ) {
+                const r = n.charCodeAt(o++);
+                if (r >= 55296 && r <= 56319 && o < e) {
+                  const e = n.charCodeAt(o++);
+                  (64512 & e) == 56320
+                    ? t.push(((1023 & r) << 10) + (1023 & e) + 65536)
+                    : (t.push(r), o--);
+                } else {
+                  t.push(r);
+                }
+              }
+              return t;
+            })(n)).length;
+            let f = 128;
+            let i = 0;
+            let l = 72;
+            for (const o of n) {
+              o < 128 && t.push(r(o));
+            }
+            const h = t.length;
+            let p = h;
+            for (h && t.push("-"); p < o; ) {
+              let o = 2147483647;
+              for (const t of n) {
+                t >= f && t < o && (o = t);
+              }
+              const a = p + 1;
+              (o - f > e((2147483647 - i) / a) && s("overflow"),
+                (i += (o - f) * a),
+                (f = o));
+              for (const o of n) {
+                if ((o < f && ++i > 2147483647 && s("overflow"), o == f)) {
+                  let n = i;
+                  for (let o = 36; ; o += 36) {
+                    const s = o <= l ? 1 : o >= l + 26 ? 26 : o - l;
+                    if (n < s) {
+                      break;
+                    }
+                    const u = n - s;
+                    const f = 36 - s;
+                    (t.push(r(c(s + (u % f), 0))), (n = e(u / f)));
+                  }
+                  (t.push(r(c(n, 0))), (l = u(i, a, p == h)), (i = 0), ++p);
+                }
+              }
+              (++i, ++f);
+            }
+            return t.join("");
+          })(t)
+      : t;
+  });
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    expect(toASCII("example.com")).toBe("example.com");
+    expect(toASCII("test")).toBe("test");
+  });
+
+  it("should convert non-ASCII domain labels to punycode", () => {
+    expect(toASCII("münchen.de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("àéîöù.com")).toBe("xn--0casp6ap.com");
+  });
+
+  it("should handle email addresses with non-ASCII domains", () => {
+    expect(toASCII("user@münchen.de")).toBe("user@xn--mnchen-3ya.de");
+  });
+
+  it("should handle various dot separators like ideographic full stop", () => {
+    expect(toASCII("münchen．de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("münchen。de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("münchen．de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("münchenꮴde")).toBe("xn--mnchende-6v0g.de");
+  });
+
+  it("should handle empty strings", () => {
+    expect(toASCII("")).toBe("");
+  });
+
+  it("should handle surrogate pairs (emoji and high-range Unicode characters)", () => {
+    expect(toASCII("💩.com")).toBe("xn--ls8h.com");
+    expect(toASCII("𝌆.com")).toBe("xn--kr1h.com");
+  });
+
+  it("should handle multi-label non-ASCII strings requiring complex bias adaptation and delta calculations", () => {
+    expect(toASCII("mañana.com")).toBe("xn--maana-pta.com");
+    expect(toASCII("日本語.jp")).toBe("xn--wgv71a119e.jp");
+    expect(toASCII("рф.ru")).toBe("xn--p1ai.ru");
+  });
+
+  it("should handle characters right around the 128 boundary", () => {
+    expect(toASCII(String.fromCharCode(128) + ".com")).toBe("xn--a.com");
+  });
+
+  it("should handle surrogate pairs correctly with an unpaired high surrogate", () => {
+    const unpaired = String.fromCharCode(55296) + "abc.com";
+    expect(() => toASCII(unpaired)).not.toThrow();
+  });
+
+  it("should correctly handle high surrogate lower boundary (55296) and upper boundary (56319)", () => {
+    const lowBoundary = String.fromCharCode(55296, 56320) + ".com";
+    expect(toASCII(lowBoundary)).toBe("xn--1uh.com");
+
+    const highBoundary = String.fromCharCode(55295) + "abc.com";
+    expect(() => toASCII(highBoundary)).not.toThrow();
+  });
+
+  it("should throw RangeError with correct error message on overflow", () => {
+    const heavyInput = "a".repeat(20000) + "\u{1F4A9}".repeat(10000);
+    expect(() => toASCII(heavyInput)).toThrow(RangeError);
+    expect(() => toASCII(heavyInput)).toThrow("Overflow Error");
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.5 /home/runner/work/_temp/ufo
+
+ ❯ test/__generated__/punycode.gen.test.ts (11 tests | 2 failed) 23ms
+     ✓ should return ASCII strings unchanged 2ms
+     ✓ should convert non-ASCII domain labels to punycode 0ms
+     ✓ should handle email addresses with non-ASCII domains 0ms
+     × should handle various dot separators like ideographic full stop 5ms
+     ✓ should handle empty strings 0ms
+     ✓ should handle surrogate pairs (emoji and high-range Unicode characters) 0ms
+     ✓ should handle multi-label non-ASCII strings requiring complex bias adaptation and delta calculations 0ms
+     ✓ should handle characters right around the 128 boundary 0ms
+     ✓ should handle surrogate pairs correctly with an unpaired high surrogate 1ms
+     × should correctly handle high surrogate lower boundary (55296) and upper boundary (56319) 1ms
+     ✓ should throw RangeError with correct error message on overflow 11ms
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 9 passed (11)
+   Start at  08:08:49
+   Duration  204ms (transform 35ms, setup 0ms, import 47ms, tests 23ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/punycode.gen.test.ts > toASCII > should handle various dot separators like ideographic full stop
+AssertionError: expected 'xn--mnchende-65a95184b' to be 'xn--mnchende-6v0g.de' // Object.is equality
+
+Expected: "xn--mnchende-6v0g.de"
+Received: "xn--mnchende-65a95184b"
+
+ ❯ test/__generated__/punycode.gen.test.ts:23:35
+     21|     expect(toASCII("münchen。de")).toBe("xn--mnchen-3ya.de");
+     22|     expect(toASCII("münchen．de")).toBe("xn--mnchen-3ya.de");
+     23|     expect(toASCII("münchenꮴde")).toBe("xn--mnchende-6v0g.de");
+       |                                   ^
+     24|   });
+     25|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/__generated__/punycode.gen.test.ts > toASCII > should correctly handle high surrogate lower boundary (55296) and upper boundary (56319)
+AssertionError: expected 'xn--2n7c.com' to be 'xn--1uh.com' // Object.is equality
+
+Expected: "xn--1uh.com"
+Received: "xn--2n7c.com"
+
+ ❯ test/__generated__/punycode.gen.test.ts:52:34
+     50|   it("should correctly handle high surrogate lower boundary (55296) an…
+     51|     const lowBoundary = String.fromCharCode(55296, 56320) + ".com";
+     52|     expect(toASCII(lowBoundary)).toBe("xn--1uh.com");
+       |                                  ^
+     53|
+     54|     const highBoundary = String.fromCharCode(55295) + "abc.com";
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

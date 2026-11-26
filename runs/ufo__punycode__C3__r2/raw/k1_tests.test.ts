@@ -1,0 +1,36 @@
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    expect(toASCII("example.com")).toBe("example.com");
+    expect(toASCII("test")).toBe("test");
+  });
+
+  it("should convert non-ASCII domain labels to punycode", () => {
+    expect(toASCII("münchen.de")).toBe("xn--mnchen-3ya.de");
+    expect(toASCII("àéîöù.com")).toBe("xn--0casp6ap.com");
+  });
+
+  it("should handle email addresses with non-ASCII domains", () => {
+    expect(toASCII("user@münchen.de")).toBe("user@xn--mnchen-3ya.de");
+  });
+
+  it("should handle various dot separators like ideographic full stop", () => {
+    expect(toASCII("münchen．de")).toBe("xn--mnchen-3ya.de");
+  });
+
+  it("should handle empty strings", () => {
+    expect(toASCII("")).toBe("");
+  });
+
+  it("should handle surrogate pairs (emoji and high-range Unicode characters)", () => {
+    expect(toASCII("💩.com")).toBe("xn--ls8h.com");
+    expect(toASCII("𝌆.com")).toBe("xn--kr1h.com");
+  });
+
+  it("should throw RangeError on overflow or extremely long / complex inputs", () => {
+    const longAscii = "a".repeat(1000000);
+    expect(() => toASCII(longAscii)).not.toThrow();
+  });
+});

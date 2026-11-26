@@ -1,0 +1,324 @@
+The Vitest test file below for `src/url.ts` (import path: `../../src/url`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Source of `src/url.ts`:
+```ts
+import { parseURL, parseAuth, parseHost } from "./parse";
+import { QueryObject, parseQuery, stringifyQuery } from "./query";
+import { withoutLeadingSlash, withTrailingSlash } from "./utils";
+import {
+  encodeHash,
+  encodePath,
+  decodePath,
+  decode,
+  encodeHost,
+} from "./encoding";
+
+/**
+ * @deprecated use native URL with `new URL(input)` or `ufo.parseURL(input)`
+ */
+export class $URL implements URL {
+  protocol: string;
+  host: string;
+  auth: string;
+  pathname: string;
+  query: QueryObject = {};
+  hash: string;
+
+  constructor(input = "") {
+    if (typeof input !== "string") {
+      throw new TypeError(
+        `URL input should be string received ${typeof input} (${input})`,
+      );
+    }
+
+    const parsed = parseURL(input);
+
+    this.protocol = decode(parsed.protocol);
+    this.host = decode(parsed.host);
+    this.auth = decode(parsed.auth);
+    this.pathname = decodePath(parsed.pathname);
+    this.query = parseQuery(parsed.search);
+    this.hash = decode(parsed.hash);
+  }
+
+  get hostname(): string {
+    return parseHost(this.host).hostname;
+  }
+
+  get port(): string {
+    return parseHost(this.host).port || "";
+  }
+
+  get username(): string {
+    return parseAuth(this.auth).username;
+  }
+
+  get password(): string {
+    return parseAuth(this.auth).password || "";
+  }
+
+  get hasProtocol() {
+    return this.protocol.length;
+  }
+
+  get isAbsolute() {
+    return this.hasProtocol || this.pathname[0] === "/";
+  }
+
+  get search(): string {
+    const q = stringifyQuery(this.query);
+    return q.length > 0 ? "?" + q : "";
+  }
+
+  get searchParams(): URLSearchParams {
+    const p = new URLSearchParams();
+    for (const name in this.query) {
+      const value = this.query[name];
+      if (Array.isArray(value)) {
+        for (const v of value) {
+          p.append(name, v);
+        }
+      } else {
+        p.append(
+          name,
+          typeof value === "string" ? value : JSON.stringify(value),
+        );
+      }
+    }
+    return p;
+  }
+
+  get origin(): string {
+    return (this.protocol ? this.protocol + "//" : "") + encodeHost(this.host);
+  }
+
+  get fullpath(): string {
+    return encodePath(this.pathname) + this.search + encodeHash(this.hash);
+  }
+
+  get encodedAuth(): string {
+    if (!this.auth) {
+      return "";
+    }
+    const { username, password } = parseAuth(this.auth);
+    return (
+      encodeURIComponent(username) +
+      (password ? ":" + encodeURIComponent(password) : "")
+    );
+  }
+
+  get href(): string {
+    const auth = this.encodedAuth;
+    const originWithAuth =
+      (this.protocol ? this.protocol + "//" : "") +
+      (auth ? auth + "@" : "") +
+      encodeHost(this.host);
+    return this.hasProtocol && this.isAbsolute
+      ? originWithAuth + this.fullpath
+      : this.fullpath;
+  }
+
+  append(url: $URL) {
+    if (url.hasProtocol) {
+      throw new Error("Cannot append a URL with protocol");
+    }
+
+    Object.assign(this.query, url.query);
+
+    if (url.pathname) {
+      this.pathname =
+        withTrailingSlash(this.pathname) + withoutLeadingSlash(url.pathname);
+    }
+
+    if (url.hash) {
+      this.hash = url.hash;
+    }
+  }
+
+  toJSON(): string {
+    return this.href;
+  }
+
+  toString(): string {
+    return this.href;
+  }
+}
+
+/**
+ * @deprecated use native URL with `new URL(input)` or `ufo.parseURL(input)`
+ */
+export function createURL(input: string): $URL {
+  return new $URL(input);
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import { $URL, createURL } from "../../src/url";
+
+describe("$URL", () => {
+  it("should parse absolute URL with protocol, host, pathname, query and hash", () => {
+    const url = new $URL("https://example.com/path?foo=bar#hash");
+    expect(url.protocol).toBe("https:");
+    expect(url.host).toBe("example.com");
+    expect(url.pathname).toBe("/path");
+    expect(url.query).toEqual({ foo: "bar" });
+    expect(url.hash).toBe("#hash");
+    expect(url.hostname).toBe("example.com");
+    expect(url.port).toBe("");
+    expect(url.hasProtocol).toBeTruthy();
+    expect(url.isAbsolute).toBe(true);
+    expect(url.search).toBe("?foo=bar");
+    expect(url.origin).toBe("https://example.com");
+    expect(url.fullpath).toBe("/path?foo=bar#hash");
+    expect(url.href).toBe("https://example.com/path?foo=bar#hash");
+    expect(url.toString()).toBe("https://example.com/path?foo=bar#hash");
+    expect(url.toJSON()).toBe("https://example.com/path?foo=bar#hash");
+  });
+
+  it("should handle empty input default value", () => {
+    const url = new $URL();
+    expect(url.protocol).toBe("");
+    expect(url.host).toBe("");
+    expect(url.pathname).toBe("");
+    expect(url.query).toEqual({});
+    expect(url.hash).toBe("");
+    expect(url.href).toBe("");
+  });
+
+  it("should throw TypeError for non-string input", () => {
+    expect(() => new $URL(123 as any)).toThrow(TypeError);
+    expect(() => new $URL(123 as any)).toThrow("URL input should be string received number (123)");
+  });
+
+  it("should correctly parse port and hostname", () => {
+    const url = new $URL("http://localhost:8080/api");
+    expect(url.hostname).toBe("localhost");
+    expect(url.port).toBe("8080");
+    expect(url.origin).toBe("http://localhost:8080");
+  });
+
+  it("should correctly parse username and password", () => {
+    const url = new $URL("https://user:pass@example.com/");
+    expect(url.username).toBe("user");
+    expect(url.password).toBe("pass");
+    expect(url.encodedAuth).toBe("user%3Apass");
+  });
+
+  it("should handle array query parameters in searchParams", () => {
+    const url = new $URL("https://example.com/?tag=a&tag=b&num=1");
+    const params = url.searchParams;
+    expect(params.getAll("tag")).toEqual(["a", "b"]);
+    expect(params.get("num")).toBe("1");
+  });
+
+  it("should append a relative URL without protocol", () => {
+    const base = new $URL("https://example.com/base/");
+    const extra = new $URL("sub?new=1#newhash");
+    base.append(extra);
+    expect(base.pathname).toBe("/base/sub");
+    expect(base.query).toEqual({ new: "1" });
+    expect(base.hash).toBe("#newhash");
+  });
+
+  it("should throw error when appending a URL with protocol", () => {
+    const base = new $URL("https://example.com/");
+    const other = new $URL("https://other.com/");
+    expect(() => base.append(other)).toThrow("Cannot append a URL with protocol");
+  });
+});
+
+describe("createURL", () => {
+  it("should create an instance of $URL", () => {
+    const url = createURL("https://example.com");
+    expect(url).toBeInstanceOf($URL);
+    expect(url.href).toBe("https://example.com/");
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v4.1.5 /home/runner/work/_temp/ufo
+
+ ❯ test/__generated__/url.gen.test.ts (9 tests | 3 failed) 12ms
+     × should parse absolute URL with protocol, host, pathname, query and hash 5ms
+     ✓ should handle empty input default value 1ms
+     ✓ should throw TypeError for non-string input 1ms
+     ✓ should correctly parse port and hostname 0ms
+     × should correctly parse username and password 2ms
+     ✓ should handle array query parameters in searchParams 0ms
+     ✓ should append a relative URL without protocol 0ms
+     ✓ should throw error when appending a URL with protocol 0ms
+     × should create an instance of $URL 1ms
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 6 passed (9)
+   Start at  08:21:39
+   Duration  229ms (transform 87ms, setup 0ms, import 106ms, tests 12ms, environment 0ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/url.gen.test.ts > $URL > should parse absolute URL with protocol, host, pathname, query and hash
+AssertionError: expected 6 to be true // Object.is equality
+
+- Expected:
+true
+
++ Received:
+6
+
+ ❯ test/__generated__/url.gen.test.ts:15:28
+     13|     expect(url.port).toBe("");
+     14|     expect(url.hasProtocol).toBeTruthy();
+     15|     expect(url.isAbsolute).toBe(true);
+       |                            ^
+     16|     expect(url.search).toBe("?foo=bar");
+     17|     expect(url.origin).toBe("https://example.com");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/__generated__/url.gen.test.ts > $URL > should correctly parse username and password
+AssertionError: expected 'user:pass' to be 'user%3Apass' // Object.is equality
+
+Expected: "user%3Apass"
+Received: "user:pass"
+
+ ❯ test/__generated__/url.gen.test.ts:50:29
+     48|     expect(url.username).toBe("user");
+     49|     expect(url.password).toBe("pass");
+     50|     expect(url.encodedAuth).toBe("user%3Apass");
+       |                             ^
+     51|   });
+     52|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/__generated__/url.gen.test.ts > createURL > should create an instance of $URL
+AssertionError: expected 'https://example.com' to be 'https://example.com/' // Object.is equality
+
+Expected: "https://example.com/"
+Received: "https://example.com"
+
+ ❯ test/__generated__/url.gen.test.ts:80:22
+     78|     const url = createURL("https://example.com");
+     79|     expect(url).toBeInstanceOf($URL);
+     80|     expect(url.href).toBe("https://example.com/");
+       |                      ^
+     81|   });
+     82| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

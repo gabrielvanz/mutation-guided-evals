@@ -1,0 +1,89 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { parseQuery, encodeQueryItem, stringifyQuery } from "../../src/query";
+
+describe("parseQuery", () => {
+  it("should parse a simple query string", () => {
+    const input = "foo=bar&baz=qux";
+    const expected = { foo: "bar", baz: "qux" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should parse a query string starting with '?'", () => {
+    const input = "?foo=bar&baz=qux";
+    const expected = { foo: "bar", baz: "qux" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should handle repeated keys as arrays", () => {
+    const input = "tags=javascript&tags=web&tags=dev";
+    const expected = { tags: ["javascript", "web", "dev"] };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should handle omitted values or empty strings", () => {
+    const input = "foo=&bar";
+    const expected = { foo: "", bar: "" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should ignore empty parameters or malformed entries", () => {
+    const input = "&&foo=bar&&";
+    const expected = { foo: "bar" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should ignore __proto__ and constructor keys for security", () => {
+    const input = "__proto__=bar&constructor=bad&safe=good";
+    const expected = { safe: "good" };
+    expect(parseQuery(input)).toEqual(expected);
+  });
+
+  it("should handle empty string input", () => {
+    expect(parseQuery("")).toEqual({});
+    expect(parseQuery()).toEqual({});
+  });
+});
+
+describe("encodeQueryItem", () => {
+  it.each([
+    { key: "message", value: "Hello World", expected: "message=Hello+World" },
+    { key: "num", value: 123, expected: "num=123" },
+    { key: "bool", value: true, expected: "bool=true" },
+    { key: "empty", value: "", expected: "empty" },
+    { key: "tags", value: ["javascript", "web"], expected: "tags=javascript&tags=web" },
+  ] as const)("should encode $key with value $value", ({ key, value, expected }) => {
+    expect(encodeQueryItem(key, value)).toBe(expected);
+  });
+});
+
+describe("stringifyQuery", () => {
+  it("should stringify a simple query object", () => {
+    const input = { foo: "bar", baz: "qux" };
+    const expected = "foo=bar&baz=qux";
+    expect(stringifyQuery(input)).toBe(expected);
+  });
+
+  it("should omit undefined values", () => {
+    const input = { foo: "bar", baz: undefined };
+    const expected = "foo=bar";
+    expect(stringifyQuery(input)).toBe(expected);
+  });
+
+  it("should stringify arrays into repeated query items", () => {
+    const input = { tags: ["javascript", "web", "dev"] };
+    const expected = "tags=javascript&tags=web&tags=dev";
+    expect(stringifyQuery(input)).toBe(expected);
+  });
+
+  it("should handle numbers and booleans", () => {
+    const input = { count: 5, active: true };
+    const expected = "count=5&active=true";
+    expect(stringifyQuery(input)).toBe(expected);
+  });
+
+  it("should handle empty query object", () => {
+    expect(stringifyQuery({})).toBe("");
+  });
+});
+```

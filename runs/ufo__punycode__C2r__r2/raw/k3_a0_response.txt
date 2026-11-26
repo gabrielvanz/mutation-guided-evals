@@ -1,0 +1,64 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    const cases = [
+      { input: "example.com", expected: "example.com" },
+      { input: "test", expected: "test" },
+      { input: "123.456", expected: "123.456" },
+      { input: "", expected: "" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should convert internationalized domain names to punycode", () => {
+    const cases = [
+      { input: "münchen.de", expected: "xn--mnchen-3ya.de" },
+      { input: "mahlzeit.de", expected: "mahlzeit.de" },
+      { input: "الجزائر.test", expected: "xn--lgbbat1h8j.test" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle email addresses with domain internationalization", () => {
+    const cases = [
+      { input: "user@münchen.de", expected: "user@xn--mnchen-3ya.de" },
+      { input: "test.user@example.com", expected: "test.user@example.com" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle alternative dot separators", () => {
+    const cases = [
+      { input: "münchen｡de", expected: "xn--mnchen-3ya.de" },
+      { input: "münchen․de", expected: "xn--mnchen-3ya.de" },
+      { input: "münchen．de", expected: "xn--mnchen-3ya.de" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should throw RangeError on overflow or invalid input", () => {
+    const invalidInputs = [
+      String.fromCharCode(0xD800) // unpaired surrogate
+    ];
+
+    for (const input of invalidInputs) {
+      expect(() => toASCII(input)).toThrow(RangeError);
+    }
+  });
+});
+```

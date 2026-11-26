@@ -1,0 +1,38 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    const cases = [
+      { input: "example.com", expected: "example.com" },
+      { input: "test", expected: "test" },
+      { input: "123.456", expected: "123.456" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should convert non-ASCII domain labels to punycode", () => {
+    const cases = [
+      { input: "ñandu.com", expected: "xn--andu-fqa.com" },
+      { input: "Exämple.com", expected: "xn--exmple-eva.com" },
+      { input: "maçã.com", expected: "xn--ma-cja.com" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle email addresses with domain part containing non-ASCII characters", () => {
+    expect(toASCII("user@ñandu.com")).toBe("user@xn--andu-fqa.com");
+  });
+
+  it("should handle various separator dots", () => {
+    expect(toASCII("example．com")).toBe("example.com");
+  });
+});
+```

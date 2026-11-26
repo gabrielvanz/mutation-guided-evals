@@ -1,0 +1,53 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    const cases = [
+      { input: "example.com", expected: "example.com" },
+      { input: "test", expected: "test" },
+      { input: "", expected: "" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should convert internationalized domain names to punycode", () => {
+    const cases = [
+      { input: "München.de", expected: "xn--Mnchen-3ya.de" },
+      { input: "пример.is", expected: "xn--e1afmkfd.is" },
+      { input: "日本語.jp", expected: "xn--wgv71a119e.jp" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle email addresses with unicode domain parts", () => {
+    const input = "user@München.de";
+    const expected = "user@xn--Mnchen-3ya.de";
+    expect(toASCII(input)).toBe(expected);
+  });
+
+  it("should handle various dot separators", () => {
+    const cases = [
+      { input: "test。com", expected: "test.com" },
+      { input: "test．com", expected: "test.com" },
+      { input: "test｡com", expected: "test.com" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should throw RangeError on overflow", () => {
+    const overflowInput = String.fromCodePoint(0x7fffffff);
+    expect(() => toASCII(overflowInput)).toThrow(RangeError);
+  });
+});
+```

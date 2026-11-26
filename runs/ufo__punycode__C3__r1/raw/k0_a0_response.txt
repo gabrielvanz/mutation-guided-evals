@@ -1,0 +1,62 @@
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    const cases = [
+      { input: "example.com", expected: "example.com" },
+      { input: "test", expected: "test" },
+      { input: "", expected: "" },
+      { input: "123.456", expected: "123.456" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should convert non-ASCII unicode domains to punycode", () => {
+    const cases = [
+      { input: "münchen.de", expected: "xn--mnchen-3ya.de" },
+      { input: "ñandu.com", expected: "xn--andu-1wa.com" },
+      { input: "中文.com", expected: "xn--fiq228c.com" },
+      { input: "العربية.xn--p1ai", expected: "xn--mgbh0fb.xn--p1ai" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle email addresses with domain part containing unicode", () => {
+    const cases = [
+      { input: "user@münchen.de", expected: "user@xn--mnchen-3ya.de" },
+      { input: "test.name@中文.com", expected: "test.name@xn--fiq228c.com" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should normalize different dot separators", () => {
+    const cases = [
+      { input: "münchen．de", expected: "xn--mnchen-3ya.de" },
+      { input: "münchen。de", expected: "xn--mnchen-3ya.de" },
+      { input: "münchen｡de", expected: "xn--mnchen-3ya.de" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should throw RangeError on overflow or invalid input", () => {
+    // Extremely large input or characters causing overflow/invalid state
+    const invalidInput = "\u{10FFFF}\u{10FFFF}\u{10FFFF}\u{10FFFF}\u{10FFFF}\u{10FFFF}\u{10FFFF}\u{10FFFF}";
+    
+    expect(() => toASCII(invalidInput)).toThrow(RangeError);
+  });
+});
+```

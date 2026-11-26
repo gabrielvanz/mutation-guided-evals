@@ -1,0 +1,456 @@
+{
+  "schema_version": "0.1",
+  "run_id": "ufo__utils__C3__r2",
+  "started_at": "2026-11-26T08:33:41.002Z",
+  "finished_at": "2026-11-26T08:39:36.595Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "ufo",
+    "repo": "unjs/ufo",
+    "commit": "f06c800d0c59f2a4a1b9ba65eb6cb61a84419be6",
+    "license": "MIT",
+    "module_path": "src/utils.ts",
+    "module_loc": 775,
+    "mutants_total": 470,
+    "human_test_files": [
+      "test/base.test.ts",
+      "test/double-slash.test.ts",
+      "test/is-same.test.ts",
+      "test/join.test.ts",
+      "test/normalize.test.ts",
+      "test/resolve.test.ts",
+      "test/trailing-slash.test.ts",
+      "test/utilities.test.ts"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "fe67ae67ed930f60b3dd8e1afdf5aff76745522417116f7b5723c18190555635",
+    "git_sha_agent": "b0dedb690104ab74dbd119d5f449b123ff18bc62"
+  },
+  "memorization": {
+    "probe_similarity": 0.485,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__utils__C3__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 29389,
+        "tokens_out": 11387,
+        "usd_ref": 0.007494,
+        "wall_s": 33.28,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 60.6061,
+        "ms_feedback": 67.7824,
+        "ms_all": 64.2553,
+        "ms_covered": 77.4359
+      },
+      "coverage": {
+        "line_cov": 87.71,
+        "branch_cov": 76.87
+      },
+      "mutants_eval": {
+        "killed": 140,
+        "survived": 46,
+        "no_coverage": 45,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 162,
+        "survived": 42,
+        "no_coverage": 35,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 36,
+        "n_asserts": 50,
+        "sha256": "d935086a581eb35c6f0c5553e118c98c9b1a8bf7f0b55dac8c5ec5d9863421fd"
+      },
+      "prompt_file": "runs/ufo__utils__C3__r2/raw/k1_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r2/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 4,
+        "tokens_in": 58679,
+        "tokens_out": 22664,
+        "usd_ref": 0.014934,
+        "wall_s": 112.62,
+        "stryker_s": 28.81
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 70.1299,
+        "ms_feedback": 74.477,
+        "ms_all": 72.3404,
+        "ms_covered": 79.8122
+      },
+      "coverage": {
+        "line_cov": 94.15,
+        "branch_cov": 86.87
+      },
+      "mutants_eval": {
+        "killed": 162,
+        "survived": 46,
+        "no_coverage": 23,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 178,
+        "survived": 40,
+        "no_coverage": 21,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/utils.ts:14:28-14:72:Regex:/^[\\S\\0]*(blob|data|javascript|vbscript):$/i",
+        "src/utils.ts:16:31-16:39:Regex:/\\.?\\//",
+        "src/utils.ts:165:25-165:27:UnaryOperator:+1",
+        "src/utils.ts:170:21-170:37:MethodExpression:s0.startsWith(\"/\")",
+        "src/utils.ts:172:27-172:39:EqualityOperator:s.length >= 0",
+        "src/utils.ts:198:31-198:35:BooleanLiteral:false",
+        "src/utils.ts:220:41-220:43:StringLiteral:\"Stryker was here!\"",
+        "src/utils.ts:319:7-319:23:ConditionalExpression:false",
+        "src/utils.ts:467:9-467:24:LogicalOperator:!i && i === \"/\"",
+        "src/utils.ts:479:9-479:24:UpdateOperator:segmentsDepth++",
+        "src/utils.ts:484:9-484:49:AssignmentOperator:segments[segments.length - 1] -= \"/\" + s",
+        "src/utils.ts:498:16-498:42:MethodExpression:input[0]?.endsWith(\"./\")",
+        "src/utils.ts:503:24-503:26:UnaryOperator:+1",
+        "src/utils.ts:508:13-508:29:ArithmeticOperator:input.length + 1",
+        "src/utils.ts:508:49-508:67:BooleanLiteral:url.endsWith(\"/\")",
+        "src/utils.ts:627:36-629:4:BlockStatement:{}",
+        "src/utils.ts:650:40-650:43:StringLiteral:\"\"",
+        "src/utils.ts:655:22-655:44:EqualityOperator:queryString.length <= 0",
+        "src/utils.ts:656:14-658:8:BlockStatement:{}",
+        "src/utils.ts:676:10-676:79:ConditionalExpression:true"
+      ],
+      "tests": {
+        "n_tests": 41,
+        "n_asserts": 55,
+        "sha256": "91008791f7430af2f40c6503079c067360cf48a0f8010cb99ab0acef2f794e84"
+      },
+      "prompt_file": "runs/ufo__utils__C3__r2/raw/k2_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r2/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 5,
+        "tokens_in": 81918,
+        "tokens_out": 30846,
+        "usd_ref": 0.02053,
+        "wall_s": 170.24,
+        "stryker_s": 62.05
+      }
+    },
+    {
+      "k": 3,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/utils.ts:12:24-12:54:Regex:/[\\s\\w\\0+.-]{2,}:([/\\\\]{2})?/",
+        "src/utils.ts:16:31-16:39:Regex:/\\.?\\//",
+        "src/utils.ts:165:25-165:27:UnaryOperator:+1",
+        "src/utils.ts:198:31-198:35:BooleanLiteral:false",
+        "src/utils.ts:212:48-212:51:StringLiteral:\"\"",
+        "src/utils.ts:268:44-268:46:StringLiteral:\"Stryker was here!\"",
+        "src/utils.ts:467:15-467:24:ConditionalExpression:false",
+        "src/utils.ts:467:9-467:24:LogicalOperator:!i && i === \"/\"",
+        "src/utils.ts:475:13-475:34:EqualityOperator:segments.length !== 1",
+        "src/utils.ts:479:9-479:24:UpdateOperator:segmentsDepth++",
+        "src/utils.ts:483:74-486:8:BlockStatement:{}",
+        "src/utils.ts:484:9-484:49:AssignmentOperator:segments[segments.length - 1] -= \"/\" + s",
+        "src/utils.ts:498:47-498:67:MethodExpression:url.endsWith(\"./\")",
+        "src/utils.ts:503:24-503:26:UnaryOperator:+1",
+        "src/utils.ts:508:13-508:29:ArithmeticOperator:input.length + 1",
+        "src/utils.ts:508:49-508:67:BooleanLiteral:url.endsWith(\"/\")",
+        "src/utils.ts:508:69-510:4:BlockStatement:{}",
+        "src/utils.ts:508:7-508:45:MethodExpression:input[input.length - 1]?.startsWith(\"/\")",
+        "src/utils.ts:619:7-619:31:ConditionalExpression:false",
+        "src/utils.ts:649:9-649:55:LogicalOperator:urlSegment.search || urlSegment.search !== \"?\""
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs/ufo__utils__C3__r2/raw/k3_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r2/raw/k3_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 11,
+        "repair_calls": 7,
+        "tokens_in": 118539,
+        "tokens_out": 44490,
+        "usd_ref": 0.02965,
+        "wall_s": 219.5,
+        "stryker_s": 62.05
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 74.8918,
+        "ms_feedback": 82.0084,
+        "ms_all": 78.5106,
+        "ms_covered": 82.3661
+      },
+      "coverage": {
+        "line_cov": 98.24,
+        "branch_cov": 93.12
+      },
+      "mutants_eval": {
+        "killed": 173,
+        "survived": 46,
+        "no_coverage": 12,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 196,
+        "survived": 33,
+        "no_coverage": 10,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/utils.ts:12:24-12:54:Regex:/^[\\S\\w\\0+.-]{2,}:([/\\\\]{2})?/",
+        "src/utils.ts:14:28-14:72:Regex:/^[\\S\\0]*(blob|data|javascript|vbscript):$/i",
+        "src/utils.ts:165:25-165:27:UnaryOperator:+1",
+        "src/utils.ts:170:21-170:37:MethodExpression:s0.startsWith(\"/\")",
+        "src/utils.ts:198:31-198:35:BooleanLiteral:false",
+        "src/utils.ts:199:12-199:24:ConditionalExpression:false",
+        "src/utils.ts:199:21-199:24:StringLiteral:\"\"",
+        "src/utils.ts:437:12-439:6:BlockStatement:{}",
+        "src/utils.ts:467:9-467:24:LogicalOperator:!i && i === \"/\"",
+        "src/utils.ts:475:13-475:34:ConditionalExpression:true",
+        "src/utils.ts:475:13-475:34:EqualityOperator:segments.length !== 1",
+        "src/utils.ts:479:9-479:24:UpdateOperator:segmentsDepth++",
+        "src/utils.ts:484:9-484:49:AssignmentOperator:segments[segments.length - 1] -= \"/\" + s",
+        "src/utils.ts:503:24-503:26:UnaryOperator:+1",
+        "src/utils.ts:508:13-508:29:ArithmeticOperator:input.length + 1",
+        "src/utils.ts:508:49-508:67:BooleanLiteral:url.endsWith(\"/\")",
+        "src/utils.ts:508:7-508:45:MethodExpression:input[input.length - 1]?.startsWith(\"/\")",
+        "src/utils.ts:644:53-646:6:BlockStatement:{}",
+        "src/utils.ts:649:9-649:55:LogicalOperator:urlSegment.search || urlSegment.search !== \"?\"",
+        "src/utils.ts:655:67-655:69:StringLiteral:\"Stryker was here!\""
+      ],
+      "tests": {
+        "n_tests": 46,
+        "n_asserts": 62,
+        "sha256": "8891c219925b816576bdca47a6404fc1a4406e82f33d4714ebcb3d9bdcbf5408"
+      },
+      "prompt_file": "runs/ufo__utils__C3__r2/raw/k4_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r2/raw/k4_a0_response.txt",
+      "best_k_so_far": 4,
+      "cost_cumulative": {
+        "calls": 13,
+        "repair_calls": 8,
+        "tokens_in": 142566,
+        "tokens_out": 53366,
+        "usd_ref": 0.035603,
+        "wall_s": 280.5,
+        "stryker_s": 96.95
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 77.0563,
+        "ms_feedback": 84.9372,
+        "ms_all": 81.0638,
+        "ms_covered": 84.292
+      },
+      "coverage": {
+        "line_cov": 98.83,
+        "branch_cov": 95
+      },
+      "mutants_eval": {
+        "killed": 178,
+        "survived": 43,
+        "no_coverage": 10,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 203,
+        "survived": 28,
+        "no_coverage": 8,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/utils.ts:14:28-14:72:Regex:/[\\s\\0]*(blob|data|javascript|vbscript):$/i",
+        "src/utils.ts:14:28-14:72:Regex:/^[\\S\\0]*(blob|data|javascript|vbscript):$/i",
+        "src/utils.ts:153:11-153:13:StringLiteral:\"Stryker was here!\"",
+        "src/utils.ts:165:25-165:27:UnaryOperator:+1",
+        "src/utils.ts:165:7-165:27:ConditionalExpression:true",
+        "src/utils.ts:170:21-170:37:MethodExpression:s0.startsWith(\"/\")",
+        "src/utils.ts:172:53-172:56:StringLiteral:\"\"",
+        "src/utils.ts:198:31-198:35:BooleanLiteral:false",
+        "src/utils.ts:199:21-199:24:StringLiteral:\"\"",
+        "src/utils.ts:212:48-212:51:StringLiteral:\"\"",
+        "src/utils.ts:333:53-333:59:Regex:/\\/+/",
+        "src/utils.ts:467:15-467:24:ConditionalExpression:false",
+        "src/utils.ts:467:9-467:24:LogicalOperator:!i && i === \"/\"",
+        "src/utils.ts:475:64-477:10:BlockStatement:{}",
+        "src/utils.ts:498:47-498:67:MethodExpression:url.endsWith(\"./\")",
+        "src/utils.ts:570:25-570:34:Regex:/\\/{2,}/",
+        "src/utils.ts:619:33-623:4:BlockStatement:{}",
+        "src/utils.ts:627:36-629:4:BlockStatement:{}",
+        "src/utils.ts:644:28-644:51:ConditionalExpression:true",
+        "src/utils.ts:649:9-649:55:LogicalOperator:urlSegment.search || urlSegment.search !== \"?\""
+      ],
+      "tests": {
+        "n_tests": 48,
+        "n_asserts": 69,
+        "sha256": "dc31d86f9c48ddef2577295bd0343b5fbba4a5841e59975721a94de12cf98523"
+      },
+      "prompt_file": "runs/ufo__utils__C3__r2/raw/k5_a0_prompt.txt",
+      "response_file": "runs/ufo__utils__C3__r2/raw/k5_a0_response.txt",
+      "best_k_so_far": 5,
+      "cost_cumulative": {
+        "calls": 15,
+        "repair_calls": 9,
+        "tokens_in": 167334,
+        "tokens_out": 63082,
+        "usd_ref": 0.041966,
+        "wall_s": 355.59,
+        "stryker_s": 134.34
+      }
+    }
+  ],
+  "selected_iteration": 5,
+  "final": {
+    "scores": {
+      "ms_eval": 77.0563,
+      "ms_feedback": 84.9372,
+      "ms_all": 81.0638,
+      "ms_covered": 84.292
+    },
+    "coverage": {
+      "line_cov": 98.83,
+      "branch_cov": 95
+    },
+    "cost": {
+      "calls": 15,
+      "repair_calls": 9,
+      "tokens_in": 167334,
+      "tokens_out": 63082,
+      "usd_ref": 0.041966,
+      "wall_s": 355.59,
+      "stryker_s": 134.34
+    },
+    "tests": {
+      "n_tests": 48,
+      "n_asserts": 69,
+      "sha256": "dc31d86f9c48ddef2577295bd0343b5fbba4a5841e59975721a94de12cf98523"
+    },
+    "gap_cov_ms": 17.7662,
+    "valid_rate": 0.6667,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/ufo__utils__C3__r2/raw"
+  }
+}

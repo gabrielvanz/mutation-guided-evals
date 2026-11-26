@@ -1,0 +1,284 @@
+Improve the Vitest test file for the module `src/punycode.ts` (import path: `../../src/punycode`).
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: ufo (utilitários de URL)
+
+- Entradas típicas: URLs absolutas, caminhos relativos, `//host`, strings com `?query` e `#hash`, protocolos (`http:`, `file:`, `data:`), strings vazias.
+- Os testes originais usam tabelas `{ input, out }` e comparam strings completas de saída com `toBe`/`toEqual`.
+- Cubra variações com e sem barra final, barras duplicadas e percent-encoding.
+</conventions>
+
+Source of `src/punycode.ts`:
+```ts
+/* eslint-disable */
+// @ts-nocheck
+// Tree-shaked + Minified version of punycode@2.1.1/punycode.es6.js#toASCII
+const n = /[^\0-\x7E]/;
+const t = /[\x2E\u3002\uFF0E\uFF61]/g;
+const o = {
+  overflow: "Overflow Error",
+  "not-basic": "Illegal Input",
+  "invalid-input": "Invalid Input",
+};
+const e = Math.floor;
+const r = String.fromCharCode;
+function s(n) {
+  throw new RangeError(o[n]);
+}
+const c = function (n, t) {
+  return n + 22 + 75 * (n < 26) - ((t != 0) << 5);
+};
+const u = function (n, t, o) {
+  let r = 0;
+  for (n = o ? e(n / 700) : n >> 1, n += e(n / t); n > 455; r += 36) {
+    n = e(n / 35);
+  }
+  return e(r + (36 * n) / (n + 38));
+};
+export function toASCII(o) {
+  return (function (n, o) {
+    const e = n.split("@");
+    let r = "";
+    e.length > 1 && ((r = e[0] + "@"), (n = e[1]));
+    const s = (function (n, t) {
+      const o = [];
+      let e = n.length;
+      for (; e--; ) {
+        o[e] = t(n[e]);
+      }
+      return o;
+    })((n = n.replace(t, ".")).split("."), o).join(".");
+    return r + s;
+  })(o, function (t) {
+    return n.test(t)
+      ? "xn--" +
+          (function (n) {
+            const t = [];
+            const o = (n = (function (n) {
+              const t = [];
+              let o = 0;
+              const e = n.length;
+              for (; o < e; ) {
+                const r = n.charCodeAt(o++);
+                if (r >= 55296 && r <= 56319 && o < e) {
+                  const e = n.charCodeAt(o++);
+                  (64512 & e) == 56320
+                    ? t.push(((1023 & r) << 10) + (1023 & e) + 65536)
+                    : (t.push(r), o--);
+                } else {
+                  t.push(r);
+                }
+              }
+              return t;
+            })(n)).length;
+            let f = 128;
+            let i = 0;
+            let l = 72;
+            for (const o of n) {
+              o < 128 && t.push(r(o));
+            }
+            const h = t.length;
+            let p = h;
+            for (h && t.push("-"); p < o; ) {
+              let o = 2147483647;
+              for (const t of n) {
+                t >= f && t < o && (o = t);
+              }
+              const a = p + 1;
+              (o - f > e((2147483647 - i) / a) && s("overflow"),
+                (i += (o - f) * a),
+                (f = o));
+              for (const o of n) {
+                if ((o < f && ++i > 2147483647 && s("overflow"), o == f)) {
+                  let n = i;
+                  for (let o = 36; ; o += 36) {
+                    const s = o <= l ? 1 : o >= l + 26 ? 26 : o - l;
+                    if (n < s) {
+                      break;
+                    }
+                    const u = n - s;
+                    const f = 36 - s;
+                    (t.push(r(c(s + (u % f), 0))), (n = e(u / f)));
+                  }
+                  (t.push(r(c(n, 0))), (l = u(i, a, p == h)), (i = 0), ++p);
+                }
+              }
+              (++i, ++f);
+            }
+            return t.join("");
+          })(t)
+      : t;
+  });
+}
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect } from "vitest";
+import { toASCII } from "../../src/punycode";
+
+describe("toASCII", () => {
+  it("should return ASCII strings unchanged", () => {
+    const cases = [
+      { input: "example.com", expected: "example.com" },
+      { input: "test", expected: "test" },
+      { input: "123.456", expected: "123.456" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should convert non-ASCII domain names to Punycode", () => {
+    const cases = [
+      { input: "münchen.de", expected: "xn--mnchen-3ya.de" },
+      { input: "test.ñ", expected: "test.xn--ida" },
+      { input: "añoranza.es", expected: "xn--aoranza-4za.es" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle email addresses with domain internationalization", () => {
+    const cases = [
+      { input: "user@münchen.de", expected: "user@xn--mnchen-3ya.de" },
+      { input: "test.user@domain.com", expected: "test.user@domain.com" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should handle various dot separators like ideographic full stop", () => {
+    const input = "münchen\u3002de";
+    const expected = "xn--mnchen-3ya.de";
+    expect(toASCII(input)).toBe(expected);
+  });
+
+  it("should handle empty strings and basic punctuation", () => {
+    expect(toASCII("")).toBe("");
+    expect(toASCII(".")).toBe(".");
+  });
+
+  it("should correctly handle surrogate pairs and multi-character non-ASCII input requiring bias adaptation", () => {
+    const cases = [
+      { input: "bücher", expected: "xn--bcher-kva" },
+      { input: "café", expected: "xn--caf-dma" },
+      { input: "💩.com", expected: "xn--ls8h.com" }
+    ];
+
+    for (const { input, expected } of cases) {
+      expect(toASCII(input)).toBe(expected);
+    }
+  });
+
+  it("should convert non-ASCII input without throwing on normal inputs", () => {
+    const longNonAscii = "a" + "\u{1F4A9}".repeat(10);
+    expect(typeof toASCII(longNonAscii)).toBe("string");
+  });
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 20 changes below (34 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. line 6, operator ObjectLiteral
+   line: const o = {
+   original fragment: "{\n  overflow: \"Overflow Error\",\n  \"not-basic\": \"Illegal Input\",\n  \"invalid-input\": \"Invalid Input\",\n}"
+   mutated fragment:  "{}"
+2. line 7, operator StringLiteral
+   line: overflow: "Overflow Error",
+   original fragment: "\"Overflow Error\""
+   mutated fragment:  "\"\""
+3. line 13, operator BlockStatement (no test executes this code)
+   line: function s(n) {
+   original fragment: "{\n  throw new RangeError(o[n]);\n}"
+   mutated fragment:  "{}"
+4. line 14, operator CallExpression (no test executes this code)
+   line: throw new RangeError(o[n]);
+   original fragment: "throw new RangeError(o[n]);"
+   mutated fragment:  ";"
+5. line 21, operator ArithmeticOperator
+   line: for (n = o ? e(n / 700) : n >> 1, n += e(n / t); n > 455; r += 36) {
+   original fragment: "n / 700"
+   mutated fragment:  "n * 700"
+6. line 21, operator AssignmentOperator
+   line: for (n = o ? e(n / 700) : n >> 1, n += e(n / t); n > 455; r += 36) {
+   original fragment: "n += e(n / t)"
+   mutated fragment:  "n -= e(n / t)"
+7. line 21, operator ArithmeticOperator
+   line: for (n = o ? e(n / 700) : n >> 1, n += e(n / t); n > 455; r += 36) {
+   original fragment: "n / t"
+   mutated fragment:  "n * t"
+8. line 21, operator EqualityOperator
+   line: for (n = o ? e(n / 700) : n >> 1, n += e(n / t); n > 455; r += 36) {
+   original fragment: "n > 455"
+   mutated fragment:  "n >= 455"
+9. line 21, operator AssignmentOperator
+   line: for (n = o ? e(n / 700) : n >> 1, n += e(n / t); n > 455; r += 36) {
+   original fragment: "r += 36"
+   mutated fragment:  "r -= 36"
+10. line 24, operator ArithmeticOperator
+   line: return e(r + (36 * n) / (n + 38));
+   original fragment: "(36 * n) / (n + 38)"
+   mutated fragment:  "36 * n * (n + 38)"
+11. line 32, operator ArrayDeclaration
+   line: const o = [];
+   original fragment: "[]"
+   mutated fragment:  "[\"Stryker was here\"]"
+12. line 51, operator LogicalOperator
+   line: if (r >= 55296 && r <= 56319 && o < e) {
+   original fragment: "r >= 55296 && r <= 56319 && o < e"
+   mutated fragment:  "r >= 55296 && r <= 56319 || o < e"
+13. line 51, operator ConditionalExpression
+   line: if (r >= 55296 && r <= 56319 && o < e) {
+   original fragment: "o < e"
+   mutated fragment:  "true"
+14. line 51, operator EqualityOperator
+   line: if (r >= 55296 && r <= 56319 && o < e) {
+   original fragment: "o < e"
+   mutated fragment:  "o <= e"
+15. line 53, operator ConditionalExpression
+   line: (64512 & e) == 56320
+   original fragment: "(64512 & e) == 56320"
+   mutated fragment:  "true"
+16. line 55, operator UpdateOperator (no test executes this code)
+   line: : (t.push(r), o--);
+   original fragment: "o--"
+   mutated fragment:  "o++"
+17. line 76, operator StringLiteral (no test executes this code)
+   line: (o - f > e((2147483647 - i) / a) && s("overflow"),
+   original fragment: "\"overflow\""
+   mutated fragment:  "\"\""
+18. line 91, operator ConditionalExpression
+   line: (t.push(r(c(n, 0))), (l = u(i, a, p == h)), (i = 0), ++p);
+   original fragment: "p == h"
+   mutated fragment:  "false"
+19. line 91, operator EqualityOperator
+   line: (t.push(r(c(n, 0))), (l = u(i, a, p == h)), (i = 0), ++p);
+   original fragment: "p == h"
+   mutated fragment:  "p != h"
+20. line 94, operator UpdateOperator
+   line: (++i, ++f);
+   original fragment: "++i"
+   mutated fragment:  "--i"
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.

@@ -1,0 +1,506 @@
+{
+  "schema_version": "0.1",
+  "run_id": "ufo__punycode__C3__r3",
+  "started_at": "2026-11-26T08:08:34.686Z",
+  "finished_at": "2026-11-26T08:12:11.506Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "ufo",
+    "repo": "unjs/ufo",
+    "commit": "f06c800d0c59f2a4a1b9ba65eb6cb61a84419be6",
+    "license": "MIT",
+    "module_path": "src/punycode.ts",
+    "module_loc": 100,
+    "mutants_total": 180,
+    "human_test_files": [
+      "test/punycode.test.ts"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.23.5",
+    "vitest": "4.1.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "fe67ae67ed930f60b3dd8e1afdf5aff76745522417116f7b5723c18190555635",
+    "git_sha_agent": "b0dedb690104ab74dbd119d5f449b123ff18bc62"
+  },
+  "memorization": {
+    "probe_similarity": 0.141,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 64.7727,
+        "ms_feedback": 54.3478,
+        "ms_all": 59.4444,
+        "ms_covered": 67.7215
+      },
+      "coverage": {
+        "line_cov": 93.65,
+        "branch_cov": 72.72
+      },
+      "mutants_eval": {
+        "killed": 50,
+        "survived": 24,
+        "no_coverage": 7,
+        "timeout": 7,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 48,
+        "survived": 27,
+        "no_coverage": 15,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 5,
+        "n_asserts": 6,
+        "sha256": "40eae56de9cfa6632f2bb3166632315ca31a8a63cecfafbf1549c7df6a4889a6"
+      },
+      "prompt_file": "runs/ufo__punycode__C3__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs/ufo__punycode__C3__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 6551,
+        "tokens_out": 1528,
+        "usd_ref": 0.001266,
+        "wall_s": 40.97,
+        "stryker_s": 11.24
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 76.1364,
+        "ms_feedback": 63.0435,
+        "ms_all": 69.4444,
+        "ms_covered": 71.8391
+      },
+      "coverage": {
+        "line_cov": 98.41,
+        "branch_cov": 87.87
+      },
+      "mutants_eval": {
+        "killed": 57,
+        "survived": 19,
+        "no_coverage": 2,
+        "timeout": 10,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 55,
+        "survived": 30,
+        "no_coverage": 4,
+        "timeout": 3,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/punycode.ts:6:11-10:2:ObjectLiteral:{}",
+        "src/punycode.ts:7:13-7:29:StringLiteral:\"\"",
+        "src/punycode.ts:13:15-15:2:BlockStatement:{}",
+        "src/punycode.ts:14:3-14:30:CallExpression:;",
+        "src/punycode.ts:17:25-17:31:EqualityOperator:n <= 26",
+        "src/punycode.ts:21:18-21:25:ArithmeticOperator:n * 700",
+        "src/punycode.ts:21:37-21:50:AssignmentOperator:n -= e(n / t)",
+        "src/punycode.ts:21:52-21:59:EqualityOperator:n >= 455",
+        "src/punycode.ts:21:61-21:68:AssignmentOperator:r -= 36",
+        "src/punycode.ts:24:16-24:35:ArithmeticOperator:36 * n * (n + 38)",
+        "src/punycode.ts:32:17-32:19:ArrayDeclaration:[\"Stryker was here\"]",
+        "src/punycode.ts:51:21-51:45:ConditionalExpression:true",
+        "src/punycode.ts:51:21-51:54:LogicalOperator:r >= 55296 && r <= 56319 || o < e",
+        "src/punycode.ts:51:35-51:45:ConditionalExpression:true",
+        "src/punycode.ts:51:56-56:18:BlockStatement:{}",
+        "src/punycode.ts:55:35-55:38:UpdateOperator:o++",
+        "src/punycode.ts:76:53-76:63:StringLiteral:\"\"",
+        "src/punycode.ts:91:53-91:59:ConditionalExpression:false",
+        "src/punycode.ts:91:53-91:59:EqualityOperator:p != h",
+        "src/punycode.ts:94:16-94:19:UpdateOperator:--i"
+      ],
+      "tests": {
+        "n_tests": 7,
+        "n_asserts": 8,
+        "sha256": "adb931aa0937df1d3f716485be4b64fa10847caa487e79eccf2c358f5d8c121d"
+      },
+      "prompt_file": "runs/ufo__punycode__C3__r3/raw/k1_a0_prompt.txt",
+      "response_file": "runs/ufo__punycode__C3__r3/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 5,
+        "repair_calls": 3,
+        "tokens_in": 13114,
+        "tokens_out": 2991,
+        "usd_ref": 0.002508,
+        "wall_s": 75.95,
+        "stryker_s": 29.57
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 73.8636,
+        "ms_feedback": 61.9565,
+        "ms_all": 67.7778,
+        "ms_covered": 71.345
+      },
+      "coverage": {
+        "line_cov": 96.82,
+        "branch_cov": 84.84
+      },
+      "mutants_eval": {
+        "killed": 57,
+        "survived": 20,
+        "no_coverage": 3,
+        "timeout": 8,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 55,
+        "survived": 29,
+        "no_coverage": 6,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/punycode.ts:6:11-10:2:ObjectLiteral:{}",
+        "src/punycode.ts:7:13-7:29:StringLiteral:\"\"",
+        "src/punycode.ts:13:15-15:2:BlockStatement:{}",
+        "src/punycode.ts:14:3-14:30:CallExpression:;",
+        "src/punycode.ts:21:18-21:25:ArithmeticOperator:n * 700",
+        "src/punycode.ts:21:37-21:50:AssignmentOperator:n -= e(n / t)",
+        "src/punycode.ts:21:44-21:49:ArithmeticOperator:n * t",
+        "src/punycode.ts:21:52-21:59:EqualityOperator:n >= 455",
+        "src/punycode.ts:21:61-21:68:AssignmentOperator:r -= 36",
+        "src/punycode.ts:24:16-24:35:ArithmeticOperator:36 * n * (n + 38)",
+        "src/punycode.ts:32:17-32:19:ArrayDeclaration:[\"Stryker was here\"]",
+        "src/punycode.ts:51:21-51:54:LogicalOperator:r >= 55296 && r <= 56319 || o < e",
+        "src/punycode.ts:51:49-51:54:ConditionalExpression:true",
+        "src/punycode.ts:51:49-51:54:EqualityOperator:o <= e",
+        "src/punycode.ts:53:19-53:39:ConditionalExpression:true",
+        "src/punycode.ts:55:35-55:38:UpdateOperator:o++",
+        "src/punycode.ts:76:53-76:63:StringLiteral:\"\"",
+        "src/punycode.ts:91:53-91:59:ConditionalExpression:false",
+        "src/punycode.ts:91:53-91:59:EqualityOperator:p != h",
+        "src/punycode.ts:94:16-94:19:UpdateOperator:--i"
+      ],
+      "tests": {
+        "n_tests": 7,
+        "n_asserts": 8,
+        "sha256": "be5c1e09b778f2902456e20e8ab540044fb2f68bedeec2790469f21f61c79348"
+      },
+      "prompt_file": "runs/ufo__punycode__C3__r3/raw/k2_a0_prompt.txt",
+      "response_file": "runs/ufo__punycode__C3__r3/raw/k2_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 7,
+        "repair_calls": 4,
+        "tokens_in": 19997,
+        "tokens_out": 4442,
+        "usd_ref": 0.003777,
+        "wall_s": 104.71,
+        "stryker_s": 42.23
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 73.8636,
+        "ms_feedback": 61.9565,
+        "ms_all": 67.7778,
+        "ms_covered": 71.345
+      },
+      "coverage": {
+        "line_cov": 96.82,
+        "branch_cov": 84.84
+      },
+      "mutants_eval": {
+        "killed": 57,
+        "survived": 20,
+        "no_coverage": 3,
+        "timeout": 8,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 55,
+        "survived": 29,
+        "no_coverage": 6,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/punycode.ts:6:11-10:2:ObjectLiteral:{}",
+        "src/punycode.ts:7:13-7:29:StringLiteral:\"\"",
+        "src/punycode.ts:13:15-15:2:BlockStatement:{}",
+        "src/punycode.ts:14:3-14:30:CallExpression:;",
+        "src/punycode.ts:21:18-21:25:ArithmeticOperator:n * 700",
+        "src/punycode.ts:21:37-21:50:AssignmentOperator:n -= e(n / t)",
+        "src/punycode.ts:21:61-21:68:AssignmentOperator:r -= 36",
+        "src/punycode.ts:32:17-32:19:ArrayDeclaration:[\"Stryker was here\"]",
+        "src/punycode.ts:51:21-51:54:LogicalOperator:r >= 55296 && r <= 56319 || o < e",
+        "src/punycode.ts:51:49-51:54:ConditionalExpression:true",
+        "src/punycode.ts:51:49-51:54:EqualityOperator:o <= e",
+        "src/punycode.ts:55:35-55:38:UpdateOperator:o++",
+        "src/punycode.ts:73:17-73:23:EqualityOperator:t > f",
+        "src/punycode.ts:73:27-73:32:EqualityOperator:t <= o",
+        "src/punycode.ts:76:16-76:64:ConditionalExpression:false",
+        "src/punycode.ts:76:26-76:46:ArithmeticOperator:(2147483647 - i) * a",
+        "src/punycode.ts:76:53-76:63:StringLiteral:\"\"",
+        "src/punycode.ts:83:49-83:55:ArithmeticOperator:l - 26",
+        "src/punycode.ts:91:53-91:59:ConditionalExpression:false",
+        "src/punycode.ts:94:16-94:19:UpdateOperator:--i"
+      ],
+      "tests": {
+        "n_tests": 6,
+        "n_asserts": 7,
+        "sha256": "9bcba4ad130a9665539a58f6545362bc17d162c76fd9dc493bbef6c28f8602b4"
+      },
+      "prompt_file": "runs/ufo__punycode__C3__r3/raw/k3_a0_prompt.txt",
+      "response_file": "runs/ufo__punycode__C3__r3/raw/k3_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 9,
+        "repair_calls": 5,
+        "tokens_in": 26593,
+        "tokens_out": 5800,
+        "usd_ref": 0.004979,
+        "wall_s": 133.67,
+        "stryker_s": 54.61
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 76.1364,
+        "ms_feedback": 63.0435,
+        "ms_all": 69.4444,
+        "ms_covered": 71.8391
+      },
+      "coverage": {
+        "line_cov": 98.41,
+        "branch_cov": 87.87
+      },
+      "mutants_eval": {
+        "killed": 57,
+        "survived": 19,
+        "no_coverage": 2,
+        "timeout": 10,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 55,
+        "survived": 30,
+        "no_coverage": 4,
+        "timeout": 3,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/punycode.ts:6:11-10:2:ObjectLiteral:{}",
+        "src/punycode.ts:7:13-7:29:StringLiteral:\"\"",
+        "src/punycode.ts:13:15-15:2:BlockStatement:{}",
+        "src/punycode.ts:14:3-14:30:CallExpression:;",
+        "src/punycode.ts:17:25-17:31:EqualityOperator:n <= 26",
+        "src/punycode.ts:21:37-21:50:AssignmentOperator:n -= e(n / t)",
+        "src/punycode.ts:21:44-21:49:ArithmeticOperator:n * t",
+        "src/punycode.ts:21:52-21:59:EqualityOperator:n >= 455",
+        "src/punycode.ts:21:61-21:68:AssignmentOperator:r -= 36",
+        "src/punycode.ts:24:16-24:35:ArithmeticOperator:36 * n * (n + 38)",
+        "src/punycode.ts:32:17-32:19:ArrayDeclaration:[\"Stryker was here\"]",
+        "src/punycode.ts:51:21-51:31:EqualityOperator:r > 55296",
+        "src/punycode.ts:51:21-51:54:ConditionalExpression:true",
+        "src/punycode.ts:51:21-51:54:LogicalOperator:r >= 55296 && r <= 56319 || o < e",
+        "src/punycode.ts:51:35-51:45:ConditionalExpression:true",
+        "src/punycode.ts:55:35-55:38:UpdateOperator:o++",
+        "src/punycode.ts:76:16-76:64:ConditionalExpression:false",
+        "src/punycode.ts:76:26-76:46:ArithmeticOperator:(2147483647 - i) * a",
+        "src/punycode.ts:76:53-76:63:StringLiteral:\"\"",
+        "src/punycode.ts:94:16-94:19:UpdateOperator:--i"
+      ],
+      "tests": {
+        "n_tests": 8,
+        "n_asserts": 10,
+        "sha256": "4ea1ce7d1d1964d0c7d19671921e7e8bca6fd71133e90ccf25fd35c64f56cda3"
+      },
+      "prompt_file": "runs/ufo__punycode__C3__r3/raw/k4_a0_prompt.txt",
+      "response_file": "runs/ufo__punycode__C3__r3/raw/k4_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 11,
+        "repair_calls": 6,
+        "tokens_in": 33395,
+        "tokens_out": 7444,
+        "usd_ref": 0.006317,
+        "wall_s": 180.46,
+        "stryker_s": 73.28
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 76.1364,
+        "ms_feedback": 63.0435,
+        "ms_all": 69.4444,
+        "ms_covered": 71.8391
+      },
+      "coverage": {
+        "line_cov": 98.41,
+        "branch_cov": 87.87
+      },
+      "mutants_eval": {
+        "killed": 57,
+        "survived": 19,
+        "no_coverage": 2,
+        "timeout": 10,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 55,
+        "survived": 30,
+        "no_coverage": 4,
+        "timeout": 3,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/punycode.ts:6:11-10:2:ObjectLiteral:{}",
+        "src/punycode.ts:7:13-7:29:StringLiteral:\"\"",
+        "src/punycode.ts:13:15-15:2:BlockStatement:{}",
+        "src/punycode.ts:14:3-14:30:CallExpression:;",
+        "src/punycode.ts:21:37-21:50:AssignmentOperator:n -= e(n / t)",
+        "src/punycode.ts:21:44-21:49:ArithmeticOperator:n * t",
+        "src/punycode.ts:21:61-21:68:AssignmentOperator:r -= 36",
+        "src/punycode.ts:24:16-24:35:ArithmeticOperator:36 * n * (n + 38)",
+        "src/punycode.ts:32:17-32:19:ArrayDeclaration:[\"Stryker was here\"]",
+        "src/punycode.ts:51:21-51:54:ConditionalExpression:true",
+        "src/punycode.ts:51:21-51:54:LogicalOperator:r >= 55296 && r <= 56319 || o < e",
+        "src/punycode.ts:51:35-51:45:ConditionalExpression:true",
+        "src/punycode.ts:55:35-55:38:UpdateOperator:o++",
+        "src/punycode.ts:66:15-66:22:EqualityOperator:o <= 128",
+        "src/punycode.ts:73:17-73:23:EqualityOperator:t > f",
+        "src/punycode.ts:73:27-73:32:EqualityOperator:t <= o",
+        "src/punycode.ts:76:16-76:64:ConditionalExpression:false",
+        "src/punycode.ts:76:53-76:63:StringLiteral:\"\"",
+        "src/punycode.ts:83:49-83:55:ArithmeticOperator:l - 26",
+        "src/punycode.ts:94:16-94:19:UpdateOperator:--i"
+      ],
+      "tests": {
+        "n_tests": 8,
+        "n_asserts": 9,
+        "sha256": "254dfb9d8aa8af40f7c693b46e39673b80657519d2875d39a938e191db0e870d"
+      },
+      "prompt_file": "runs/ufo__punycode__C3__r3/raw/k5_a0_prompt.txt",
+      "response_file": "runs/ufo__punycode__C3__r3/raw/k5_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 13,
+        "repair_calls": 7,
+        "tokens_in": 40046,
+        "tokens_out": 8972,
+        "usd_ref": 0.007593,
+        "wall_s": 216.82,
+        "stryker_s": 91.63
+      }
+    }
+  ],
+  "selected_iteration": 1,
+  "final": {
+    "scores": {
+      "ms_eval": 76.1364,
+      "ms_feedback": 63.0435,
+      "ms_all": 69.4444,
+      "ms_covered": 71.8391
+    },
+    "coverage": {
+      "line_cov": 98.41,
+      "branch_cov": 87.87
+    },
+    "cost": {
+      "calls": 13,
+      "repair_calls": 7,
+      "tokens_in": 40046,
+      "tokens_out": 8972,
+      "usd_ref": 0.007593,
+      "wall_s": 216.82,
+      "stryker_s": 91.63
+    },
+    "tests": {
+      "n_tests": 7,
+      "n_asserts": 8,
+      "sha256": "adb931aa0937df1d3f716485be4b64fa10847caa487e79eccf2c358f5d8c121d"
+    },
+    "gap_cov_ms": 28.9656,
+    "valid_rate": 1,
+    "tokens_per_pp": 4313.56
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs/ufo__punycode__C3__r3/raw"
+  }
+}
