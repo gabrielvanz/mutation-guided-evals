@@ -10,7 +10,7 @@ protocolo do experimento) e no artigo em [`paper/`](paper/).
 ## Sumário
 
 1. [A ideia em um minuto](#1-a-ideia-em-um-minuto)
-2. [O problema: teste que "cobre" não é teste que "pega bug"](#2-o-problema)
+2. [O problema: teste que &#34;cobre&#34; não é teste que &#34;pega bug&#34;](#2-o-problema)
 3. [A nossa proposta](#3-a-nossa-proposta)
 4. [O experimento, passo a passo](#4-o-experimento-passo-a-passo)
 5. [O que foi feito (linha do tempo)](#5-o-que-foi-feito)
@@ -73,11 +73,11 @@ Montar uma esteira em que:
 
 E testar três hipóteses:
 
-| ID | Hipótese (em palavras simples) |
-|----|--------------------------------|
+| ID           | Hipótese (em palavras simples)                                                                                                                                     |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **H1** | O laço com feedback gera testes **melhores** que os outros jeitos de usar a IA, **inclusive** que simplesmente pedir várias vezes e escolher o melhor |
-| **H2** | A cobertura sobe **sem** que a capacidade de detectar defeitos suba na mesma proporção (cobrir ≠ detectar) |
-| **H3** | O ganho do feedback tem **retorno decrescente**: a primeira rodada ajuda muito, as seguintes ajudam cada vez menos, e custam mais por ponto ganho |
+| **H2** | A cobertura sobe **sem** que a capacidade de detectar defeitos suba na mesma proporção (cobrir ≠ detectar)                                                 |
+| **H3** | O ganho do feedback tem **retorno decrescente**: a primeira rodada ajuda muito, as seguintes ajudam cada vez menos, e custam mais por ponto ganho             |
 
 ## 4. O experimento, passo a passo
 
@@ -87,12 +87,12 @@ E testar três hipóteses:
 código nunca mude: `ufo`, `defu`, `pathe` e `knitwork`. A unidade de análise é o **módulo** (um arquivo `.ts` de
 funções puras, sem rede nem I/O). Consideramos **17 módulos candidatos**, medimos 14 e ficamos com **9**:
 
-| Biblioteca | Módulos |
-|---|---|
-| ufo | `query`, `parse`, `punycode`, `url`, `utils` |
-| defu | `defu` |
-| pathe | `_path`, `utils` |
-| knitwork | `string` |
+| Biblioteca | Módulos                                               |
+| ---------- | ------------------------------------------------------ |
+| ufo        | `query`, `parse`, `punycode`, `url`, `utils` |
+| defu       | `defu`                                               |
+| pathe      | `_path`, `utils`                                   |
+| knitwork   | `string`                                             |
 
 Critérios, aplicados **antes** de rodar qualquer IA: pelo menos 50 mutantes válidos (para dividir em dois grupos de
 25) e score humano de no máximo 92% (para haver espaço de melhoria). Os números estão em
@@ -104,14 +104,14 @@ ferramenta (`scule`, `ohash`) e um (`pathe/_glob`) ficou de fora por tempo.
 Todas usam o **mesmo modelo** (`gemini-3.5-flash-lite`, camada gratuita do Google AI Studio), a mesma temperatura
 (0,7) e os mesmos módulos.
 
-| Condição | O que é | Chamadas à IA |
-|---|---|---|
-| **C0** | Testes **escritos por humanos** (linha de base) | 0 |
-| **C0-suite** | Toda a suíte humana do repositório (referência superior) | 0 |
-| **C1** | Só o código do módulo ("zero-shot") | 1 |
-| **C2** | C1 + um arquivo de **convenções do projeto** | 1 |
-| **C2r** | C2 repetido 6 vezes de forma independente; fica a melhor amostra | 6 |
-| **C3** | C2 + **laço de feedback** com os mutantes sobreviventes, até 5 iterações | até 6 |
+| Condição         | O que é                                                                           | Chamadas à IA |
+| ------------------ | ---------------------------------------------------------------------------------- | -------------- |
+| **C0**       | Testes **escritos por humanos** (linha de base)                              | 0              |
+| **C0-suite** | Toda a suíte humana do repositório (referência superior)                        | 0              |
+| **C1**       | Só o código do módulo ("zero-shot")                                             | 1              |
+| **C2**       | C1 + um arquivo de **convenções do projeto**                               | 1              |
+| **C2r**      | C2 repetido 6 vezes de forma independente; fica a melhor amostra                   | 6              |
+| **C3**       | C2 + **laço de feedback** com os mutantes sobreviventes, até 5 iterações | até 6         |
 
 **Por que C2r existe?** C3 usa até 6 chamadas; C1 e C2 só 1. Se C3 ganhar, pode ser só porque "tentou mais vezes".
 C2r dá o **mesmo número de tentativas** sem nenhum feedback, isolando o efeito do feedback. Por isso H1 só vale se
@@ -146,14 +146,14 @@ baixa a biblioteca no commit fixado → IA escreve o teste → guardrails → ro
 
 ### 4.6 As métricas principais
 
-| Métrica | Em palavras simples |
-|---|---|
-| `ms_eval` | % de mutantes mortos no grupo de **avaliação** (a nota principal) |
-| `ms_all` | % de mutantes mortos em **todos** os mutantes |
-| `line_cov` | % de linhas executadas pelos testes (cobertura) |
-| lacuna (`gap`) | cobertura − `ms_all`: quanto os testes cobrem **sem** detectar |
-| tokens | custo em "palavras" processadas pela IA, contadas pela API |
-| taxa de validade | % de runs em que a IA produziu ao menos um teste que passa |
+| Métrica         | Em palavras simples                                                       |
+| ---------------- | ------------------------------------------------------------------------- |
+| `ms_eval`      | % de mutantes mortos no grupo de **avaliação** (a nota principal) |
+| `ms_all`       | % de mutantes mortos em **todos** os mutantes                       |
+| `line_cov`     | % de linhas executadas pelos testes (cobertura)                           |
+| lacuna (`gap`) | cobertura − `ms_all`: quanto os testes cobrem **sem** detectar   |
+| tokens           | custo em "palavras" processadas pela IA, contadas pela API                |
+| taxa de validade | % de runs em que a IA produziu ao menos um teste que passa                |
 
 ## 5. O que foi feito
 
@@ -193,25 +193,25 @@ principal (os 21 restantes são runs em que a IA **não conseguiu produzir nenhu
 
 ### 6.1 Nota por condição (`ms_eval`, mediana, em %)
 
-| Condição | Nota | Runs válidos | Tokens (mediana) |
-|---|---|---|---|
-| C0 (humano) | 82,1 | 9/9 | 0 |
-| C0-suite (humano, tudo) | 84,0 | 9/9 | 0 |
-| C1 (zero-shot) | 70,0 | 23/27 (85,2%) | 5,3 mil |
-| C2 (+ convenções) | 76,1 | 17/27 (63,0%) | 5,9 mil |
-| C2r (6 amostras, melhor) | 79,0 | 24/27 (88,9%) | 52 mil |
-| C3 (com feedback) | 80,3 | 23/27 (85,2%) | 64 mil |
+| Condição               | Nota | Runs válidos | Tokens (mediana) |
+| ------------------------ | ---- | ------------- | ---------------- |
+| C0 (humano)              | 82,1 | 9/9           | 0                |
+| C0-suite (humano, tudo)  | 84,0 | 9/9           | 0                |
+| C1 (zero-shot)           | 70,0 | 23/27 (85,2%) | 5,3 mil          |
+| C2 (+ convenções)      | 76,1 | 17/27 (63,0%) | 5,9 mil          |
+| C2r (6 amostras, melhor) | 79,0 | 24/27 (88,9%) | 52 mil           |
+| C3 (com feedback)        | 80,3 | 23/27 (85,2%) | 64 mil           |
 
 A cobertura de linha chega a **100%** em todas as condições com IA (o humano tem 95,5%): o problema nunca foi
 cobrir, foi detectar.
 
 ### 6.2 H1: o feedback é melhor? (Wilcoxon pareado unilateral, correção de Holm)
 
-| Comparação | Módulos pareados | Diferença | p ajustado | Conclusão |
-|---|---|---|---|---|
-| C3 > C1 | 8 | +7,6 pp | 0,109 | não significativo |
-| C3 > C2 | 6 | +12,2 pp | **0,047** | significativo |
-| **C3 > C2r** | 8 | +4,0 pp | 0,109 | **não significativo** |
+| Comparação       | Módulos pareados | Diferença | p ajustado      | Conclusão                   |
+| ------------------ | ----------------- | ---------- | --------------- | ---------------------------- |
+| C3 > C1            | 8                 | +7,6 pp    | 0,109           | não significativo           |
+| C3 > C2            | 6                 | +12,2 pp   | **0,047** | significativo                |
+| **C3 > C2r** | 8                 | +4,0 pp    | 0,109           | **não significativo** |
 
 (pp = pontos percentuais.) Como C2r e C3 gastam cerca de 10 vezes mais tokens que C1 e C2, parte da vantagem de C3 é
 compatível com "ter tentado mais". A diferença contra C2r é positiva, mas o intervalo de confiança inclui zero.
@@ -239,12 +239,12 @@ errada). Como o **código atual é o "oráculo"**, um teste que erra o comportam
 
 ### 6.6 Análises de sensibilidade
 
-| Análise | O que testa | Resultado |
-|---|---|---|
-| **V1** Memorização | O modelo já "conhece" a biblioteca? Dividimos em 5 módulos de baixa e 4 de alta memorização | Poucos módulos por grupo para testes formais; nos dados descritivos, C3 e C2r empatam na baixa (79,0%) |
-| **V2** Mutantes equivalentes | Refaz H1 com `ms_killable` (mortos ÷ união dos mortos por qualquer condição) | C3 > C2r fica significativo (p ajustado 0,047), mas **essa métrica inclui o grupo de feedback**, que C3 otimiza, então **não é prova** a favor de H1 |
-| **V3** Outros operadores | Reavaliar com outro conjunto de mutantes | **Executada** com 4 operadores próprios (literal ±1, `return undefined`, troca de argumentos): C3 85,5 · C2r 83,5 · C2 80,0 · C1 76,4 · C0 78,6; H1 segue não sustentada (p Holm 0,188 nas três comparações) |
-| **V4** Runs instáveis | Incluir/excluir runs flaky | Nenhum run foi instável, sem efeito |
+| Análise                           | O que testa                                                                                     | Resultado                                                                                                                                                                                                                      |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **V1** Memorização         | O modelo já "conhece" a biblioteca? Dividimos em 5 módulos de baixa e 4 de alta memorização | Poucos módulos por grupo para testes formais; nos dados descritivos, C3 e C2r empatam na baixa (79,0%)                                                                                                                        |
+| **V2** Mutantes equivalentes | Refaz H1 com `ms_killable` (mortos ÷ união dos mortos por qualquer condição)              | C3 > C2r fica significativo (p ajustado 0,047), mas **essa métrica inclui o grupo de feedback**, que C3 otimiza, então **não é prova** a favor de H1                                                           |
+| **V3** Outros operadores     | Reavaliar com outro conjunto de mutantes                                                        | **Executada** com 4 operadores próprios (literal ±1, `return undefined`, troca de argumentos): C3 85,5 · C2r 83,5 · C2 80,0 · C1 76,4 · C0 78,6; H1 segue não sustentada (p Holm 0,188 nas três comparações) |
+| **V4** Runs instáveis       | Incluir/excluir runs flaky                                                                      | Nenhum run foi instável, sem efeito                                                                                                                                                                                           |
 
 ## 7. O que podemos e o que não podemos concluir
 
@@ -287,14 +287,14 @@ sintéticos não são defeitos reais; mutantes equivalentes subestimam o score; 
 
 ### 8.3 O que ainda falta antes de entregar
 
-| Pendência | Quem resolve |
-|---|---|
+| Pendência                                                                                                                                 | Quem resolve                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
 | **Compilar o `main.tex`** e gerar um novo `main.pdf` (o PDF em `paper/` é de 16/11, **anterior** a todos os resultados) | Vocês (precisa de LaTeX; não foi compilado ainda) |
-| Preencher o **domínio institucional** dos e-mails e o **URL público do repositório** (`\pendente` no artigo) | Vocês |
-| **Revisar integralmente** o artigo e conferir as **referências**; trocar o `\pendente` de revisão | Vocês |
-| Conferir a frase de que "os autores executaram C1–C3" em `AI_USAGE.md` | Vocês |
-| Revisar se o conjunto de operadores da **V3** (definido pela IA) é aceitável | Vocês |
-| Opcional: mais módulos/modelos, para ganhar poder estatístico | Vocês, se houver tempo |
+| Preencher o **domínio institucional** dos e-mails e o **URL público do repositório** (`\pendente` no artigo)              | Vocês                                              |
+| **Revisar integralmente** o artigo e conferir as **referências**; trocar o `\pendente` de revisão                          | Vocês                                              |
+| Conferir a frase de que "os autores executaram C1–C3" em `AI_USAGE.md`                                                                  | Vocês                                              |
+| Revisar se o conjunto de operadores da **V3** (definido pela IA) é aceitável                                                       | Vocês                                              |
+| Opcional: mais módulos/modelos, para ganhar poder estatístico                                                                            | Vocês, se houver tempo                             |
 
 ## 9. Como reproduzir
 
@@ -394,23 +394,23 @@ arquivo `conventions/` não menciona teste de mutação (para não contaminar o 
 
 ## 11. Glossário
 
-| Termo | Significado |
-|---|---|
-| **LLM** | Modelo de linguagem de grande porte (a IA que escreve os testes) |
-| **Teste unitário** | Teste automático de uma função isolada |
-| **Cobertura** | % de linhas de código executadas pelos testes |
-| **Mutante** | Cópia do código com um defeito artificial (ex.: `>=` virou `>`) |
-| **Mutante morto / sobrevivente** | Morto: algum teste falhou (detectou). Sobrevivente: todos passaram (não detectou) |
-| **Mutation score** | % de mutantes mortos; mede a capacidade de detectar defeitos |
-| **Mutante equivalente** | Mutante que não muda o comportamento; não pode ser morto e puxa o score para baixo |
-| **Stryker** | Ferramenta que gera mutantes e roda os testes contra eles |
-| **Vitest** | Framework de testes usado nos módulos |
-| **Zero-shot** | Pedir à IA sem exemplos nem feedback |
-| **Oráculo** | O que define se um resultado está "certo"; aqui, o próprio código atual |
+| Termo                                      | Significado                                                                                                                       |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| **LLM**                              | Modelo de linguagem de grande porte (a IA que escreve os testes)                                                                  |
+| **Teste unitário**                  | Teste automático de uma função isolada                                                                                         |
+| **Cobertura**                        | % de linhas de código executadas pelos testes                                                                                    |
+| **Mutante**                          | Cópia do código com um defeito artificial (ex.: `>=` virou `>`)                                                             |
+| **Mutante morto / sobrevivente**     | Morto: algum teste falhou (detectou). Sobrevivente: todos passaram (não detectou)                                                |
+| **Mutation score**                   | % de mutantes mortos; mede a capacidade de detectar defeitos                                                                      |
+| **Mutante equivalente**              | Mutante que não muda o comportamento; não pode ser morto e puxa o score para baixo                                              |
+| **Stryker**                          | Ferramenta que gera mutantes e roda os testes contra eles                                                                         |
+| **Vitest**                           | Framework de testes usado nos módulos                                                                                            |
+| **Zero-shot**                        | Pedir à IA sem exemplos nem feedback                                                                                             |
+| **Oráculo**                         | O que define se um resultado está "certo"; aqui, o próprio código atual                                                        |
 | **Wilcoxon, Holm, Cliff, bootstrap** | Teste estatístico pareado; correção para múltiplas comparações; tamanho de efeito; intervalo de confiança por reamostragem |
-| **pp** | Pontos percentuais (diferença entre duas porcentagens) |
-| **Flaky** | Teste que às vezes passa e às vezes falha sem mudança no código |
-| **Run** | Uma execução: (módulo, condição, repetição) |
+| **pp**                               | Pontos percentuais (diferença entre duas porcentagens)                                                                           |
+| **Flaky**                            | Teste que às vezes passa e às vezes falha sem mudança no código                                                               |
+| **Run**                              | Uma execução: (módulo, condição, repetição)                                                                                |
 
 ## 12. Perguntas que podem aparecer na apresentação
 
