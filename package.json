@@ -5,9 +5,13 @@
   "description": "Malha de continuous evals guiada por mutação para geração de testes com LLM (Toazza & Vanz)",
   "type": "module",
   "license": "MIT",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "lint": "eslint agent",
+    "test:coverage": "vitest run --coverage --coverage.include=agent/src/**",
     "test": "vitest run",
     "agent": "tsx agent/src/cli.ts",
     "run": "tsx agent/src/cli.ts run",
@@ -15,11 +19,15 @@
     "validate": "tsx agent/src/cli.ts validate"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^3.2.7",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
+    "eslint": "^9.39.5",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
+    "typescript-eslint": "^8.74.0",
     "vitest": "^3.2.4"
   }
 }

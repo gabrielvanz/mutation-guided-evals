@@ -114,6 +114,9 @@ Python (`radon`): complexidade média C (17,1) nas 7 funções com CC ≥ 11 de 
 
 ## 5. Qualidade estática
 
+Para repetir: `npm run lint` (configuração em `eslint.config.mjs`) e `npm run test:coverage` (cobertura v8). O `lint` não está
+no CI porque ainda falha pelos 54 erros listados abaixo.
+
 ESLint 9 com `typescript-eslint` em modo type-checked, mais `complexity` (10), `max-lines-per-function` (60), `max-depth` (4)
 e `eqeqeq`. Resultado nos 23 arquivos de `agent/`: **54 erros e 21 avisos**.
 
