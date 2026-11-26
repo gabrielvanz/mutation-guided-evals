@@ -246,7 +246,7 @@ módulos de memorização baixa e alta (corte pela mediana de `memo_sim`, defini
 
 | Data | Seção | Desvio | Justificativa | Impacto |
 |------|-------|--------|---------------|---------|
-| — | — | — | — | — |
+| 2026-11-26 | §6 | Três runs além das repetições previstas (r1–r3) foram coletados e ficam **fora da análise**: `pathe__path__C1__r4`, `pathe__path__C1__r8` e `pathe__path__C2__r7` (lote de 2026-11-23, commit `aa81e65`, workflow run 45212339765). | O protocolo prevê 3 repetições por (módulo, condição). Esses três runs, todos de `pathe/path`, têm status `ok` e o mesmo modelo, mas ultrapassam esse número; a origem exata (execução de teste ou reexecução do lote) não foi confirmada. Mantê-los daria a `pathe/path` mais repetições que aos demais módulos nas condições C1 e C2, desbalanceando a mediana por módulo. Os arquivos permanecem em `runs/`, sem alteração; a exclusão é feita na análise (filtro de repetição ≤ 3). | `pathe/path` usa só r1–r3 em C1 e C2. Os demais módulos e condições não mudam. Sem impacto na validade, pois os runs não foram escolhidos pelo resultado; a exclusão é por regra de número de repetições. |
 
 ## 13. Ameaças à validade (versão inicial)
 

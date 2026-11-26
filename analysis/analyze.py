@@ -30,12 +30,21 @@ N_BOOT = 10_000
 
 
 # --------------------------------------------------------------------------- carga
+MAX_REP = 3  # PROTOCOL.md §6 (3 repetições); desvio de 2026-11-26 em §12 exclui r > 3
+
+
 def load_runs(runs_dir: Path) -> list[dict]:
     out = []
+    skipped = []
     for f in sorted(runs_dir.rglob("result.json")):
         j = json.loads(f.read_text(encoding="utf-8"))
+        if j["repetition"] > MAX_REP:
+            skipped.append(j["run_id"])
+            continue
         j["_dir"] = str(f.parent)
         out.append(j)
+    if skipped:
+        print(f"excluídos por repetição > {MAX_REP} (§12): {', '.join(skipped)}")
     return out
 
 
@@ -198,6 +207,19 @@ def h2(df: pd.DataFrame, its: pd.DataFrame) -> dict:
                 w = stats.wilcoxon(pr[a], pr[b], alternative="two-sided")
                 pairs.append(dict(comparison=f"gap {a} vs {b}", n=len(pr), p=float(w.pvalue), median_diff=float((pr[a] - pr[b]).median())))
     res["gap_tests"] = pd.DataFrame(pairs)
+    # Holm dentro da família H2 (PROTOCOL.md §11): Spearman, Wilcoxon dos ganhos e os testes de lacuna
+    fam = [("spearman", res["spearman"][1]) if "spearman" in res else None,
+           ("wilcoxon_dline_gt_dms", res["wilcoxon_dline_gt_dms"][1]) if "wilcoxon_dline_gt_dms" in res else None]
+    fam = [f for f in fam if f is not None and not math.isnan(f[1])]
+    fam += [(f"gap:{i}", float(p)) for i, p in enumerate(res["gap_tests"]["p"])] if not res["gap_tests"].empty else []
+    if fam:
+        adj = dict(zip([k for k, _ in fam], holm([p for _, p in fam])))
+        if "spearman" in adj:
+            res["spearman_p_holm"] = adj["spearman"]
+        if "wilcoxon_dline_gt_dms" in adj:
+            res["wilcoxon_dline_gt_dms_p_holm"] = adj["wilcoxon_dline_gt_dms"]
+        if not res["gap_tests"].empty:
+            res["gap_tests"]["p_holm"] = [adj[f"gap:{i}"] for i in range(len(res["gap_tests"]))]
     return res
 
 
