@@ -402,10 +402,17 @@ avaliação, em que C3 $>$ C2r não é significativo.
 \textbf{V4: \textit{runs} instáveis.} Nenhum dos 129 \textit{runs} teve reexecução com resultado diferente (G6), então incluir ou excluir
 \textit{runs} instáveis não altera nenhum resultado.
 
-\textbf{V3: operadores.} Não executamos a reavaliação com um segundo conjunto de mutantes. O Stryker já foi usado com todos os
-operadores padrão, e um segundo conjunto exigiria outra ferramenta ou definir operadores alternativos, o que ficou como trabalho
-futuro. Como o \textit{split} usa a mesma ferramenta nos dois grupos, o risco de \textit{overfitting} ao Stryker permanece (ver a seção de
-ameaças).
+\textbf{V3: operadores.} O Stryker já foi usado com todos os operadores padrão, então não havia um segundo conjunto pronto. Definimos
+um conjunto próprio, sobre a AST do TypeScript, com operadores que o Stryker não implementa: literal numérico $n\to n\pm1$, \texttt{return
+expr} $\to$ \texttt{return undefined} e troca dos dois primeiros argumentos de uma chamada. Os mutantes são injetados por um
+\textit{plugin} do Vite, sem alterar o código dos sujeitos, e cada teste final selecionado (e o teste humano de C0) foi reavaliado contra
+eles (105 \textit{runs}; nenhum falhou no teste-base e nenhum mutante foi inválido). Como esses mutantes não participam do \textit{split}, não
+há o viés visto na V2. A mediana do \textit{score} nesse conjunto foi 85,5 em C3, 83,5 em C2r, 80,0 em C2, 76,4 em C1 e 78,6 em C0, a mesma
+ordenação do Stryker. Repetida sobre esse \textit{score}, H1 não é sustentada: C3 $>$ C1 ($p=0{,}063$, $p_{\text{Holm}}=0{,}188$, $n=8$),
+C3 $>$ C2 ($p=0{,}125$, $p_{\text{Holm}}=0{,}188$, $n=6$) e C3 $>$ C2r ($p=0{,}094$, $p_{\text{Holm}}=0{,}188$, $n=8$; diferença mediana de 2,0 pp).
+Ressalvas: o conjunto foi definido por nós, não é uma ferramenta independente, e alguns módulos geram poucos mutantes (cerca de 10 em
+\texttt{defu} e \texttt{ufo/query}), o que produz empates. A V3 indica que o resultado não depende só dos operadores do Stryker, mas não
+elimina o risco de \textit{overfitting} a mutantes sintéticos (ver a seção de ameaças).
 
 \section{Discussão e ameaças à validade}
 \label{sec:ameacas}
@@ -417,7 +424,7 @@ mas atual passa e ``mata'' mutantes; não medimos corretude semântica das expec
 
 \textbf{Validade interna.} A estocasticidade do modelo é tratada com repetições e testes não paramétricos; o desvio de
 modelos gratuitos, com ID fixo e janela de coleta curta; o \textit{overfitting} ao Stryker, com o \textit{split} (mitigação
-parcial, pois a ferramenta é a mesma nos dois grupos; a reavaliação com outros operadores, planejada, não foi executada); e a comparação
+parcial, pois a ferramenta é a mesma nos dois grupos; a reavaliação com um segundo conjunto de operadores, próprio e não independente, é a V3); e a comparação
 injusta entre C1/C2 e C3, com C2r. Ainda assim C1 e C2 usam menos orçamento por construção.
 
 \textbf{Viés de sobrevivência.} Runs em que nenhum teste gerado é válido não têm \textit{score} e saem da análise principal,

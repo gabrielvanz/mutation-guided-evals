@@ -20,6 +20,7 @@ trecho correspondente no capítulo de Metodologia do artigo.
 | Seleção de módulos | Rodou o Stryker nas suítes humanas e propôs critérios de inclusão | Números reais em `data/module-selection.csv` |
 | Baseline C0 | Executou o pipeline sobre os módulos | `runs/*__C0__*` |
 | Análise dos resultados de C1–C3 | Rodou `analyze.py`, as análises V1, V2 e V4, e investigou a causa dos runs inválidos de C2 lendo os prompts e respostas em `raw/` | A causa foi lida em uma amostra (a repetição 1 de `knitwork/string`, `ufo/url` e `ufo/utils`) e confirmada nos motivos de descarte de todos os runs (`tests_fail_on_original`); não foram lidos todos os arquivos `raw/` |
+| Análise V3 | Definiu um segundo conjunto de operadores próprio (literal ±1, `return undefined`, troca de argumentos) e escreveu `analysis/sensitivity_v3.ts` e `.py` | Teste de fumaça em 2 runs; 105 runs reavaliados sem falha no teste-base; o conjunto não é uma ferramenta independente e **a escolha dos operadores foi da IA, devendo ser revisada pelos autores** |
 | Registro de desvio | Redigiu a entrada de 2026-11-26 em §12 do `PROTOCOL.md` (3 runs extras de `pathe/path` fora da análise) | Os autores decidiram o desvio; a origem exata dos runs extras não foi confirmada |
 | Artigo | Redigiu o rascunho e, depois, reescreveu resumos, resultados, sensibilidade e conclusão com os números reais | Números conferidos contra `analysis/out` e contra `data/module-selection.csv`; **o `main.tex` ainda não foi compilado nesta fase**; **os autores devem revisar integralmente** e conferir as referências |
 
@@ -27,7 +28,6 @@ trecho correspondente no capítulo de Metodologia do artigo.
 
 - Não executou as condições C1, C2, C2r e C3: foram executadas pelos autores no GitHub Actions (exigem chave de API que a IA não possui). A IA só analisou os `result.json` resultantes.
 - Não produziu nenhum resultado de LLM; os números dessas condições vêm de `runs/` gerado pelo pipeline.
-- Não executou a análise V3 (segundo conjunto de operadores): não há um conjunto definido, e a escolha cabe aos autores.
 - Não preencheu os campos que dependem dos autores (`\pendente` no `main.tex`: domínio institucional, URL do repositório e confirmação da revisão).
 
 ## Erros da IA detectados e corrigidos durante o trabalho
