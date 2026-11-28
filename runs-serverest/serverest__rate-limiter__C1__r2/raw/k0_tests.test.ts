@@ -1,0 +1,63 @@
+import { describe, it, expect, vi } from "vitest";
+import rateLimiterModule from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter middleware", () => {
+  it("exports the expected functions and properties", () => {
+    expect(typeof rateLimiterModule).toBe("function");
+    expect(typeof rateLimiterModule.criarLimitador).toBe("function");
+    expect(typeof rateLimiterModule.criarOrcamentoDeBytes).toBe("function");
+    expect(typeof rateLimiterModule.criarRateLimiter).toBe("function");
+    expect(typeof rateLimiterModule.BYTES_POR_HORA).toBe("number");
+  });
+
+  it("bypasses rate limiting in test environment", async () => {
+    const req = { method: "GET", path: "/api/test", ip: "127.0.0.1" };
+    const res = {
+      locals: {
+        etapas: {
+          ignorar: vi.fn(),
+        },
+      },
+    };
+    const next = vi.fn();
+
+    await rateLimiterModule(req, res, next);
+
+    expect(res.locals.etapas.ignorar).toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("creates and uses an byte budget correctly", async () => {
+    const { criarOrcamentoDeBytes } = rateLimiterModule;
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+
+    const msBefore = await orcamento.msAteLiberar("key1");
+    expect(msBefore).toBe(0);
+
+    orcamento.registrar("key1", 50);
+    expect(orcamento.duracaoMs).toBe(10000);
+  });
+
+  it("creates a custom limitador and handles requests", async () => {
+    const { criarLimitador } = rateLimiterModule;
+    const mockGlobal = {
+      consume: vi.fn().mockResolvedValue(true),
+      duration: 30,
+    };
+    const mockPorIp = {
+      consume: vi.fn().mockResolvedValue(true),
+      duration: 30,
+    };
+
+    const limitador = criarLimitador({
+      global: mockGlobal as any,
+      porIp: mockPorIp as any,
+    });
+
+    const req = { method: "GET", path: "/other", ip: "1.2.3.4" };
+    const res = { getHeader: vi.fn().mockReturnValue(100), on: vi.fn() };
+
+    const result = await limitador(req, res);
+    expect(result).toBeNull();
+  });
+});

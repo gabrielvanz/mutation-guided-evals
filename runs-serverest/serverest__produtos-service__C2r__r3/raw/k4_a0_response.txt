@@ -1,0 +1,86 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found by query", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente XYZ" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a product with formatted values and return it", async () => {
+    const body = {
+      nome: "  Produto Teste  ",
+      preco: "199.99",
+      quantidade: "10",
+      descricao: "Teste de produto",
+      imagem: " imagem.jpg "
+    };
+    const novoProduto = await produtosService.criarProduto(body);
+    expect(novoProduto).toHaveProperty("_id");
+    expect(novoProduto.nome).toBe("Produto Teste");
+    expect(novoProduto.preco).toBe(199.99);
+    expect(novoProduto.quantidade).toBe(10);
+    expect(novoProduto.imagem).toBe("imagem.jpg");
+    expect(novoProduto).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const lote = [{ idProduto: "id-invalido-lote", quantidade: 1 }];
+    const resultado = await produtosService.getPrecosUnitariosPorLote(lote);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.item.idProduto).toBe("id-invalido-lote");
+  });
+});
+
+describe("deleteById", () => {
+  it("should remove product by id and return count of removed docs", async () => {
+    const removidos = await produtosService.deleteById("id-inexistente-para-remover");
+    expect(removidos).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should update product by id using upsert", async () => {
+    const id = "id-para-atualizar";
+    const body = { $set: { nome: "Nome Atualizado" } };
+    const resultado = await produtosService.updateById(id, body);
+    expect(resultado).toBeDefined();
+  });
+});
+
+describe("createOrUpdateById", () => {
+  it("should format values and update product by id", async () => {
+    const id = "id-para-criar-ou-atualizar";
+    const body = {
+      nome: "  Produto PUT  ",
+      preco: "50",
+      quantidade: "5"
+    };
+    const resultado = await produtosService.createOrUpdateById(id, body);
+    expect(resultado).toBeDefined();
+    expect(resultado.nome).toBe("Produto PUT");
+    expect(resultado.preco).toBe(50);
+    expect(resultado.quantidade).toBe(5);
+  });
+});
+```

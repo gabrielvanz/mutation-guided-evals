@@ -1,0 +1,275 @@
+```ts
+import { describe, it, expect } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+
+describe("errorHandler", () => {
+  it("should handle headersSent when request timed out", () => {
+    const error = new Error("Timeout after response");
+    const socketDestroy = { destroy: () => {} };
+    const req = {
+      timedout: true,
+      method: "GET",
+      originalUrl: "/users",
+      socket: socketDestroy
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: false
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeUndefined();
+  });
+
+  it("should handle headersSent when request did not timeout", () => {
+    const error = new Error("Late error");
+    const socketDestroy = { destroy: () => {} };
+    const req = {
+      timedout: false,
+      method: "POST",
+      originalUrl: "/login",
+      socket: socketDestroy
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: false
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeUndefined();
+  });
+
+  it("should handle ValidationError", () => {
+    const error = { name: "ValidationError", details: [{ message: "is required", path: ["field"] }] };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        expect(code).toBe(400);
+        return {
+          json: (body: unknown) => {
+            expect(body).toBeDefined();
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeDefined();
+  });
+
+  it("should handle URIError", () => {
+    const error = new URIError("Malformed URI");
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        expect(code).toBe(400);
+        return {
+          json: (body: unknown) => {
+            expect(body).toEqual({
+              message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+            });
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeDefined();
+  });
+
+  it("should handle entity.parse.failed error type", () => {
+    const error = { type: "entity.parse.failed", message: "Parse error" };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        expect(code).toBe(400);
+        return {
+          json: (body: unknown) => {
+            expect(body).toEqual({
+              message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+            });
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeDefined();
+  });
+
+  it("should handle entity.too.large error type", () => {
+    const error = { type: "entity.too.large" };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        expect(code).toBe(413);
+        return {
+          json: (body: unknown) => {
+            expect(body).toEqual({ message: "Payload too large" });
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeDefined();
+  });
+
+  it("should handle charset.unsupported error type", () => {
+    const error = { type: "charset.unsupported", charset: "utf-16" };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        expect(code).toBe(415);
+        return {
+          json: (body: unknown) => {
+            expect(body).toEqual({ message: "Unsupported charset", charset: "utf-16" });
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeDefined();
+  });
+
+  it("should handle encoding.unsupported error type", () => {
+    const error = { type: "encoding.unsupported", encoding: "br" };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        expect(code).toBe(415);
+        return {
+          json: (body: unknown) => {
+            expect(body).toEqual({ message: "Unsupported content encoding", encoding: "br" });
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeDefined();
+  });
+
+  it("should handle client error with Z_ prefix in code", () => {
+    const error = {
+      expose: true,
+      statusCode: 400,
+      code: "Z_DATA_ERROR",
+      message: "Data error"
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        expect(code).toBe(400);
+        return {
+          json: (body: unknown) => {
+            expect(body).toEqual({
+              message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+            });
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeDefined();
+  });
+
+  it("should handle ETIMEDOUT error code", () => {
+    const error = { code: "ETIMEDOUT" };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        expect(code).toBe(408);
+        return {
+          json: (body: unknown) => {
+            expect(body).toHaveProperty("message");
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeDefined();
+  });
+
+  it("should handle generic client error (expose true, 400 <= statusCode < 500)", () => {
+    const error = {
+      expose: true,
+      statusCode: 422,
+      type: "some.client.error",
+      message: "Client validation failed"
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        expect(code).toBe(422);
+        return {
+          json: (body: unknown) => {
+            expect(body).toEqual({
+              message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+              error: "some.client.error"
+            });
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeDefined();
+  });
+
+  it("should handle internal error with error type present", () => {
+    const error = { type: "database.error", message: "DB down" };
+    const req = { body: { test: 1 } };
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        expect(code).toBe(500);
+        return {
+          json: (body: unknown) => {
+            expect(body).toHaveProperty("message");
+            expect(body).toHaveProperty("error", "database.error");
+            expect(body).toHaveProperty("version");
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeDefined();
+  });
+});
+```

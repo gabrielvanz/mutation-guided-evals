@@ -1,0 +1,100 @@
+import { describe, it, expect } from "vitest";
+import rateLimiterMod, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+
+describe("criarOrcamentoDeBytes", () => {
+  it("should initialize with default bytes and duration", () => {
+    const orcamento = criarOrcamentoDeBytes();
+    expect(orcamento.duracaoMs).toBe(3600000);
+  });
+
+  it("should allow registering and checking byte consumption", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+    expect(await orcamento.msAteLiberar("127.0.0.1")).toBe(0);
+
+    orcamento.registrar("127.0.0.1", 50);
+    expect(await orcamento.msAteLiberar("127.0.0.1")).toBe(0);
+
+    orcamento.registrar("127.0.0.1", 60);
+    const ms = await orcamento.msAteLiberar("127.0.0.1");
+    expect(ms).toBeGreaterThan(0);
+  });
+});
+
+describe("criarLimitador", () => {
+  it("should allow requests under the limit", async () => {
+    const limitador = criarLimitador();
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: () => {} };
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toBeNull();
+  });
+});
+
+describe("criarRateLimiter", () => {
+  it("should call next when limitador returns null", async () => {
+    const limitadorMock = async () => null;
+    const rateLimiter = criarRateLimiter({ limitador: limitadorMock });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {
+      set: () => {},
+      status: () => res,
+      send: () => {}
+    };
+    let chamadoNext = false;
+    const next = () => {
+      chamadoNext = true;
+    };
+
+    await rateLimiter(req, res, next);
+    expect(chamadoNext).toBe(true);
+  });
+
+  it("should return 429 when limitador returns a block", async () => {
+    const limitadorMock = async () => ({ tipo: "requisicoes-por-ip", ms: 5000 });
+    const rateLimiter = criarRateLimiter({ limitador: limitadorMock });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const headers: Record<string, string> = {};
+    let statusRetornado = 0;
+    let corpoEnviado: any = null;
+
+    const res = {
+      set: (key: string, value: string) => {
+        headers[key] = value;
+      },
+      status: (s: number) => {
+        statusRetornado = s;
+        return res;
+      },
+      send: (body: any) => {
+        corpoEnviado = body;
+        return res;
+      }
+    };
+    const next = () => {};
+
+    await rateLimiter(req, res, next);
+    expect(statusRetornado).toBe(429);
+    expect(headers["Retry-After"]).toBe("5");
+    expect(corpoEnviado).toEqual({ message: "Foi detectado comportamento equivalente a teste de carga, não execute teste de carga nesse ambiente. Leia a documentação: https://github.com/ServeRest/ServeRest#teste-de-carga" });
+  });
+});
+
+describe("BYTES_POR_HORA", () => {
+  it("should export BYTES_POR_HORA as a number", () => {
+    expect(BYTES_POR_HORA).toBe(250 * 1024 * 1024);
+  });
+});
+
+describe("rate-limiter default export", () => {
+  it("should be a function", () => {
+    expect(typeof rateLimiterMod).toBe("function");
+  });
+});

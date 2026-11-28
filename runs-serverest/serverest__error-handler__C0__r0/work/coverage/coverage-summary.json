@@ -1,0 +1,3 @@
+{"total": {"lines":{"total":39,"covered":32,"skipped":0,"pct":82.05},"statements":{"total":41,"covered":32,"skipped":0,"pct":78.04},"functions":{"total":3,"covered":2,"skipped":0,"pct":66.66},"branches":{"total":42,"covered":32,"skipped":0,"pct":76.19},"branchesTrue":{"total":0,"covered":0,"skipped":0,"pct":"Unknown"}}
+,"/home/administrador/work/w1/src/middlewares/error-handler.js": {"lines":{"total":39,"covered":32,"skipped":0,"pct":82.05},"functions":{"total":3,"covered":2,"skipped":0,"pct":66.66},"statements":{"total":41,"covered":32,"skipped":0,"pct":78.04},"branches":{"total":42,"covered":32,"skipped":0,"pct":76.19}}
+}

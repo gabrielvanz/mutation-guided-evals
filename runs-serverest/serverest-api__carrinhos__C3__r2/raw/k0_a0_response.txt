@@ -1,0 +1,243 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("carrinhos API", () => {
+  async function createRegisteredUser(emailPrefix: string) {
+    const uniqueEmail = `user_${emailPrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}@test.com`;
+    await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Test User",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "true"
+      });
+
+    const loginRes = await request(app)
+      .post("/login")
+      .send({
+        email: uniqueEmail,
+        password: "password123"
+      });
+
+    return loginRes.body.authorization;
+  }
+
+  async function createProduct(nome: string, quantidade: number, preco: number) {
+    const prodRes = await request(app)
+      .post("/produtos")
+      .send({
+        nome,
+        preco,
+        descricao: "Produto de teste",
+        quantidade
+      });
+    return prodRes.body._id;
+  }
+
+  describe("GET /carrinhos", () => {
+    it("should list all carts", async () => {
+      const res = await request(app).get("/carrinhos");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("quantidade");
+      expect(res.body).toHaveProperty("carrinhos");
+      expect(Array.isArray(res.body.carrinhos)).toBe(true);
+    });
+
+    it("should filter carts by query parameters", async () => {
+      const res = await request(app).get("/carrinhos?quantidadeTotal=999");
+      expect(res.status).toBe(200);
+      expect(res.body.quantidade).toBe(0);
+      expect(res.body.carrinhos).toEqual([]);
+    });
+
+    it("should fail validation for invalid query parameters", async () => {
+      const res = await request(app).get("/carrinhos?precoTotal=invalid");
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("GET /carrinhos/:id", () => {
+    it("should return cart not found for non-existent id", async () => {
+      const res = await request(app).get("/carrinhos/1234567890abcdef");
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Carrinho não encontrado" });
+    });
+
+    it("should fail validation for malformed id", async () => {
+      const res = await request(app).get("/carrinhos/short");
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("POST /carrinhos", () => {
+    it("should require authentication token", async () => {
+      const res = await request(app)
+        .post("/carrinhos")
+        .send({ produtos: [{ idProduto: "1234567890abcdef", quantidade: 1 }] });
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({ message: "Token de acesso ausente" });
+    });
+
+    it("should create a cart successfully", async () => {
+      const token = await createRegisteredUser("cartpost");
+      const prodId = await createProduct(`Produto Cart ${Date.now()}`, 10, 50);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [
+            { idProduto: prodId, quantidade: 2 }
+          ]
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+      expect(res.body).toHaveProperty("_id");
+    });
+
+    it("should not allow user to create more than one cart", async () => {
+      const token = await createRegisteredUser("multicart");
+      const prodId1 = await createProduct(`Prod Multi 1 ${Date.now()}`, 10, 10);
+      const prodId2 = await createProduct(`Prod Multi 2 ${Date.now()}`, 10, 10);
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [{ idProduto: prodId1, quantidade: 1 }]
+        });
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [{ idProduto: prodId2, quantidade: 1 }]
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Não é permitido ter mais de 1 carrinho" });
+    });
+
+    it("should reject cart with duplicate products", async () => {
+      const token = await createRegisteredUser("dupcart");
+      const prodId = await createProduct(`Prod Dup ${Date.now()}`, 10, 10);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [
+            { idProduto: prodId, quantidade: 1 },
+            { idProduto: prodId, quantidade: 2 }
+          ]
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Não é permitido possuir produtos duplicados no carrinho");
+      expect(res.body.idProdutosDuplicados).toContain(prodId);
+    });
+
+    it("should reject product that does not exist", async () => {
+      const token = await createRegisteredUser("noproduct");
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [
+            { idProduto: "1234567890abcdef", quantidade: 1 }
+          ]
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Produto não encontrado");
+    });
+
+    it("should reject when stock is insufficient", async () => {
+      const token = await createRegisteredUser("nostock");
+      const prodId = await createProduct(`Prod Low Stock ${Date.now()}`, 2, 10);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [
+            { idProduto: prodId, quantidade: 5 }
+          ]
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe("Produto não possui estoque suficiente");
+    });
+  });
+
+  describe("DELETE /carrinhos/concluir-compra", () => {
+    it("should handle concluding a purchase when no cart exists", async () => {
+      const token = await createRegisteredUser("noconclude");
+
+      const res = await request(app)
+        .delete("/carrinhos/concluir-compra")
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Não foi encontrado nenhum carrinho para esse usuário" });
+    });
+
+    it("should conclude purchase successfully when cart exists", async () => {
+      const token = await createRegisteredUser("conclude");
+      const prodId = await createProduct(`Prod Conclude ${Date.now()}`, 10, 20);
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [{ idProduto: prodId, quantidade: 1 }]
+        });
+
+      const res = await request(app)
+        .delete("/carrinhos/concluir-compra")
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro excluído com sucesso" });
+    });
+  });
+
+  describe("DELETE /carrinhos/cancelar-compra", () => {
+    it("should handle cancelling purchase when no cart exists", async () => {
+      const token = await createRegisteredUser("nocancel");
+
+      const res = await request(app)
+        .delete("/carrinhos/cancelar-compra")
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Não foi encontrado nenhum carrinho para esse usuário" });
+    });
+
+    it("should cancel purchase and replenish stock when cart exists", async () => {
+      const token = await createRegisteredUser("cancelstock");
+      const prodId = await createProduct(`Prod Cancel ${Date.now()}`, 5, 10);
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [{ idProduto: prodId, quantidade: 2 }]
+        });
+
+      const res = await request(app)
+        .delete("/carrinhos/cancelar-compra")
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toContain("Registro excluído com sucesso");
+      expect(res.body.message).toContain("Estoque dos produtos reabastecido");
+    });
+  });
+});
+```

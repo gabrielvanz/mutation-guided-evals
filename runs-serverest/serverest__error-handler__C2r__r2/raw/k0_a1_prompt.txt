@@ -1,0 +1,585 @@
+The Vitest test file below for `src/middlewares/error-handler.js` (import path: `../../src/middlewares/error-handler`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Note about this project: The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports.
+
+Source of `src/middlewares/error-handler.js`:
+```js
+const { INTERNAL_ERROR, TIMEOUT } = require('../utils/constants')
+const montarMensagemDeErroDeSchema = require('../utils/montarMensagemDeErroDeSchema')
+const { log } = require('../utils/logger')
+const { version } = require('../../package.json')
+const { IpDeniedError } = require('express-ipfilter')
+
+// O body-parser marca com expose e um status 4xx o erro que é culpa de quem enviou (header Content-Encoding sem
+// suporte, corpo comprimido que não descomprime, parâmetros demais). Sem esta regra, cada tipo novo caía no 500
+// que pede para abrir issue, e o aluno procurava um bug no servidor em vez de corrigir o envio.
+function ehErroDoCliente (error) {
+  return error.expose === true && error.statusCode >= 400 && error.statusCode < 500
+}
+
+// Os headers já saíram, então não há como responder de novo. Chega aqui o erro de um passo que termina depois do 408
+// do timeout, que é esperado, e o de uma resposta que falha no meio ou que é enviada duas vezes, que é bug. Como o
+// Express fazia, a conexão da resposta incompleta é fechada, para o cliente não ficar esperando o resto; a da
+// resposta que já terminou, como o 408, continua aberta.
+function registrarErroDepoisDaResposta (error, req, res) {
+  log({
+    level: req.timedout ? 'warn' : 'error',
+    message: `Erro depois da resposta enviada: ${req.method} ${req.originalUrl}, timedout: ${Boolean(req.timedout)}, ` +
+      `${error.code || error.name}: ${error.message}, Stack: ${error.stack}`
+  })
+  if (!res.writableEnded) req.socket.destroy()
+}
+
+function errorHandler (error, req, res, _next) {
+  if (res.headersSent) return registrarErroDepoisDaResposta(error, req, res)
+  const erroDeSchema = error.name === 'ValidationError'
+  if (erroDeSchema) {
+    return res.status(400).json(montarMensagemDeErroDeSchema(error))
+  }
+  if (error.name === 'URIError') {
+    log({ message: `URI decode error: ${error.message}` })
+    return res.status(400).json({
+      message: 'Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente.'
+    })
+  }
+  // https://github.com/expressjs/body-parser#errors
+  if (error.type === 'entity.parse.failed') {
+    log({ message: 'Entity parse error, user sending request without proper quotation marks.' })
+    return res.status(400).json({
+      message: 'Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225'
+    })
+  }
+  if (error.type === 'entity.too.large' || error.type === 'parameters.too.many') {
+    log({ message: `Payload too large: ${error.type}` })
+    return res.status(413).json({ message: 'Payload too large' })
+  }
+  if (error.type === 'charset.unsupported') {
+    return res.status(415).json({ message: 'Unsupported charset', charset: error.charset })
+  }
+  if (error.type === 'encoding.unsupported') {
+    log({ message: `Unsupported content encoding: ${error.encoding}` })
+    return res.status(415).json({ message: 'Unsupported content encoding', encoding: error.encoding })
+  }
+  // O zlib não dá tipo ao erro: o corpo dito comprimido pelo Content-Encoding não descomprime (Z_DATA_ERROR) ou
+  // chegou cortado (Z_BUF_ERROR).
+  if (ehErroDoCliente(error) && /^Z_/.test(error.code)) {
+    log({ message: `Invalid compressed body: ${error.message}` })
+    return res.status(400).json({
+      message: 'Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header.'
+    })
+  }
+  if (error.code === 'ETIMEDOUT') {
+    return res.status(408).json({ message: TIMEOUT })
+  }
+  /* istanbul ignore if */
+  if (error instanceof IpDeniedError) {
+    return res.status(429).json({ message: 'IP bloqueado por excesso de requisições. Alternativas: Envie mensagem para o autor do projeto para desbloqueio (https://linkedin.com/in/paulo-goncalves) ou faça doação financeira ao projeto (https://github.com/ServeRest/ServeRest?tab=readme-ov-file#doadores).' })
+  }
+  if (ehErroDoCliente(error)) {
+    log({ message: `Client error ${error.statusCode}: ${error.type || error.message}` })
+    return res.status(error.statusCode).json({
+      message: 'Não foi possível ler a requisição. Confira o corpo e os headers enviados.',
+      error: error.type
+    })
+  }
+  log({
+    level: 'error',
+    message: `Error: ${error?.type || JSON.stringify(error)}, Stack: ${error.stack || 'No stack available'}, Request body: ${JSON.stringify(req.body)}`
+  })
+
+  if (error?.type) {
+    return res.status(500).json({ message: INTERNAL_ERROR, error: error.type, version })
+  }
+  /* istanbul ignore next */
+  return res.status(500).json({ message: INTERNAL_ERROR, version, error: { message: error.message || 'No message available', stack: error.stack || 'No stack available' } })
+}
+
+module.exports = errorHandler
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+
+describe("errorHandler", () => {
+  it("should handle headers already sent with timedout request", () => {
+    const error = new Error("Test error");
+    error.stack = "Error stack";
+    const req = {
+      timedout: true,
+      method: "GET",
+      originalUrl: "/test",
+      socket: { destroy: () => {} }
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: false
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeUndefined();
+  });
+
+  it("should handle headers already sent without timeout", () => {
+    const error = new Error("Test error");
+    error.stack = "Error stack";
+    const req = {
+      timedout: false,
+      method: "POST",
+      originalUrl: "/test",
+      socket: { destroy: () => {} }
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: true
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeUndefined();
+  });
+
+  it("should handle ValidationError", () => {
+    const error = {
+      name: "ValidationError",
+      details: [{ message: "Field is required" }]
+    };
+    const req = {};
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({ message: "Field is required" });
+  });
+
+  it("should handle URIError", () => {
+    const error = new URIError("Malformed URI");
+    const req = {};
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should handle entity.parse.failed", () => {
+    const error = {
+      type: "entity.parse.failed"
+    };
+    const req = {};
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should handle entity.too.large", () => {
+    const error = {
+      type: "entity.too.large"
+    };
+    const req = {};
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(413);
+    expect(jsonBody).toEqual({ message: "Payload too large" });
+  });
+
+  it("should handle charset.unsupported", () => {
+    const error = {
+      type: "charset.unsupported",
+      charset: "utf-16"
+    };
+    const req = {};
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(415);
+    expect(jsonBody).toEqual({ message: "Unsupported charset", charset: "utf-16" });
+  });
+
+  it("should handle encoding.unsupported", () => {
+    const error = {
+      type: "encoding.unsupported",
+      encoding: "deflate"
+    };
+    const req = {};
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(415);
+    expect(jsonBody).toEqual({ message: "Unsupported content encoding", encoding: "deflate" });
+  });
+
+  it("should handle client error with Z_ prefix code", () => {
+    const error = {
+      expose: true,
+      statusCode: 400,
+      code: "Z_DATA_ERROR",
+      message: "data error"
+    };
+    const req = {};
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({
+      message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+    });
+  });
+
+  it("should handle ETIMEDOUT code", () => {
+    const error = {
+      code: "ETIMEDOUT"
+    };
+    const req = {};
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(408);
+    expect(jsonBody).toEqual({ message: "Ocorreu um timeout ao tentar se comunicar com o banco de dados. Tente novamente mais tarde." });
+  });
+
+  it("should handle general client error", () => {
+    const error = {
+      expose: true,
+      statusCode: 422,
+      type: "some.type"
+    };
+    const req = {};
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(422);
+    expect(jsonBody).toEqual({
+      message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+      error: "some.type"
+    });
+  });
+
+  it("should handle server error with error type", () => {
+    const error = {
+      type: "database.error",
+      stack: "stack"
+    };
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(500);
+    expect(jsonBody).toMatchObject({
+      message: "Ocorreu um erro interno no servidor. Abra uma issue em https://github.com/ServeRest/ServeRest/issues informando este problema.",
+      error: "database.error"
+    });
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v3.2.7 /home/administrador/work/w2
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle headers already sent with timedout request
+{
+  time: '2026-11-27T20:46:02.475Z',
+  level: 'warn',
+  message: 'Erro depois da resposta enviada: GET /test, timedout: true, Error: Test error, Stack: Error stack'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle headers already sent without timeout
+{
+  time: '2026-11-27T20:46:02.478Z',
+  level: 'error',
+  message: 'Erro depois da resposta enviada: POST /test, timedout: false, Error: Test error, Stack: Error stack'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle URIError
+{
+  time: '2026-11-27T20:46:02.486Z',
+  level: 'alert',
+  message: 'URI decode error: Malformed URI'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle entity.parse.failed
+{
+  time: '2026-11-27T20:46:02.488Z',
+  level: 'alert',
+  message: 'Entity parse error, user sending request without proper quotation marks.'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle entity.too.large
+{
+  time: '2026-11-27T20:46:02.489Z',
+  level: 'alert',
+  message: 'Payload too large: entity.too.large'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle encoding.unsupported
+{
+  time: '2026-11-27T20:46:02.490Z',
+  level: 'alert',
+  message: 'Unsupported content encoding: deflate'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle client error with Z_ prefix code
+{
+  time: '2026-11-27T20:46:02.491Z',
+  level: 'alert',
+  message: 'Invalid compressed body: data error'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle general client error
+{
+  time: '2026-11-27T20:46:02.497Z',
+  level: 'alert',
+  message: 'Client error 422: some.type'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle server error with error type
+{
+  time: '2026-11-27T20:46:02.498Z',
+  level: 'error',
+  message: 'Error: database.error, Stack: stack, Request body: {}'
+}
+
+ ❯ test/__generated__/error-handler.gen.test.ts (12 tests | 3 failed) 30ms
+   ✓ errorHandler > should handle headers already sent with timedout request 3ms
+   ✓ errorHandler > should handle headers already sent without timeout 1ms
+   × errorHandler > should handle ValidationError 8ms
+     → Cannot read properties of undefined (reading 'forEach')
+   ✓ errorHandler > should handle URIError 2ms
+   ✓ errorHandler > should handle entity.parse.failed 1ms
+   ✓ errorHandler > should handle entity.too.large 1ms
+   ✓ errorHandler > should handle charset.unsupported 0ms
+   ✓ errorHandler > should handle encoding.unsupported 1ms
+   ✓ errorHandler > should handle client error with Z_ prefix code 1ms
+   × errorHandler > should handle ETIMEDOUT code 6ms
+     → expected { Object (message) } to deeply equal { Object (message) }
+   ✓ errorHandler > should handle general client error 1ms
+   × errorHandler > should handle server error with error type 5ms
+     → expected { …(3) } to match object { …(2) }
+(1 matching property omitted from actual)
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 9 passed (12)
+   Start at  17:46:01
+   Duration  592ms (transform 83ms, setup 0ms, collect 217ms, tests 30ms, environment 0ms, prepare 134ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/error-handler.gen.test.ts > errorHandler > should handle ValidationError
+TypeError: Cannot read properties of undefined (reading 'forEach')
+ ❯ module.exports src/utils/montarMensagemDeErroDeSchema.js:5:18
+ ❯ errorHandler src/middlewares/error-handler.js:31:33
+     29|   const erroDeSchema = error.name === 'ValidationError'
+     30|   if (erroDeSchema) {
+     31|     return res.status(400).json(montarMensagemDeErroDeSchema(error))
+       |                                 ^
+     32|   }
+     33|   if (error.name === 'URIError') {
+ ❯ test/__generated__/error-handler.gen.test.ts:65:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  test/__generated__/error-handler.gen.test.ts > errorHandler > should handle ETIMEDOUT code
+AssertionError: expected { Object (message) } to deeply equal { Object (message) }
+
+- Expected
++ Received
+
+  {
+-   "message": "Ocorreu um timeout ao tentar se comunicar com o banco de dados. Tente novamente mais tarde.",
++   "message": "Timeout da requisição atingido",
+  }
+
+ ❯ test/__generated__/error-handler.gen.test.ts:258:22
+    256|     errorHandler(error, req, res, next);
+    257|     expect(statusCode).toBe(408);
+    258|     expect(jsonBody).toEqual({ message: "Ocorreu um timeout ao tentar …
+       |                      ^
+    259|   });
+    260| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  test/__generated__/error-handler.gen.test.ts > errorHandler > should handle server error with error type
+AssertionError: expected { …(3) } to match object { …(2) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": "database.error",
+-   "message": "Ocorreu um erro interno no servidor. Abra uma issue em https://github.com/ServeRest/ServeRest/issues informando este problema.",
++   "message": "Abra uma issue informando essa resposta. https://github.com/ServeRest/ServeRest/issues",
+  }
+
+ ❯ test/__generated__/error-handler.gen.test.ts:316:22
+    314|     errorHandler(error, req, res, next);
+    315|     expect(statusCode).toBe(500);
+    316|     expect(jsonBody).toMatchObject({
+       |                      ^
+    317|       message: "Ocorreu um erro interno no servidor. Abra uma issue em…
+    318|       error: "database.error"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

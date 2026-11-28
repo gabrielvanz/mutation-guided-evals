@@ -1,0 +1,88 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API tests", () => {
+  it("should return 401 when token is missing on protected routes", async () => {
+    const res = await request(app).post("/carrinhos").send({
+      produtos: [{ id_produto: "any", quantidade: 1 }]
+    });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when token format is bad", async () => {
+    const res = await request(app)
+      .post("/carrinhos")
+      .set("authorization", "InvalidFormat token123")
+      .send({
+        produtos: [{ id_produto: "any", quantidade: 1 }]
+      });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when token is invalid or user does not exist", async () => {
+    const res = await request(app)
+      .post("/carrinhos")
+      .set("authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im5vbmVzdGlhbmdAZW1haWwuY29tIiwicGFzc3dvcmQiOiJ0ZXN0ZSIsImlhdCI6MTYxNjIzMjAyMH0.invalid_signature")
+      .send({
+        produtos: [{ id_produto: "any", quantidade: 1 }]
+      });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 403 when user is not an administrator on admin-only routes", async () => {
+    const uniqueEmail = "user_non_admin_test@email.com";
+    await request(app).post("/usuarios").send({
+      nome: "Test User",
+      email: uniqueEmail,
+      password: "teste",
+      administrador: "false"
+    });
+
+    const loginRes = await request(app).post("/login").send({
+      email: uniqueEmail,
+      password: "teste"
+    });
+
+    const token = loginRes.body.authorization;
+
+    const res = await request(app)
+      .post("/produtos")
+      .set("authorization", token)
+      .send({
+        nome: "Produto Teste",
+        preco: 100,
+        descricao: "Desc",
+        quantidade: 10
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({
+      message: "Rota exclusiva para administradores"
+    });
+  });
+
+  it("should handle invalid JSON body parse error (entity.parse.failed)", async () => {
+    const res = await request(app)
+      .post("/usuarios")
+      .set("content-type", "application/json")
+      .send("{invalid_json");
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain("Adicione aspas em todos os valores");
+  });
+});
+```

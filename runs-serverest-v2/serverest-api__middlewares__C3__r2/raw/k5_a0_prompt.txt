@@ -1,0 +1,531 @@
+Improve the Vitest + supertest test file for this API unit: the middlewares API (files under test: src/middlewares/error-handler.js, src/middlewares/authentication-middleware.js) (app import path: `../../src/app`).
+
+Note about this project: This is an Express REST API (CommonJS JavaScript). The application object is exported by src/app.js (`module.exports = app`); import it with a default import. The routes are mounted on the paths listed in the context files. Use supertest (`import request from "supertest"`) and never start a real server. IMPORTANT (v2 instruction): do NOT use vi.mock or vi.doMock on project modules: Vitest cannot intercept the require() calls made by CommonJS code under test, so the real module would run and your spies would never be called. If you need to stub or observe a dependency, import it (a default import is its module.exports object) and use vi.spyOn(thatObject, 'method'); the module under test reaches it through the same object. The direct dependencies of the unit are provided below as read-only context: read them to learn the exact input and error shapes, and assert only behaviour you can derive from the source and that context, never guesses. Which routes require a token or an administrator is defined in the route files provided as context (checkToken / checkAdm): assert 401 or 403 only on routes whose route file applies them, and obtain real tokens through POST /login instead of assuming them. Do not assume that a URL produces an error unless the source shows it.
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: ServeRest como API (testes de API via HTTP com supertest)
+
+- Os testes exercitam a API só por requisições HTTP ao app Express (`request(app).get("/usuarios")`, `.post`, `.put`, `.delete`), com `.send({...})` para o corpo e `.set("authorization", token)` para rotas protegidas. O token vem de `POST /login`.
+- O banco de dados é em memória e compartilhado pelos testes do arquivo. Cada teste cadastra os dados de que precisa, com valores únicos (por exemplo, e-mail e nome com um sufixo exclusivo), e não depende de outro teste nem da ordem de execução.
+- Verifique sempre o status HTTP e o corpo da resposta (`res.status`, `res.body`), com o texto exato das mensagens que aparece no código-fonte.
+- Cubra, para cada rota: o caminho feliz, validação do corpo (campos ausentes, tipos errados, valores em branco ou limites), autenticação e autorização (sem token, token inválido, usuário não administrador), recursos inexistentes, conflitos (e-mail ou nome já usado) e regras de negócio (por exemplo, não excluir usuário com carrinho, estoque insuficiente).
+- Filtros e listas: teste cada parâmetro de consulta suportado e a ordem em que a lista é devolvida.
+- Não importe controllers, services ou models: só o app.
+</conventions>
+
+Read-only context file `src/utils/rotas-da-api.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+// As rotas da API, numa lista só: o painel de etapas mede só elas, o orçamento de bytes do rate limiter conta só
+// elas e os buscadores não as indexam.
+module.exports = {
+  ROTAS_DA_API: ['/login', '/usuarios', '/produtos', '/carrinhos']
+}
+
+```
+
+Read-only context file `src/routes/usuarios-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const controller = require('../controllers/usuarios-controller')
+const model = require('../models/usuarios-model')
+const validateSchema = require('../services/validateSchema-service')
+const { filtrosDaLista } = require('../utils/filtrosDaQuery')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.get('/', plano('schema', 'read'), filtrosDaLista(model.schemaGet), etapa('read', controller.get))
+router.get('/:id', plano('schema', 'read'), validateSchema(model.schemaGetOne), etapa('read', controller.getOne))
+router.post('/', plano('schema', 'rules'), validateSchema(model.schemaPost), etapa('rules', controller.post))
+router.delete('/:id', plano('schema', 'rules'), validateSchema(model.schemaDelete), etapa('rules', controller.delete))
+router.put('/:id', plano('schema', 'rules'), validateSchema(model.schemaPut), etapa('rules', controller.put))
+
+module.exports = router
+
+```
+
+Read-only context file `src/routes/produtos-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const authentication = require('../middlewares/authentication-middleware')
+const controller = require('../controllers/produtos-controller')
+const model = require('../models/produtos-model')
+const validateSchema = require('../services/validateSchema-service')
+const { filtrosDaLista } = require('../utils/filtrosDaQuery')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.get('/', plano('schema', 'read'), filtrosDaLista(model.schemaGet), etapa('read', controller.get))
+router.get('/:id', plano('schema', 'read'), validateSchema(model.schemaGetOne), etapa('read', controller.getOne))
+router.post('/', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaPost), etapa('rules', controller.post))
+router.delete('/:id', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaDelete), etapa('rules', controller.delete))
+router.put('/:id', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaPut), etapa('rules', controller.put))
+
+module.exports = router
+
+```
+
+Read-only context file `src/routes/carrinhos-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const authentication = require('../middlewares/authentication-middleware')
+const controller = require('../controllers/carrinhos-controller')
+const model = require('../models/carrinhos-model')
+const validateSchema = require('../services/validateSchema-service')
+const { filtrosDaLista } = require('../utils/filtrosDaQuery')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.get('/', plano('schema', 'read'), filtrosDaLista(model.schemaGet), etapa('read', controller.get))
+router.get('/:id', plano('schema', 'read'), validateSchema(model.schemaGetOne), etapa('read', controller.getOne))
+router.post('/', plano('auth', 'schema', 'rules', 'write'), authentication.checkToken, validateSchema(model.schemaPost), etapa('rules', controller.post))
+router.delete('/concluir-compra', plano('auth', 'rules'), authentication.checkToken, etapa('rules', controller.concluirCompra))
+router.delete('/cancelar-compra', plano('auth', 'rules'), authentication.checkToken, etapa('rules', controller.cancelarCompra))
+
+module.exports = router
+
+```
+
+Read-only context file `src/routes/login-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const controller = require('../controllers/login-controller')
+const model = require('../models/login-model')
+const validateSchema = require('../services/validateSchema-service')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.post('/', plano('schema', 'rules'), validateSchema(model.schemaPost), etapa('rules', controller.post))
+
+module.exports = router
+
+```
+
+Source of `the middlewares API (files under test: src/middlewares/error-handler.js, src/middlewares/authentication-middleware.js)`:
+```js
+// ===== file: src/middlewares/error-handler.js =====
+const { INTERNAL_ERROR, TIMEOUT } = require('../utils/constants')
+const montarMensagemDeErroDeSchema = require('../utils/montarMensagemDeErroDeSchema')
+const { log } = require('../utils/logger')
+const { version } = require('../../package.json')
+const { IpDeniedError } = require('express-ipfilter')
+
+// O body-parser marca com expose e um status 4xx o erro que é culpa de quem enviou (header Content-Encoding sem
+// suporte, corpo comprimido que não descomprime, parâmetros demais). Sem esta regra, cada tipo novo caía no 500
+// que pede para abrir issue, e o aluno procurava um bug no servidor em vez de corrigir o envio.
+function ehErroDoCliente (error) {
+  return error.expose === true && error.statusCode >= 400 && error.statusCode < 500
+}
+
+// Os headers já saíram, então não há como responder de novo. Chega aqui o erro de um passo que termina depois do 408
+// do timeout, que é esperado, e o de uma resposta que falha no meio ou que é enviada duas vezes, que é bug. Como o
+// Express fazia, a conexão da resposta incompleta é fechada, para o cliente não ficar esperando o resto; a da
+// resposta que já terminou, como o 408, continua aberta.
+function registrarErroDepoisDaResposta (error, req, res) {
+  log({
+    level: req.timedout ? 'warn' : 'error',
+    message: `Erro depois da resposta enviada: ${req.method} ${req.originalUrl}, timedout: ${Boolean(req.timedout)}, ` +
+      `${error.code || error.name}: ${error.message}, Stack: ${error.stack}`
+  })
+  if (!res.writableEnded) req.socket.destroy()
+}
+
+function errorHandler (error, req, res, _next) {
+  if (res.headersSent) return registrarErroDepoisDaResposta(error, req, res)
+  const erroDeSchema = error.name === 'ValidationError'
+  if (erroDeSchema) {
+    return res.status(400).json(montarMensagemDeErroDeSchema(error))
+  }
+  if (error.name === 'URIError') {
+    log({ message: `URI decode error: ${error.message}` })
+    return res.status(400).json({
+      message: 'Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente.'
+    })
+  }
+  // https://github.com/expressjs/body-parser#errors
+  if (error.type === 'entity.parse.failed') {
+    log({ message: 'Entity parse error, user sending request without proper quotation marks.' })
+    return res.status(400).json({
+      message: 'Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225'
+    })
+  }
+  if (error.type === 'entity.too.large' || error.type === 'parameters.too.many') {
+    log({ message: `Payload too large: ${error.type}` })
+    return res.status(413).json({ message: 'Payload too large' })
+  }
+  if (error.type === 'charset.unsupported') {
+    return res.status(415).json({ message: 'Unsupported charset', charset: error.charset })
+  }
+  if (error.type === 'encoding.unsupported') {
+    log({ message: `Unsupported content encoding: ${error.encoding}` })
+    return res.status(415).json({ message: 'Unsupported content encoding', encoding: error.encoding })
+  }
+  // O zlib não dá tipo ao erro: o corpo dito comprimido pelo Content-Encoding não descomprime (Z_DATA_ERROR) ou
+  // chegou cortado (Z_BUF_ERROR).
+  if (ehErroDoCliente(error) && /^Z_/.test(error.code)) {
+    log({ message: `Invalid compressed body: ${error.message}` })
+    return res.status(400).json({
+      message: 'Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header.'
+    })
+  }
+  if (error.code === 'ETIMEDOUT') {
+    return res.status(408).json({ message: TIMEOUT })
+  }
+  /* istanbul ignore if */
+  if (error instanceof IpDeniedError) {
+    return res.status(429).json({ message: 'IP bloqueado por excesso de requisições. Alternativas: Envie mensagem para o autor do projeto para desbloqueio (https://linkedin.com/in/paulo-goncalves) ou faça doação financeira ao projeto (https://github.com/ServeRest/ServeRest?tab=readme-ov-file#doadores).' })
+  }
+  if (ehErroDoCliente(error)) {
+    log({ message: `Client error ${error.statusCode}: ${error.type || error.message}` })
+    return res.status(error.statusCode).json({
+      message: 'Não foi possível ler a requisição. Confira o corpo e os headers enviados.',
+      error: error.type
+    })
+  }
+  log({
+    level: 'error',
+    message: `Error: ${error?.type || JSON.stringify(error)}, Stack: ${error.stack || 'No stack available'}, Request body: ${JSON.stringify(req.body)}`
+  })
+
+  if (error?.type) {
+    return res.status(500).json({ message: INTERNAL_ERROR, error: error.type, version })
+  }
+  /* istanbul ignore next */
+  return res.status(500).json({ message: INTERNAL_ERROR, version, error: { message: error.message || 'No message available', stack: error.stack || 'No stack available' } })
+}
+
+module.exports = errorHandler
+
+// ===== file: src/middlewares/authentication-middleware.js =====
+'use strict'
+
+const { TokenExpiredError } = require('jsonwebtoken')
+
+const authService = require('../services/auth-service')
+const constant = require('../utils/constants')
+const usuariosService = require('../services/usuarios-service')
+const { etapa } = require('../utils/etapas')
+
+exports.checkAdm = etapa('auth', async (req, res, next) => {
+  const motivo = await motivoDoTokenInvalido(req.headers)
+  if (motivo) {
+    res.locals.etapas.detalhar({ reason: motivo })
+    return res.status(401).send({ message: constant.INVALID_TOKEN })
+  }
+  const tokenDecodificado = authService.verifyToken(req.headers.authorization)
+  if (!await usuariosService.usuarioEhAdministrador(tokenDecodificado)) {
+    res.locals.etapas.detalhar({ reason: 'not_admin' })
+    return res.status(403).send({ message: constant.REQUIRED_ADMIN })
+  }
+  next()
+})
+
+exports.checkToken = etapa('auth', async (req, res, next) => {
+  const motivo = await motivoDoTokenInvalido(req.headers)
+  if (motivo) {
+    res.locals.etapas.detalhar({ reason: motivo })
+    return res.status(401).send({ message: constant.INVALID_TOKEN })
+  }
+  next()
+})
+
+async function motivoDoTokenInvalido ({ authorization }) {
+  if (authorization === undefined) return 'token_missing'
+
+  const [tipo, token] = authorization.split(' ')
+  if (tipo !== 'Bearer' || !token) return 'bad_format'
+
+  const tokenDecodificado = authService.verifyToken(authorization)
+  if (tokenDecodificado instanceof TokenExpiredError) return 'token_expired'
+  if (tokenDecodificado.email === undefined) return 'token_invalid'
+
+  const usuario = await usuariosService.existeUsuario({ email: tokenDecodificado.email, password: tokenDecodificado.password })
+  if (!usuario) return 'user_not_found'
+}
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API tests", () => {
+  it("should return 401 when accessing a protected route without authorization header", async () => {
+    const response = await request(app).post("/carrinhos").send({
+      produtos: []
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when accessing a protected route with a malformed authorization header", async () => {
+    const response = await request(app)
+      .post("/carrinhos")
+      .set("authorization", "InvalidFormat token")
+      .send({
+        produtos: []
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when accessing a protected route with an invalid token", async () => {
+    const response = await request(app)
+      .post("/carrinhos")
+      .set("authorization", "Bearer invalid.jwt.token")
+      .send({
+        produtos: []
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 403 when a non-admin user tries to access an admin-only route", async () => {
+    const userEmail = "user_non_admin_mw@email.com";
+    const userName = "User Non Admin";
+
+    await request(app).post("/usuarios").send({
+      nome: userName,
+      email: userEmail,
+      password: "teste",
+      administrador: "false"
+    });
+
+    const loginResponse = await request(app).post("/login").send({
+      email: userEmail,
+      password: "teste"
+    });
+
+    const token = loginResponse.body.authorization;
+
+    const response = await request(app)
+      .post("/produtos")
+      .set("authorization", token)
+      .send({
+        nome: "Produto Teste MW",
+        preco: 100,
+        descricao: "Desc",
+        quantidade: 10
+      });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      message: "Rota exclusiva para administradores"
+    });
+  });
+
+  it("should allow an admin user to access an admin-only route successfully", async () => {
+    const adminEmail = "user_admin_mw@email.com";
+    const adminName = "User Admin";
+
+    await request(app).post("/usuarios").send({
+      nome: adminName,
+      email: adminEmail,
+      password: "teste",
+      administrador: "true"
+    });
+
+    const loginResponse = await request(app).post("/login").send({
+      email: adminEmail,
+      password: "teste"
+    });
+
+    const token = loginResponse.body.authorization;
+
+    const response = await request(app)
+      .post("/produtos")
+      .set("authorization", token)
+      .send({
+        nome: "Produto Admin MW",
+        preco: 150,
+        descricao: "Desc Admin",
+        quantidade: 5
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+  });
+
+  it("should return 400 when malformed JSON entity parse error occurs (bad quotation marks)", async () => {
+    const response = await request(app)
+      .post("/usuarios")
+      .set("content-type", "application/json")
+      .send("{nome: unquoted}");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should return 400 when schema validation error occurs on POST /usuarios", async () => {
+    const response = await request(app).post("/usuarios").send({
+      nome: "",
+      email: "invalid-email",
+      password: "",
+      administrador: "true"
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("email");
+  });
+
+  it("should return 400 when an invalid URI decode parameter is passed", async () => {
+    const response = await request(app).get("/usuarios/%C0%C0");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should return 415 when unsupported charset is sent", async () => {
+    const response = await request(app)
+      .post("/usuarios")
+      .set("content-type", "application/json; charset=utf-32")
+      .send(JSON.stringify({ nome: "Charset Test", email: "charset@email.com", password: "teste", administrador: "false" }));
+
+    expect(response.status).toBe(415);
+    expect(response.body).toEqual({
+      message: "Unsupported charset",
+      charset: "utf-32"
+    });
+  });
+
+  it("should return 415 when unsupported content encoding is sent", async () => {
+    const response = await request(app)
+      .post("/usuarios")
+      .set("content-encoding", "unsupported-encoding")
+      .send({ nome: "Encoding Test", email: "encoding@email.com", password: "teste", administrador: "false" });
+
+    expect(response.status).toBe(415);
+    expect(response.body).toEqual({
+      message: "Unsupported content encoding",
+      encoding: "unsupported-encoding"
+    });
+  });
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 20 changes below (57 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. file src/middlewares/error-handler.js, line 11, operator LogicalOperator (no test executes this code)
+   line: return error.expose === true && error.statusCode >= 400 && error.statusCode < 500
+   original fragment: "error.expose === true && error.statusCode >= 400 && error.statusCode < 500"
+   mutated fragment:  "error.expose === true && error.statusCode >= 400 || error.statusCode < 500"
+2. file src/middlewares/error-handler.js, line 11, operator EqualityOperator (no test executes this code)
+   line: return error.expose === true && error.statusCode >= 400 && error.statusCode < 500
+   original fragment: "error.statusCode >= 400"
+   mutated fragment:  "error.statusCode > 400"
+3. file src/middlewares/error-handler.js, line 11, operator EqualityOperator (no test executes this code)
+   line: return error.expose === true && error.statusCode >= 400 && error.statusCode < 500
+   original fragment: "error.statusCode < 500"
+   mutated fragment:  "error.statusCode <= 500"
+4. file src/middlewares/error-handler.js, line 19, operator ObjectLiteral (no test executes this code)
+   line: log({
+   original fragment: "{\n    level: req.timedout ? 'warn' : 'error',\n    message: `Erro depois da resposta enviada: ${req.method} ${req.originalUrl}, timedout: ${Boolean(req.timedout)}, ` +\n      `${error.code || error.name..."
+   mutated fragment:  "{}"
+5. file src/middlewares/error-handler.js, line 20, operator StringLiteral (no test executes this code)
+   line: level: req.timedout ? 'warn' : 'error',
+   original fragment: "'error'"
+   mutated fragment:  "\"\""
+6. file src/middlewares/error-handler.js, line 22, operator ConditionalExpression (no test executes this code)
+   line: `${error.code || error.name}: ${error.message}, Stack: ${error.stack}`
+   original fragment: "error.code || error.name"
+   mutated fragment:  "true"
+7. file src/middlewares/error-handler.js, line 24, operator CallExpression (no test executes this code)
+   line: if (!res.writableEnded) req.socket.destroy()
+   original fragment: "req.socket.destroy()"
+   mutated fragment:  ";"
+8. file src/middlewares/error-handler.js, line 24, operator BooleanLiteral (no test executes this code)
+   line: if (!res.writableEnded) req.socket.destroy()
+   original fragment: "!res.writableEnded"
+   mutated fragment:  "res.writableEnded"
+9. file src/middlewares/authentication-middleware.js, line 30, operator CallExpression (no test executes this code)
+   line: next()
+   original fragment: "next()"
+   mutated fragment:  ";"
+10. file src/middlewares/authentication-middleware.js, line 40, operator StringLiteral (no test executes this code)
+   line: if (tokenDecodificado instanceof TokenExpiredError) return 'token_expired'
+   original fragment: "'token_expired'"
+   mutated fragment:  "\"\""
+11. file src/middlewares/error-handler.js, line 48, operator StringLiteral (no test executes this code)
+   line: return res.status(413).json({ message: 'Payload too large' })
+   original fragment: "'Payload too large'"
+   mutated fragment:  "\"\""
+12. file src/middlewares/error-handler.js, line 59, operator Regex (no test executes this code)
+   line: if (ehErroDoCliente(error) && /^Z_/.test(error.code)) {
+   original fragment: "/^Z_/"
+   mutated fragment:  "/Z_/"
+13. file src/middlewares/error-handler.js, line 59, operator BlockStatement (no test executes this code)
+   line: if (ehErroDoCliente(error) && /^Z_/.test(error.code)) {
+   original fragment: "{\n    log({ message: `Invalid compressed body: ${error.message}` })\n    return res.status(400).json({\n      message: 'Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding o..."
+   mutated fragment:  "{}"
+14. file src/middlewares/error-handler.js, line 72, operator BlockStatement (no test executes this code)
+   line: if (ehErroDoCliente(error)) {
+   original fragment: "{\n    log({ message: `Client error ${error.statusCode}: ${error.type || error.message}` })\n    return res.status(error.statusCode).json({\n      message: 'Não foi possível ler a requisição. Confira o c..."
+   mutated fragment:  "{}"
+15. file src/middlewares/error-handler.js, line 74, operator ObjectLiteral (no test executes this code)
+   line: return res.status(error.statusCode).json({
+   original fragment: "{\n      message: 'Não foi possível ler a requisição. Confira o corpo e os headers enviados.',\n      error: error.type\n    }"
+   mutated fragment:  "{}"
+16. file src/middlewares/error-handler.js, line 81, operator LogicalOperator (no test executes this code)
+   line: message: `Error: ${error?.type || JSON.stringify(error)}, Stack: ${error.stack || 'No stack available'}, Request body: ${JSON.stringify(req.body)}`
+   original fragment: "error?.type || JSON.stringify(error)"
+   mutated fragment:  "error?.type && JSON.stringify(error)"
+17. file src/middlewares/error-handler.js, line 81, operator ConditionalExpression (no test executes this code)
+   line: message: `Error: ${error?.type || JSON.stringify(error)}, Stack: ${error.stack || 'No stack available'}, Request body: ${JSON.stringify(req.body)}`
+   original fragment: "error.stack || 'No stack available'"
+   mutated fragment:  "false"
+18. file src/middlewares/error-handler.js, line 84, operator OptionalChaining (no test executes this code)
+   line: if (error?.type) {
+   original fragment: "error?.type"
+   mutated fragment:  "error.type"
+19. file src/middlewares/error-handler.js, line 88, operator ObjectLiteral (no test executes this code)
+   line: return res.status(500).json({ message: INTERNAL_ERROR, version, error: { message: error.message || 'No message available', stack: error.stack || 'No stack available' } })
+   original fragment: "{ message: INTERNAL_ERROR, version, error: { message: error.message || 'No message available', stack: error.stack || 'No stack available' } }"
+   mutated fragment:  "{}"
+20. file src/middlewares/error-handler.js, line 88, operator LogicalOperator (no test executes this code)
+   line: return res.status(500).json({ message: INTERNAL_ERROR, version, error: { message: error.message || 'No message available', stack: error.stack || 'No stack available' } })
+   original fragment: "error.message || 'No message available'"
+   mutated fragment:  "error.message && 'No message available'"
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.

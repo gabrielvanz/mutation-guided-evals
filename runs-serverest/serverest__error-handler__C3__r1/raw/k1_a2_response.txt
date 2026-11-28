@@ -1,0 +1,267 @@
+```ts
+import { describe, it, expect, vi } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+
+describe("errorHandler", () => {
+  it("should handle headersSent by destroying socket if not writableEnded and logging error", () => {
+    const error = new Error("Test error");
+    error.stack = "stack";
+    const req = {
+      method: "GET",
+      originalUrl: "/test",
+      timedout: false,
+      socket: {
+        destroy: () => {}
+      }
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: false
+    };
+
+    const destroySpy = vi.spyOn(req.socket, "destroy");
+    errorHandler(error, req, res, () => {});
+    expect(destroySpy).toHaveBeenCalled();
+  });
+
+  it("should handle ValidationError by returning status 400 and schema error message", () => {
+    const error = {
+      name: "ValidationError",
+      details: [{ message: "Field required", path: ["name"] }]
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        this.body = data;
+        return this;
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({ name: "Field required" });
+  });
+
+  it("should handle URIError by returning status 400 and invalid URL parameter message", () => {
+    const error = new URIError("malformed URI");
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        this.body = data;
+        return this;
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should handle entity.parse.failed by returning status 400 and quotation marks message", () => {
+    const error = {
+      type: "entity.parse.failed",
+      message: "JSON error"
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        this.body = data;
+        return this;
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should handle entity.too.large by returning status 413 and Payload too large", () => {
+    const error = {
+      type: "entity.too.large"
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        this.body = data;
+        return this;
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(res.statusCode).toBe(413);
+    expect(res.body).toEqual({ message: "Payload too large" });
+  });
+
+  it("should handle charset.unsupported by returning status 415 and unsupported charset", () => {
+    const error = {
+      type: "charset.unsupported",
+      charset: "utf-16"
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        this.body = data;
+        return this;
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(res.statusCode).toBe(415);
+    expect(res.body).toEqual({ message: "Unsupported charset", charset: "utf-16" });
+  });
+
+  it("should handle encoding.unsupported by returning status 415 and unsupported encoding", () => {
+    const error = {
+      type: "encoding.unsupported",
+      encoding: "deflate"
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        this.body = data;
+        return this;
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(res.statusCode).toBe(415);
+    expect(res.body).toEqual({ message: "Unsupported content encoding", encoding: "deflate" });
+  });
+
+  it("should handle client error with Z_ prefix code by returning status 400 invalid compressed body message", () => {
+    const error = {
+      expose: true,
+      statusCode: 400,
+      code: "Z_DATA_ERROR",
+      message: "zlib error"
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        this.body = data;
+        return this;
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({
+      message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+    });
+  });
+
+  it("should handle ETIMEDOUT code by returning status 408", () => {
+    const error = {
+      code: "ETIMEDOUT"
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        this.body = data;
+        return this;
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(res.statusCode).toBe(408);
+    expect(res.body).toHaveProperty("message");
+  });
+
+  it("should handle general client error (expose true, 4xx) by returning statusCode and generic client error message", () => {
+    const error = {
+      expose: true,
+      statusCode: 422,
+      type: "some.type",
+      message: "Unprocessable entity"
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        this.body = data;
+        return this;
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(res.statusCode).toBe(422);
+    expect(res.body).toEqual({
+      message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+      error: "some.type"
+    });
+  });
+
+  it("should handle error with type as internal error 500", () => {
+    const error = {
+      type: "database.error",
+      stack: "stacktrace"
+    };
+    const req = { body: {} };
+    const res = {
+      headersSent: false,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data: any) {
+        this.body = data;
+        return this;
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body).toHaveProperty("error", "database.error");
+    expect(res.body).toHaveProperty("version");
+  });
+});
+```

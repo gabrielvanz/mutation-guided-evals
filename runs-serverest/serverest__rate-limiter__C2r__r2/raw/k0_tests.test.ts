@@ -1,0 +1,153 @@
+import { describe, it, expect, vi } from "vitest";
+import mod, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter exportações e comportamento principal", () => {
+  it("deve exportar a função principal e as funções auxiliares", () => {
+    expect(typeof mod).toBe("function");
+    expect(typeof criarLimitador).toBe("function");
+    expect(typeof criarOrcamentoDeBytes).toBe("function");
+    expect(typeof criarRateLimiter).toBe("function");
+    expect(BYTES_POR_HORA).toBe(250 * 1024 * 1024);
+  });
+
+  it("deve ignorar o rate limiter quando executando em ambiente de testes", async () => {
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { locals: { etapas: { ignorar: vi.fn() } } };
+    const next = vi.fn();
+
+    await mod(req, res, next);
+
+    expect(res.locals.etapas.ignorar).toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+  });
+});
+
+describe("criarOrcamentoDeBytes", () => {
+  it("deve retornar 0 ms até liberar quando não há consumo excedente", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+    const ms = await orcamento.msAteLiberar("cliente-1");
+    expect(ms).toBe(0);
+    expect(orcamento.duracaoMs).toBe(10000);
+  });
+
+  it("não deve registrar tamanho menor ou igual a zero", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+    orcamento.registrar("cliente-1", 0);
+    orcamento.registrar("cliente-1", -10);
+    const ms = await orcamento.msAteLiberar("cliente-1");
+    expect(ms).toBe(0);
+  });
+});
+
+describe("criarLimitador", () => {
+  it("deve permitir requisições que não estouram nenhum limite", async () => {
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {} },
+      orcamento: { msAteLiberar: async () => 0, duracaoMs: 1000 }
+    });
+
+    const headers = new Map();
+    const res = {
+      method: "GET",
+      getHeader: (name) => headers.get(name),
+      on: (event, cb) => {}
+    };
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toBeNull();
+  });
+
+  it("deve barrar requisições quando o orçamento de bytes for excedido", async () => {
+    const limitador = criarLimitador({
+      orcamento: { msAteLiberar: async () => 5000, duracaoMs: 1000 }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {};
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toEqual({ tipo: "orcamento-de-bytes", ms: 5000 });
+  });
+
+  it("deve tratar erro ao ler o orçamento de bytes", async () => {
+    const limitador = criarLimitador({
+      orcamento: {
+        msAteLiberar: async () => {
+          throw new Error("falha armazenamento");
+        },
+        duracaoMs: 3600000
+      }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {};
+
+    const resultado = await limitador(req, res);
+    expect(resultado?.tipo).toBe("orcamento-de-bytes");
+    expect(resultado?.ms).toBe(3600000);
+    expect(resultado?.erro).toBeInstanceOf(Error);
+  });
+});
+
+describe("criarRateLimiter", () => {
+  it("deve chamar next() quando o limitador retorna null", async () => {
+    const limitador = async () => null;
+    const rateLimiter = criarRateLimiter({ limitador });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {};
+    const next = vi.fn();
+
+    await rateLimiter(req, res, next);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("deve retornar status 429 e mensagem correta quando houver bloqueio", async () => {
+    const limitador = async () => ({ tipo: "requisicoes-por-ip", ms: 15000 });
+    const rateLimiter = criarRateLimiter({ limitador });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const headers = {};
+    const res = {
+      set: (k, v) => { headers[k] = v; },
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    await rateLimiter(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(headers["Retry-After"]).toBe("15");
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.send).toHaveBeenCalledWith({
+      message: "Foi detectado comportamento equivalente a teste de carga, não execute teste de carga nesse ambiente. Leia a documentação: https://github.com/ServeRest/ServeRest#teste-de-carga"
+    });
+  });
+
+  it("deve garantir Retry-After de pelo menos 1 segundo para ms muito baixos", async () => {
+    const limitador = async () => ({ tipo: "requisicoes-global", ms: 100 });
+    const rateLimiter = criarRateLimiter({ limitador });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const headers = {};
+    const res = {
+      set: (k, v) => { headers[k] = v; },
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    await rateLimiter(req, res, next);
+
+    expect(headers["Retry-After"]).toBe("1");
+    expect(res.status).toHaveBeenCalledWith(429);
+  });
+});

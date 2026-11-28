@@ -1,0 +1,412 @@
+The Vitest test file below for `src/middlewares/error-handler.js` (import path: `../../src/middlewares/error-handler`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Note about this project: The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports.
+
+Source of `src/middlewares/error-handler.js`:
+```js
+const { INTERNAL_ERROR, TIMEOUT } = require('../utils/constants')
+const montarMensagemDeErroDeSchema = require('../utils/montarMensagemDeErroDeSchema')
+const { log } = require('../utils/logger')
+const { version } = require('../../package.json')
+const { IpDeniedError } = require('express-ipfilter')
+
+// O body-parser marca com expose e um status 4xx o erro que é culpa de quem enviou (header Content-Encoding sem
+// suporte, corpo comprimido que não descomprime, parâmetros demais). Sem esta regra, cada tipo novo caía no 500
+// que pede para abrir issue, e o aluno procurava um bug no servidor em vez de corrigir o envio.
+function ehErroDoCliente (error) {
+  return error.expose === true && error.statusCode >= 400 && error.statusCode < 500
+}
+
+// Os headers já saíram, então não há como responder de novo. Chega aqui o erro de um passo que termina depois do 408
+// do timeout, que é esperado, e o de uma resposta que falha no meio ou que é enviada duas vezes, que é bug. Como o
+// Express fazia, a conexão da resposta incompleta é fechada, para o cliente não ficar esperando o resto; a da
+// resposta que já terminou, como o 408, continua aberta.
+function registrarErroDepoisDaResposta (error, req, res) {
+  log({
+    level: req.timedout ? 'warn' : 'error',
+    message: `Erro depois da resposta enviada: ${req.method} ${req.originalUrl}, timedout: ${Boolean(req.timedout)}, ` +
+      `${error.code || error.name}: ${error.message}, Stack: ${error.stack}`
+  })
+  if (!res.writableEnded) req.socket.destroy()
+}
+
+function errorHandler (error, req, res, _next) {
+  if (res.headersSent) return registrarErroDepoisDaResposta(error, req, res)
+  const erroDeSchema = error.name === 'ValidationError'
+  if (erroDeSchema) {
+    return res.status(400).json(montarMensagemDeErroDeSchema(error))
+  }
+  if (error.name === 'URIError') {
+    log({ message: `URI decode error: ${error.message}` })
+    return res.status(400).json({
+      message: 'Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente.'
+    })
+  }
+  // https://github.com/expressjs/body-parser#errors
+  if (error.type === 'entity.parse.failed') {
+    log({ message: 'Entity parse error, user sending request without proper quotation marks.' })
+    return res.status(400).json({
+      message: 'Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225'
+    })
+  }
+  if (error.type === 'entity.too.large' || error.type === 'parameters.too.many') {
+    log({ message: `Payload too large: ${error.type}` })
+    return res.status(413).json({ message: 'Payload too large' })
+  }
+  if (error.type === 'charset.unsupported') {
+    return res.status(415).json({ message: 'Unsupported charset', charset: error.charset })
+  }
+  if (error.type === 'encoding.unsupported') {
+    log({ message: `Unsupported content encoding: ${error.encoding}` })
+    return res.status(415).json({ message: 'Unsupported content encoding', encoding: error.encoding })
+  }
+  // O zlib não dá tipo ao erro: o corpo dito comprimido pelo Content-Encoding não descomprime (Z_DATA_ERROR) ou
+  // chegou cortado (Z_BUF_ERROR).
+  if (ehErroDoCliente(error) && /^Z_/.test(error.code)) {
+    log({ message: `Invalid compressed body: ${error.message}` })
+    return res.status(400).json({
+      message: 'Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header.'
+    })
+  }
+  if (error.code === 'ETIMEDOUT') {
+    return res.status(408).json({ message: TIMEOUT })
+  }
+  /* istanbul ignore if */
+  if (error instanceof IpDeniedError) {
+    return res.status(429).json({ message: 'IP bloqueado por excesso de requisições. Alternativas: Envie mensagem para o autor do projeto para desbloqueio (https://linkedin.com/in/paulo-goncalves) ou faça doação financeira ao projeto (https://github.com/ServeRest/ServeRest?tab=readme-ov-file#doadores).' })
+  }
+  if (ehErroDoCliente(error)) {
+    log({ message: `Client error ${error.statusCode}: ${error.type || error.message}` })
+    return res.status(error.statusCode).json({
+      message: 'Não foi possível ler a requisição. Confira o corpo e os headers enviados.',
+      error: error.type
+    })
+  }
+  log({
+    level: 'error',
+    message: `Error: ${error?.type || JSON.stringify(error)}, Stack: ${error.stack || 'No stack available'}, Request body: ${JSON.stringify(req.body)}`
+  })
+
+  if (error?.type) {
+    return res.status(500).json({ message: INTERNAL_ERROR, error: error.type, version })
+  }
+  /* istanbul ignore next */
+  return res.status(500).json({ message: INTERNAL_ERROR, version, error: { message: error.message || 'No message available', stack: error.stack || 'No stack available' } })
+}
+
+module.exports = errorHandler
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect, vi } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+
+describe("errorHandler middleware", () => {
+  it("handles headers already sent when response is not writable ended", () => {
+    const error = new Error("Late error");
+    const req = { method: "GET", originalUrl: "/test", timedout: true, socket: { destroy: vi.fn() } };
+    const res = { headersSent: true, writableEnded: false };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(req.socket.destroy).toHaveBeenCalled();
+  });
+
+  it("handles headers already sent when response is writable ended", () => {
+    const error = new Error("Late error");
+    const req = { method: "GET", originalUrl: "/test", timedout: false, socket: { destroy: vi.fn() } };
+    const res = { headersSent: true, writableEnded: true };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(req.socket.destroy).not.toHaveBeenCalled();
+  });
+
+  it("handles ValidationError (schema error)", () => {
+    const error = { name: "ValidationError", message: "Invalid schema" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalled();
+  });
+
+  it("handles URIError", () => {
+    const error = new Error("Malformed URI");
+    error.name = "URIError";
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: 'Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente.'
+    });
+  });
+
+  it("handles entity.parse.failed", () => {
+    const error = { type: "entity.parse.failed" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: 'Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225'
+    });
+  });
+
+  it("handles entity.too.large", () => {
+    const error = { type: "entity.too.large" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(413);
+    expect(jsonMock).toHaveBeenCalledWith({ message: 'Payload too large' });
+  });
+
+  it("handles parameters.too.many", () => {
+    const error = { type: "parameters.too.many" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(413);
+    expect(jsonMock).toHaveBeenCalledWith({ message: 'Payload too large' });
+  });
+
+  it("handles charset.unsupported", () => {
+    const error = { type: "charset.unsupported", charset: "utf-16" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(415);
+    expect(jsonMock).toHaveBeenCalledWith({ message: 'Unsupported charset', charset: 'utf-16' });
+  });
+
+  it("handles encoding.unsupported", () => {
+    const error = { type: "encoding.unsupported", encoding: "deflate" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(415);
+    expect(jsonMock).toHaveBeenCalledWith({ message: 'Unsupported content encoding', encoding: 'deflate' });
+  });
+
+  it("handles client error with Z_ compression error code", () => {
+    const error = { expose: true, statusCode: 400, code: "Z_DATA_ERROR", message: "zlib error" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: 'Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header.'
+    });
+  });
+
+  it("handles ETIMEDOUT code", () => {
+    const error = { code: "ETIMEDOUT" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(408);
+    expect(jsonMock).toHaveBeenCalledWith({ message: expect.any(String) });
+  });
+
+  it("handles generic client error", () => {
+    const error = { expose: true, statusCode: 400, type: "bad.request", message: "Bad request" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: 'Não foi possível ler a requisição. Confira o corpo e os headers enviados.',
+      error: 'bad.request'
+    });
+  });
+
+  it("handles internal server error with type", () => {
+    const error = { type: "some.internal.error", message: "fail" };
+    const req = { body: {} };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(500);
+    expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.any(String),
+      error: 'some.internal.error'
+    }));
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v3.2.7 /home/administrador/work/w2
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler middleware > handles headers already sent when response is not writable ended
+{
+  time: '2026-11-27T15:40:57.127Z',
+  level: 'warn',
+  message: 'Erro depois da resposta enviada: GET /test, timedout: true, Error: Late error, Stack: Error: Late error\n' +
+    '    at /home/administrador/work/w2/test/__generated__/error-handler.gen.test.ts:6:19\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at runWithTimeout (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n' +
+    '    at runTest (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n' +
+    '    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at runSuite (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n' +
+    '    at runSuite (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler middleware > handles headers already sent when response is writable ended
+{
+  time: '2026-11-27T15:40:57.131Z',
+  level: 'error',
+  message: 'Erro depois da resposta enviada: GET /test, timedout: false, Error: Late error, Stack: Error: Late error\n' +
+    '    at /home/administrador/work/w2/test/__generated__/error-handler.gen.test.ts:17:19\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at runWithTimeout (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n' +
+    '    at runTest (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n' +
+    '    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at runSuite (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n' +
+    '    at runSuite (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler middleware > handles URIError
+{
+  time: '2026-11-27T15:40:57.135Z',
+  level: 'alert',
+  message: 'URI decode error: Malformed URI'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler middleware > handles entity.parse.failed
+{
+  time: '2026-11-27T15:40:57.137Z',
+  level: 'alert',
+  message: 'Entity parse error, user sending request without proper quotation marks.'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler middleware > handles entity.too.large
+{
+  time: '2026-11-27T15:40:57.139Z',
+  level: 'alert',
+  message: 'Payload too large: entity.too.large'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler middleware > handles parameters.too.many
+{
+  time: '2026-11-27T15:40:57.139Z',
+  level: 'alert',
+  message: 'Payload too lar
+...[truncado 516 caracteres]...
+__/error-handler.gen.test.ts > errorHandler middleware > handles generic client error
+{
+  time: '2026-11-27T15:40:57.145Z',
+  level: 'alert',
+  message: 'Client error 400: bad.request'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler middleware > handles internal server error with type
+{
+  time: '2026-11-27T15:40:57.146Z',
+  level: 'error',
+  message: 'Error: some.internal.error, Stack: No stack available, Request body: {}'
+}
+
+ ❯ test/__generated__/error-handler.gen.test.ts (13 tests | 1 failed) 27ms
+   ✓ errorHandler middleware > handles headers already sent when response is not writable ended 9ms
+   ✓ errorHandler middleware > handles headers already sent when response is writable ended 2ms
+   × errorHandler middleware > handles ValidationError (schema error) 3ms
+     → Cannot read properties of undefined (reading 'body')
+   ✓ errorHandler middleware > handles URIError 2ms
+   ✓ errorHandler middleware > handles entity.parse.failed 1ms
+   ✓ errorHandler middleware > handles entity.too.large 1ms
+   ✓ errorHandler middleware > handles parameters.too.many 1ms
+   ✓ errorHandler middleware > handles charset.unsupported 1ms
+   ✓ errorHandler middleware > handles encoding.unsupported 1ms
+   ✓ errorHandler middleware > handles client error with Z_ compression error code 1ms
+   ✓ errorHandler middleware > handles ETIMEDOUT code 1ms
+   ✓ errorHandler middleware > handles generic client error 1ms
+   ✓ errorHandler middleware > handles internal server error with type 1ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 12 passed (13)
+   Start at  12:40:56
+   Duration  562ms (transform 70ms, setup 0ms, collect 131ms, tests 27ms, environment 0ms, prepare 103ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/error-handler.gen.test.ts > errorHandler middleware > handles ValidationError (schema error)
+TypeError: Cannot read properties of undefined (reading 'body')
+ ❯ module.exports src/utils/montarMensagemDeErroDeSchema.js:2:40
+ ❯ errorHandler src/middlewares/error-handler.js:31:33
+     29|   const erroDeSchema = error.name === 'ValidationError'
+     30|   if (erroDeSchema) {
+     31|     return res.status(400).json(montarMensagemDeErroDeSchema(error))
+       |                                 ^
+     32|   }
+     33|   if (error.name === 'URIError') {
+ ❯ test/__generated__/error-handler.gen.test.ts:34:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

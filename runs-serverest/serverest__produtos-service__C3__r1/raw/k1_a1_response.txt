@@ -1,0 +1,73 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente XYZ" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create and return a new product with formatted values", async () => {
+    const novoProduto = {
+      nome: "  Mouse Gamer  ",
+      preco: "150.5",
+      quantidade: "10",
+      descricao: "Mouse RGB",
+      imagem: " http://img.com/img.png "
+    };
+
+    const resultado = await produtosService.criarProduto(novoProduto);
+    expect(resultado).toHaveProperty("_id");
+    expect(resultado.nome).toBe("Mouse Gamer");
+    expect(resultado.preco).toBe(150.5);
+    expect(resultado.quantidade).toBe(10);
+    expect(resultado.imagem).toBe("http://img.com/img.png");
+    expect(resultado).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const lote = [
+      { idProduto: "id-invalido-lote", quantidade: 1 }
+    ];
+    const resultado = await produtosService.getPrecosUnitariosPorLote(lote);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.index).toBe(0);
+  });
+});
+
+describe("deleteById", () => {
+  it("should return 0 removed count when deleting non-existent product", async () => {
+    const count = await produtosService.deleteById("id-inexistente-del");
+    expect(count).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should update or upsert product by id", async () => {
+    const id = "id-teste-update";
+    const atualizacao = { nome: "Atualizado", preco: 200, quantidade: 5 };
+    const resultado = await produtosService.updateById(id, { $set: atualizacao });
+    expect(resultado).toHaveProperty("_id", id);
+  });
+});
+```

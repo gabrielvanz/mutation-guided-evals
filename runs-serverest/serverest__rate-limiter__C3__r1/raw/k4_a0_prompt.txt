@@ -1,0 +1,752 @@
+Improve the Vitest test file for the module `src/middlewares/rate-limiter.js` (import path: `../../src/middlewares/rate-limiter`).
+
+Note about this project: The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports.
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: ServeRest (API REST de estudo em Node/Express, JavaScript CommonJS)
+
+- Este projeto não é UnJS nem TypeScript: os módulos são CommonJS (`exports.nome = ...` ou `module.exports = função`), com mensagens e textos em português. Os testes que você escreve continuam em Vitest.
+- Os testes originais do projeto usam títulos descritivos em português ("Deve retornar ...") e comparam valores concretos, sem depender de ordem de execução entre testes.
+- Respostas de erro e mensagens vêm de constantes do projeto: confira o texto exato no código-fonte antes de usar numa asserção.
+- Cubra: entradas vazias ou só com espaços, tipos inesperados, valores em limites (zero, negativos, muito grandes), campos ausentes, ordem de chaves e os caminhos de erro de cada função exportada.
+- Para middlewares e controllers, use objetos simples no lugar de `req`/`res`/`next` (`status`, `json` e `send` devolvem o próprio `res`) e verifique o status e o corpo enviados.
+</conventions>
+
+Source of `src/middlewares/rate-limiter.js`:
+```js
+const { RateLimiterMemory, RateLimiterRes } = require('rate-limiter-flexible')
+
+const {
+  aplicacaoExecutandoLocalmente,
+  ehAmbienteDeTestes
+} = require('../utils/ambiente')
+const { DOWNLOAD_LIMIT_EXCEEDED, LOAD_TEST_DETECTED, SERVER_BUSY } = require('../utils/constants')
+const { log } = require('../utils/logger')
+const { ROTAS_DA_API } = require('../utils/rotas-da-api')
+
+// Limite por cliente. Depende do 'trust proxy' definido no app.js: sem ele req.ip resolve
+// para o endereço do proxy do Cloud Run e este limite passaria a valer para todos somados.
+const limitePorIp = new RateLimiterMemory({
+  points: 300, // requests
+  duration: 30 // segundos, por IP
+})
+
+// Limite agregado do container. Existe porque o limite por IP, sozinho, não impõe teto ao
+// total: bastariam vários clientes simultâneos para saturar a instância, que roda com
+// 256 MiB e max-instances 1. Fica acima do limite por IP para que um único cliente abusivo
+// seja barrado pelo próprio limite antes de consumir a cota que protege os demais.
+const limiteGlobal = new RateLimiterMemory({
+  points: 900, // requests
+  duration: 30 // segundos, somando todos os clientes
+})
+
+// Orçamento de bytes por cliente nas rotas da API. O limite de requisições não segura um laço
+// lento e pesado: em 4/11/2026 um script fez de 2 a 3 requisições por segundo e, como a lista
+// de usuários crescia a cada volta, baixou cerca de 31 GiB em três horas e derrubou o container
+// duas vezes por falta de memória. Nos 30 dias anteriores nenhum cliente passou de 90 MiB numa
+// hora, contando também os arquivos do Swagger. O orçamento conta só a API, porque o peso das
+// turmas atrás de um mesmo IP vem desses arquivos.
+const BYTES_POR_HORA = 250 * 1024 * 1024
+// Sem distinguir maiúsculas, como as rotas do Express: /Usuarios chega à mesma lista.
+const ROTA_DA_API = new RegExp(`^(${ROTAS_DA_API.join('|')})(/|$)`, 'i')
+
+// O tipo de cada limite também nomeia o limite na linha de log do bloqueio.
+const MENSAGENS = {
+  'orcamento-de-bytes': DOWNLOAD_LIMIT_EXCEEDED,
+  'requisicoes-por-ip': LOAD_TEST_DETECTED,
+  'requisicoes-global': SERVER_BUSY
+}
+
+// O fim da janela calculado em cada bloqueio varia alguns milissegundos de uma requisição para outra; a janela
+// seguinte do mesmo limite termina pelo menos uma duração inteira (30 s ou mais) depois. Um segundo de folga separa
+// as duas sem depender de arredondamento.
+const FOLGA_DA_JANELA_MS = 1000
+// Teto das marcas de primeiro bloqueio: muito acima dos clientes barrados ao mesmo tempo, e ainda poucos MiB.
+const MAXIMO_DE_MARCAS = 10000
+
+function criarOrcamentoDeBytes ({ bytes = BYTES_POR_HORA, segundos = 3600 } = {}) {
+  const contador = new RateLimiterMemory({ points: bytes, duration: segundos })
+  return {
+    // A janela começa no primeiro byte contado e não se move; zero quando ainda há orçamento.
+    async msAteLiberar (chave) {
+      const consumo = await contador.get(chave)
+      return consumo !== null && consumo.consumedPoints >= bytes ? consumo.msBeforeNext : 0
+    },
+    registrar (chave, tamanho) {
+      if (tamanho > 0) contador.penalty(chave, tamanho)
+    },
+    duracaoMs: segundos * 1000
+  }
+}
+
+async function consumir (limite, chave, tipo) {
+  try {
+    await limite.consume(chave)
+    return null
+  } catch (recusa) {
+    // O bloqueio de verdade é um RateLimiterRes, com quanto falta para a janela acabar. Qualquer outra coisa é erro
+    // do armazenamento, que não traz o tempo: vale a janela inteira.
+    if (recusa instanceof RateLimiterRes) return { tipo, ms: recusa.msBeforeNext }
+    return { tipo, ms: limite.duration * 1000, erro: recusa }
+  }
+}
+
+function criarLimitador ({ global = limiteGlobal, porIp = limitePorIp, orcamento = criarOrcamentoDeBytes() } = {}) {
+  // Devolve null se a requisição pode seguir, ou o limite que a barrou e quanto falta para ele
+  // liberar. O orçamento só é lido antes e somado no fim da resposta, quando o tamanho é
+  // conhecido; a resposta que passa do limite ainda sai, e as seguintes recebem 429 até a
+  // janela daquele cliente acabar.
+  return async function verificar (req, res) {
+    // Um HEAD tem Content-Length mas não manda corpo, então não conta.
+    const daApi = req.method !== 'HEAD' && ROTA_DA_API.test(req.path)
+    // O orçamento vem antes de tudo porque só lê: um cliente sem orçamento não gasta a cota
+    // de requisições de ninguém. O global vem antes do por IP de propósito. Avaliar os dois em
+    // paralelo faria a requisição consumir a cota individual mesmo quando o bloqueio viesse do
+    // limite agregado, o que penalizaria clientes inocentes durante congestionamento e, pior,
+    // criaria uma chave por endereço no mapa mesmo para requisições já rejeitadas.
+    let ms = 0
+    try {
+      if (daApi) ms = await orcamento.msAteLiberar(req.ip)
+    } catch (erro) {
+      return { tipo: 'orcamento-de-bytes', ms: orcamento.duracaoMs, erro }
+    }
+    if (ms > 0) return { tipo: 'orcamento-de-bytes', ms }
+    const bloqueio = await consumir(global, 'global', 'requisicoes-global') ||
+      await consumir(porIp, req.ip, 'requisicoes-por-ip')
+    if (bloqueio) return bloqueio
+    // O close vem sempre, também quando o cliente desiste no meio; aí o corpo inteiro já foi montado
+    // e parte dele saiu, então conta o tamanho todo.
+    if (daApi) {
+      res.on('close', () => orcamento.registrar(req.ip, Number(res.getHeader('Content-Length')) || 0))
+    }
+    return null
+  }
+}
+
+// Diz se é o primeiro bloqueio desta chave na janela do limite. A marca guarda o fim da janela que o próprio limite
+// informou no bloqueio, e não um timer: um timer atrasado ou adiantado pularia ou repetiria a linha. Cheio, o mapa
+// primeiro descarta as marcas de janelas que já acabaram e, se ainda faltar espaço, a mais antiga; no pior caso
+// aquele cliente ganha uma linha a mais.
+function criarMarcaDeBloqueio (maximo) {
+  const fimDaJanela = new Map()
+  return function primeiroBloqueio (chave, ms) {
+    const agora = Date.now()
+    const fim = agora + ms
+    const marcado = fimDaJanela.get(chave)
+    if (marcado !== undefined && fim <= marcado + FOLGA_DA_JANELA_MS) return false
+    fimDaJanela.delete(chave)
+    if (fimDaJanela.size >= maximo) {
+      for (const [outra, fimDaOutra] of fimDaJanela) if (fimDaOutra <= agora) fimDaJanela.delete(outra)
+      if (fimDaJanela.size >= maximo) fimDaJanela.delete(fimDaJanela.keys().next().value)
+    }
+    fimDaJanela.set(chave, fim)
+    return true
+  }
+}
+
+function criarRateLimiter ({ limitador = criarLimitador(), maximoDeMarcas = MAXIMO_DE_MARCAS } = {}) {
+  const primeiroBloqueio = criarMarcaDeBloqueio(maximoDeMarcas)
+  return async function rateLimiter (req, res, next) {
+    const bloqueio = await limitador(req, res)
+    if (bloqueio === null) return next()
+    if (bloqueio.erro) {
+      // Falha fechada: o erro do armazenamento também vira 429. O armazenamento é a memória do próprio processo e
+      // só falharia por defeito no código; deixar passar tiraria a proteção da instância única de 256 MiB
+      // justamente quando o limite não consegue contar. A linha não diz "Cliente bloqueado" para não entrar na
+      // contagem de clientes barrados.
+      log({ level: 'error', message: `Falha no armazenamento do rate limiter: ${bloqueio.tipo}` })
+    } else if (primeiroBloqueio(`${bloqueio.tipo} ${req.ip}`, bloqueio.ms)) {
+      // Conta quantos clientes cada limite barra, uma linha por cliente e janela, sem o endereço no log: a
+      // mensagem fixa é o que o contador do GCP procura.
+      log({ level: 'warn', message: `Cliente bloqueado pelo limite: ${bloqueio.tipo}` })
+    }
+    res.set('Retry-After', String(Math.max(1, Math.ceil(bloqueio.ms / 1000))))
+    return res.status(429).send({ message: MENSAGENS[bloqueio.tipo] })
+  }
+}
+
+const rateLimiter = criarRateLimiter()
+
+module.exports = async (req, res, next) => {
+  if (aplicacaoExecutandoLocalmente() || ehAmbienteDeTestes) {
+    res.locals.etapas?.ignorar()
+    return next()
+  }
+  return rateLimiter(req, res, next)
+}
+
+module.exports.criarLimitador = criarLimitador
+module.exports.criarOrcamentoDeBytes = criarOrcamentoDeBytes
+module.exports.criarRateLimiter = criarRateLimiter
+module.exports.BYTES_POR_HORA = BYTES_POR_HORA
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect, vi } from "vitest";
+import rateLimiterModule, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+import { DOWNLOAD_LIMIT_EXCEEDED, LOAD_TEST_DETECTED, SERVER_BUSY } from "../../src/utils/constants";
+const { RateLimiterRes } = require("rate-limiter-flexible");
+
+describe("rate-limiter exports", () => {
+  it("should export BYTES_POR_HORA as a number", () => {
+    expect(BYTES_POR_HORA).toBe(250 * 1024 * 1024);
+  });
+
+  it("should export criarOrcamentoDeBytes as a function", () => {
+    expect(typeof criarOrcamentoDeBytes).toBe("function");
+  });
+
+  it("should export criarLimitador as a function", () => {
+    expect(typeof criarLimitador).toBe("function");
+  });
+
+  it("should export criarRateLimiter as a function", () => {
+    expect(typeof criarRateLimiter).toBe("function");
+  });
+
+  it("should export a default function middleware", () => {
+    expect(typeof rateLimiterModule).toBe("function");
+  });
+});
+
+describe("criarOrcamentoDeBytes", () => {
+  it("should create an orçamento object with default duration and methods", () => {
+    const orcamento = criarOrcamentoDeBytes();
+    expect(orcamento).toHaveProperty("msAteLiberar");
+    expect(orcamento).toHaveProperty("registrar");
+    expect(orcamento.duracaoMs).toBe(3600000);
+  });
+
+  it("should return 0 msAteLiberar when no consumption exists", async () => {
+    const orcamento = criarOrcamentoDeBytes();
+    const ms = await orcamento.msAteLiberar("127.0.0.1");
+    expect(ms).toBe(0);
+  });
+
+  it("should not fail when registering 0 or negative bytes", async () => {
+    const orcamento = criarOrcamentoDeBytes();
+    expect(() => orcamento.registrar("127.0.0.1", 0)).not.toThrow();
+    expect(() => orcamento.registrar("127.0.0.1", -100)).not.toThrow();
+  });
+
+  it("should register positive bytes and check msAteLiberar", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 60 });
+    expect(await orcamento.msAteLiberar("127.0.0.1")).toBe(0);
+    orcamento.registrar("127.0.0.1", 150);
+    const ms = await orcamento.msAteLiberar("127.0.0.1");
+    expect(ms).toBeGreaterThan(0);
+  });
+
+  it("should correctly detect when budget is not yet exceeded and return 0", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 200, segundos: 60 });
+    orcamento.registrar("127.0.0.1", 50);
+    const ms = await orcamento.msAteLiberar("127.0.0.1");
+    expect(ms).toBe(0);
+  });
+});
+
+describe("criarLimitador", () => {
+  it("should return null (allow request) when limits are not exceeded", async () => {
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {} },
+      orcamento: { msAteLiberar: async () => 0, duracaoMs: 1000 }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: () => {} };
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toBeNull();
+  });
+
+  it("should skip api checks for HEAD requests or non-api paths", async () => {
+    let checkedOrcamento = false;
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {} },
+      orcamento: {
+        msAteLiberar: async () => {
+          checkedOrcamento = true;
+          return 0;
+        },
+        duracaoMs: 1000
+      }
+    });
+
+    const req = { method: "HEAD", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: () => {} };
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toBeNull();
+    expect(checkedOrcamento).toBe(false);
+  });
+
+  it("should check api paths case-insensitively and match root or slash", async () => {
+    let checkedCount = 0;
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {} },
+      orcamento: {
+        msAteLiberar: async () => {
+          checkedCount++;
+          return 0;
+        },
+        duracaoMs: 1000
+      }
+    });
+
+    const res = { on: () => {} };
+    await limitador({ method: "GET", path: "/Usuarios", ip: "127.0.0.1" }, res);
+    await limitador({ method: "GET", path: "/usuarios/123", ip: "127.0.0.1" }, res);
+    await limitador({ method: "GET", path: "/outrarota", ip: "127.0.0.1" }, res);
+
+    expect(checkedCount).toBe(2);
+  });
+
+  it("should return orçamento block if msAteLiberar is greater than 0", async () => {
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {} },
+      orcamento: { msAteLiberar: async () => 4500, duracaoMs: 1000 }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: () => {} };
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toEqual({ tipo: "orcamento-de-bytes", ms: 4500 });
+  });
+
+  it("should return orçamento error block if msAteLiberar throws", async () => {
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {} },
+      orcamento: { msAteLiberar: async () => { throw new Error("db error"); }, duracaoMs: 1000 }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: () => {} };
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toEqual({ tipo: "orcamento-de-bytes", ms: 1000, erro: expect.any(Error) });
+  });
+
+  it("should return global block when global limit fails", async () => {
+    const limitador = criarLimitador({
+      global: {
+        consume: async () => { throw new RateLimiterRes(0, 2000); }
+      },
+      porIp: { consume: async () => {} },
+      orcamento: { msAteLiberar: async () => 0, duracaoMs: 1000 }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: () => {} };
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toEqual({ tipo: "requisicoes-global", ms: 2000 });
+  });
+
+  it("should return porIp block when ip limit fails and global passes", async () => {
+    let globalCalled = false;
+    const limitador = criarLimitador({
+      global: {
+        consume: async () => { globalCalled = true; }
+      },
+      porIp: {
+        consume: async () => { throw new RateLimiterRes(0, 3000); }
+      },
+      orcamento: { msAteLiberar: async () => 0, duracaoMs: 1000 }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: () => {} };
+
+    const resultado = await limitador(req, res);
+    expect(globalCalled).toBe(true);
+    expect(resultado).toEqual({ tipo: "requisicoes-por-ip", ms: 3000 });
+  });
+
+  it("should register bytes on close event when Content-Length header is present", async () => {
+    let registeredKey = "";
+    let registeredSize = 0;
+    const orcamento = {
+      msAteLiberar: async () => 0,
+      duracaoMs: 1000,
+      registrar: (key: string, size: number) => {
+        registeredKey = key;
+        registeredSize = size;
+      }
+    };
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {} },
+      orcamento
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const listeners: Record<string, () => void> = {};
+    const res = {
+      on: (event: string, cb: () => void) => {
+        listeners[event] = cb;
+      },
+      getHeader: (name: string) => (name === "Content-Length" ? "512" : undefined)
+    };
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toBeNull();
+    expect(listeners.close).toBeDefined();
+
+    listeners.close();
+    expect(registeredKey).toBe("127.0.0.1");
+    expect(registeredSize).toBe(512);
+  });
+
+  it("should register 0 bytes on close event when Content-Length header is missing", async () => {
+    let registeredSize = -1;
+    const orcamento = {
+      msAteLiberar: async () => 0,
+      duracaoMs: 1000,
+      registrar: (_key: string, size: number) => {
+        registeredSize = size;
+      }
+    };
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {} },
+      orcamento
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    let closeCb: (() => void) | undefined;
+    const res = {
+      on: (event: string, cb: () => void) => {
+        if (event === "close") closeCb = cb;
+      },
+      getHeader: () => undefined
+    };
+
+    await limitador(req, res);
+    closeCb?.();
+    expect(registeredSize).toBe(0);
+  });
+});
+
+describe("criarRateLimiter", () => {
+  it("should call next() when limitador returns null", async () => {
+    const limitador = async () => null;
+    const rateLimiter = criarRateLimiter({ limitador });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {};
+    const next = vi.fn();
+
+    await rateLimiter(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it("should return 429 status and correct message when limitador returns a porIp block", async () => {
+    const limitador = async () => ({ tipo: "requisicoes-por-ip", ms: 5000 });
+    const rateLimiter = criarRateLimiter({ limitador });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const resHeaders: Record<string, string> = {};
+    const res = {
+      set: (key: string, value: string) => {
+        resHeaders[key] = value;
+      },
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    await rateLimiter(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.send).toHaveBeenCalledWith({
+      message: LOAD_TEST_DETECTED
+    });
+    expect(resHeaders["Retry-After"]).toBe("5");
+  });
+
+  it("should return 429 status and correct message for global block", async () => {
+    const limitador = async () => ({ tipo: "requisicoes-global", ms: 1200 });
+    const rateLimiter = criarRateLimiter({ limitador });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const resHeaders: Record<string, string> = {};
+    const res = {
+      set: (key: string, value: string) => {
+        resHeaders[key] = value;
+      },
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    await rateLimiter(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.send).toHaveBeenCalledWith({ message: SERVER_BUSY });
+    expect(resHeaders["Retry-After"]).toBe("2");
+  });
+
+  it("should return 429 status and correct message for orcamento-de-bytes block", async () => {
+    const limitador = async () => ({ tipo: "orcamento-de-bytes", ms: 800 });
+    const rateLimiter = criarRateLimiter({ limitador });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const resHeaders: Record<string, string> = {};
+    const res = {
+      set: (key: string, value: string) => {
+        resHeaders[key] = value;
+      },
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    await rateLimiter(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.send).toHaveBeenCalledWith({ message: DOWNLOAD_LIMIT_EXCEEDED });
+    expect(resHeaders["Retry-After"]).toBe("1");
+  });
+
+  it("should log error and return 429 when block has an error property", async () => {
+    const limitador = async () => ({ tipo: "requisicoes-por-ip", ms: 3000, erro: new Error("fail") });
+    const rateLimiter = criarRateLimiter({ limitador });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {
+      set: () => {},
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    await rateLimiter(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(429);
+  });
+
+  it("should debounce duplicate warning logs for repeated blocks within window", async () => {
+    const limitador = async () => ({ tipo: "requisicoes-por-ip", ms: 3000 });
+    const rateLimiter = criarRateLimiter({ limitador, maximoDeMarcas: 10 });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {
+      set: () => {},
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    await rateLimiter(req, res, next);
+    await rateLimiter(req, res, next);
+
+    expect(res.status).toHaveBeenCalledTimes(2);
+  });
+
+  it("should allow a new warning log if repeated block arrives after window expiration", async () => {
+    const limitador = async () => ({ tipo: "requisicoes-por-ip", ms: 100 });
+    const rateLimiter = criarRateLimiter({ limitador, maximoDeMarcas: 10 });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {
+      set: () => {},
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+
+    await rateLimiter(req, res, next);
+
+    // Advance time past the window + folga so it's considered a new block
+    vi.setSystemTime(3000);
+
+    await rateLimiter(req, res, next);
+
+    vi.useRealTimers();
+    expect(res.status).toHaveBeenCalledTimes(2);
+  });
+
+  it("should evict oldest records when maximoDeMarcas is exceeded", async () => {
+    const limitador = async () => ({ tipo: "requisicoes-por-ip", ms: 3000 });
+    const rateLimiter = criarRateLimiter({ limitador, maximoDeMarcas: 1 });
+
+    const res = {
+      set: () => {},
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+
+    await rateLimiter({ method: "GET", path: "/usuarios", ip: "127.0.0.1" }, res, next);
+    // Add another IP exceeding maximoDeMarcas: 1
+    await rateLimiter({ method: "GET", path: "/usuarios", ip: "127.0.0.2" }, res, next);
+    // Re-triggering 127.0.0.1 should be treated as first block again due to eviction
+    await rateLimiter({ method: "GET", path: "/usuarios", ip: "127.0.0.1" }, res, next);
+
+    vi.useRealTimers();
+    expect(res.status).toHaveBeenCalledTimes(3);
+  });
+
+  it("should evict expired window records when maximoDeMarcas is reached", async () => {
+    const limitador = async () => ({ tipo: "requisicoes-por-ip", ms: 100 });
+    const rateLimiter = criarRateLimiter({ limitador, maximoDeMarcas: 1 });
+
+    const res = {
+      set: () => {},
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+
+    await rateLimiter({ method: "GET", path: "/usuarios", ip: "127.0.0.1" }, res, next);
+
+    // Advance time so that 127.0.0.1's window has expired (fim = 1100 <= agora 2000)
+    vi.setSystemTime(2000);
+
+    await rateLimiter({ method: "GET", path: "/usuarios", ip: "127.0.0.2" }, res, next);
+
+    vi.useRealTimers();
+    expect(res.status).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("rateLimiterModule default export", () => {
+  it("should bypass rate limiting when running locally or in test environment", async () => {
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const etapas = { ignorar: vi.fn() };
+    const res = { locals: { etapas } };
+    const next = vi.fn();
+
+    await rateLimiterModule(req, res, next);
+    expect(etapas.ignorar).toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it("should invoke optional chaining safely when etapas is undefined", async () => {
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { locals: {} };
+    const next = vi.fn();
+
+    await rateLimiterModule(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 20 changes below (30 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. line 13, operator ObjectLiteral
+   line: const limitePorIp = new RateLimiterMemory({
+   original fragment: "{\n  points: 300, // requests\n  duration: 30 // segundos, por IP\n}"
+   mutated fragment:  "{}"
+2. line 22, operator ObjectLiteral
+   line: const limiteGlobal = new RateLimiterMemory({
+   original fragment: "{\n  points: 900, // requests\n  duration: 30 // segundos, somando todos os clientes\n}"
+   mutated fragment:  "{}"
+3. line 116, operator BlockStatement
+   line: return function primeiroBloqueio (chave, ms) {
+   original fragment: "{\n    const agora = Date.now()\n    const fim = agora + ms\n    const marcado = fimDaJanela.get(chave)\n    if (marcado !== undefined && fim <= marcado + FOLGA_DA_JANELA_MS) return false\n    fimDaJanela...."
+   mutated fragment:  "{}"
+4. line 118, operator ArithmeticOperator
+   line: const fim = agora + ms
+   original fragment: "agora + ms"
+   mutated fragment:  "agora - ms"
+5. line 120, operator ArithmeticOperator
+   line: if (marcado !== undefined && fim <= marcado + FOLGA_DA_JANELA_MS) return false
+   original fragment: "marcado + FOLGA_DA_JANELA_MS"
+   mutated fragment:  "marcado - FOLGA_DA_JANELA_MS"
+6. line 121, operator CallExpression
+   line: fimDaJanela.delete(chave)
+   original fragment: "fimDaJanela.delete(chave)"
+   mutated fragment:  ";"
+7. line 122, operator BlockStatement
+   line: if (fimDaJanela.size >= maximo) {
+   original fragment: "{\n      for (const [outra, fimDaOutra] of fimDaJanela) if (fimDaOutra <= agora) fimDaJanela.delete(outra)\n      if (fimDaJanela.size >= maximo) fimDaJanela.delete(fimDaJanela.keys().next().value)\n    ..."
+   mutated fragment:  "{}"
+8. line 122, operator ConditionalExpression
+   line: if (fimDaJanela.size >= maximo) {
+   original fragment: "fimDaJanela.size >= maximo"
+   mutated fragment:  "true"
+9. line 122, operator EqualityOperator
+   line: if (fimDaJanela.size >= maximo) {
+   original fragment: "fimDaJanela.size >= maximo"
+   mutated fragment:  "fimDaJanela.size > maximo"
+10. line 123, operator EqualityOperator
+   line: for (const [outra, fimDaOutra] of fimDaJanela) if (fimDaOutra <= agora) fimDaJanela.delete(outra)
+   original fragment: "fimDaOutra <= agora"
+   mutated fragment:  "fimDaOutra < agora"
+11. line 124, operator ConditionalExpression
+   line: if (fimDaJanela.size >= maximo) fimDaJanela.delete(fimDaJanela.keys().next().value)
+   original fragment: "fimDaJanela.size >= maximo"
+   mutated fragment:  "false"
+12. line 124, operator ConditionalExpression
+   line: if (fimDaJanela.size >= maximo) fimDaJanela.delete(fimDaJanela.keys().next().value)
+   original fragment: "fimDaJanela.size >= maximo"
+   mutated fragment:  "true"
+13. line 124, operator EqualityOperator
+   line: if (fimDaJanela.size >= maximo) fimDaJanela.delete(fimDaJanela.keys().next().value)
+   original fragment: "fimDaJanela.size >= maximo"
+   mutated fragment:  "fimDaJanela.size > maximo"
+14. line 124, operator CallExpression
+   line: if (fimDaJanela.size >= maximo) fimDaJanela.delete(fimDaJanela.keys().next().value)
+   original fragment: "fimDaJanela.delete(fimDaJanela.keys().next().value)"
+   mutated fragment:  ";"
+15. line 126, operator CallExpression
+   line: fimDaJanela.set(chave, fim)
+   original fragment: "fimDaJanela.set(chave, fim)"
+   mutated fragment:  ";"
+16. line 127, operator BooleanLiteral
+   line: return true
+   original fragment: "true"
+   mutated fragment:  "false"
+17. line 141, operator ObjectLiteral
+   line: log({ level: 'error', message: `Falha no armazenamento do rate limiter: ${bloqueio.tipo}` })
+   original fragment: "{ level: 'error', message: `Falha no armazenamento do rate limiter: ${bloqueio.tipo}` }"
+   mutated fragment:  "{}"
+18. line 141, operator StringLiteral
+   line: log({ level: 'error', message: `Falha no armazenamento do rate limiter: ${bloqueio.tipo}` })
+   original fragment: "'error'"
+   mutated fragment:  "\"\""
+19. line 141, operator StringLiteral
+   line: log({ level: 'error', message: `Falha no armazenamento do rate limiter: ${bloqueio.tipo}` })
+   original fragment: "`Falha no armazenamento do rate limiter: ${bloqueio.tipo}`"
+   mutated fragment:  "``"
+20. line 155, operator LogicalOperator
+   line: if (aplicacaoExecutandoLocalmente() || ehAmbienteDeTestes) {
+   original fragment: "aplicacaoExecutandoLocalmente() || ehAmbienteDeTestes"
+   mutated fragment:  "aplicacaoExecutandoLocalmente() && ehAmbienteDeTestes"
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.

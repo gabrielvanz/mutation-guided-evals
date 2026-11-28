@@ -1,0 +1,129 @@
+```ts
+import { describe, it, expect } from "vitest";
+import rateLimiterModule, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter exportações e funções", () => {
+  it("deve exportar a constante BYTES_POR_HORA corretamente", () => {
+    expect(BYTES_POR_HORA).toBe(250 * 1024 * 1024);
+  });
+
+  describe("criarOrcamentoDeBytes", () => {
+    it("deve retornar msAteLiberar igual a zero quando nao houver consumo excedente", async () => {
+      const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+      const ms = await orcamento.msAteLiberar("chave-1");
+      expect(ms).toBe(0);
+      expect(orcamento.duracaoMs).toBe(10000);
+    });
+
+    it("deve registrar penalidade apenas se o tamanho for maior que zero", async () => {
+      const orcamento = criarOrcamentoDeBytes({ bytes: 10, segundos: 1 });
+      expect(() => orcamento.registrar("chave-2", 0)).not.toThrow();
+      expect(() => orcamento.registrar("chave-2", -5)).not.toThrow();
+      expect(() => orcamento.registrar("chave-2", 5)).not.toThrow();
+    });
+  });
+
+  describe("criarLimitador", () => {
+    it("deve retornar null quando a requisicao passar por todos os limites", async () => {
+      const mockGlobal = { consume: async () => ({}) };
+      const mockPorIp = { consume: async () => ({}) };
+      const mockOrcamento = {
+        msAteLiberar: async () => 0,
+        duracaoMs: 1000
+      };
+
+      const limitador = criarLimitador({
+        global: mockGlobal as any,
+        porIp: mockPorIp as any,
+        orcamento: mockOrcamento as any
+      });
+
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = { on: () => {} };
+
+      const resultado = await limitador(req, res);
+      expect(resultado).toBeNull();
+    });
+
+    it("deve ignorar leitura de orcamento para metodos HEAD", async () => {
+      let lido = false;
+      const mockOrcamento = {
+        msAteLiberar: async () => {
+          lido = true;
+          return 0;
+        },
+        duracaoMs: 1000
+      };
+
+      const limitador = criarLimitador({
+        global: { consume: async () => {} } as any,
+        porIp: { consume: async () => {} } as any,
+        orcamento: mockOrcamento as any
+      });
+
+      const req = { method: "HEAD", path: "/usuarios", ip: "127.0.0.1" };
+      const res = { on: () => {} };
+
+      await limitador(req, res);
+      expect(lido).toBe(false);
+    });
+  });
+
+  describe("criarRateLimiter", () => {
+    it("deve chamar next() quando o limitador retornar null", async () => {
+      const mockLimitador = async () => null;
+      const middleware = criarRateLimiter({ limitador: mockLimitador });
+
+      const req = { method: "GET", path: "/teste", ip: "127.0.0.1" };
+      let nextChamado = false;
+      const next = () => {
+        nextChamado = true;
+      };
+
+      await middleware(req, {}, next);
+      expect(nextChamado).toBe(true);
+    });
+
+    it("deve retornar status 429 e mensagem adequada quando houver bloqueio", async () => {
+      const mockLimitador = async () => ({ tipo: "requisicoes-por-ip", ms: 5000 });
+      const middleware = criarRateLimiter({ limitador: mockLimitador });
+
+      const req = { method: "GET", path: "/teste", ip: "127.0.0.1" };
+      let statusEnviado = 0;
+      let corpoEnviado: any = null;
+      let headersSetados: Record<string, string> = {};
+
+      const res = {
+        status: (s: number) => {
+          statusEnviado = s;
+          return res;
+        },
+        send: (body: any) => {
+          corpoEnviado = body;
+          return res;
+        },
+        set: (key: string, val: string) => {
+          headersSetados[key] = val;
+        }
+      };
+
+      await middleware(req, res, () => {});
+
+      expect(statusEnviado).toBe(429);
+      expect(corpoEnviado.message).toContain("teste de carga");
+      expect(headersSetados["Retry-After"]).toBe("5");
+    });
+  });
+
+  describe("middleware principal exportado", () => {
+    it("deve ser uma funcao", () => {
+      expect(typeof rateLimiterModule).toBe("function");
+    });
+  });
+});
+```

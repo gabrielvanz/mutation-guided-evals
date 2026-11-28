@@ -1,0 +1,164 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest-api__middlewares__C1__r3",
+  "started_at": "2026-11-28T11:28:28.132Z",
+  "finished_at": "2026-11-28T11:29:36.084Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest-api",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "api/middlewares",
+    "mutate_paths": [
+      "src/middlewares/error-handler.js",
+      "src/middlewares/authentication-middleware.js"
+    ],
+    "module_loc": 136,
+    "mutants_total": 191,
+    "human_test_files": [
+      "test/integration/outros/error-handler.test.js",
+      "test/integration/usuarios/contrato.test.js",
+      "test/integration/usuarios/delete.test.js",
+      "test/integration/usuarios/get.test.js",
+      "test/integration/usuarios/getOne.test.js",
+      "test/integration/usuarios/ordem.test.js",
+      "test/integration/usuarios/post.test.js",
+      "test/integration/usuarios/put.test.js",
+      "test/integration/produtos/contrato.test.js",
+      "test/integration/produtos/delete.test.js",
+      "test/integration/produtos/get.test.js",
+      "test/integration/produtos/getOne.test.js",
+      "test/integration/produtos/ordem.test.js",
+      "test/integration/produtos/post.test.js",
+      "test/integration/produtos/put.test.js",
+      "test/integration/carrinhos/cancelarCompra.test.js",
+      "test/integration/carrinhos/concluirCompra.test.js",
+      "test/integration/carrinhos/contrato.test.js",
+      "test/integration/carrinhos/get.test.js",
+      "test/integration/carrinhos/getOne.test.js",
+      "test/integration/carrinhos/ordem.test.js",
+      "test/integration/carrinhos/post.test.js",
+      "test/integration/login/post.test.js"
+    ]
+  },
+  "condition": "C1",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": null
+  },
+  "memorization": {
+    "probe_similarity": 0.0674,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 21.7391,
+        "ms_feedback": 20.202,
+        "ms_all": 20.9424,
+        "ms_covered": 57.971
+      },
+      "coverage": {
+        "line_cov": 63.36,
+        "branch_cov": 48.28
+      },
+      "mutants_eval": {
+        "killed": 20,
+        "survived": 14,
+        "no_coverage": 58,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 20,
+        "survived": 15,
+        "no_coverage": 64,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 6,
+        "n_asserts": 12,
+        "sha256": "06f23895f8ebe42695ce4184d48a4c55e03008e022a42fd00313d4d97fe616f7"
+      },
+      "prompt_file": "runs-serverest-v2/serverest-api__middlewares__C1__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest-api__middlewares__C1__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 8613,
+        "tokens_out": 1431,
+        "usd_ref": 0.001434,
+        "wall_s": 67.95,
+        "stryker_s": 48.08
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 21.7391,
+      "ms_feedback": 20.202,
+      "ms_all": 20.9424,
+      "ms_covered": 57.971
+    },
+    "coverage": {
+      "line_cov": 63.36,
+      "branch_cov": 48.28
+    },
+    "cost": {
+      "calls": 2,
+      "repair_calls": 1,
+      "tokens_in": 8613,
+      "tokens_out": 1431,
+      "usd_ref": 0.001434,
+      "wall_s": 67.95,
+      "stryker_s": 48.08
+    },
+    "tests": {
+      "n_tests": 6,
+      "n_asserts": 12,
+      "sha256": "06f23895f8ebe42695ce4184d48a4c55e03008e022a42fd00313d4d97fe616f7"
+    },
+    "gap_cov_ms": 42.4176,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [
+      "clock"
+    ],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest-v2/serverest-api__middlewares__C1__r3/raw"
+  }
+}

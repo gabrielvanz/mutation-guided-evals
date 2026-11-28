@@ -1,0 +1,123 @@
+```ts
+import { describe, it, expect } from "vitest";
+import rateLimiterModule, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter exportações e funções", () => {
+  it("deve exportar a constante BYTES_POR_HORA corretamente", () => {
+    expect(BYTES_POR_HORA).toBe(250 * 1024 * 1024);
+  });
+
+  describe("criarOrcamentoDeBytes", () => {
+    it("deve retornar msAteLiberar igual a 0 quando não houver consumo excedido", async () => {
+      const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+      const ms = await orcamento.msAteLiberar("127.0.0.1");
+      expect(ms).toBe(0);
+      expect(orcamento.duracaoMs).toBe(10000);
+    });
+
+    it("deve registrar penalidade quando tamanho for maior que zero", async () => {
+      const orcamento = criarOrcamentoDeBytes({ bytes: 50, segundos: 1 });
+      orcamento.registrar("127.0.0.1", 10);
+      const ms = await orcamento.msAteLiberar("127.0.0.1");
+      expect(typeof ms).toBe("number");
+    });
+  });
+
+  describe("criarLimitador", () => {
+    it("deve permitir requisição quando os limites não forem excedidos", async () => {
+      const limitador = criarLimitador({
+        global: {
+          consume: async () => {}
+        },
+        porIp: {
+          consume: async () => {}
+        },
+        orcamento: {
+          msAteLiberar: async () => 0,
+          duracaoMs: 1000
+        }
+      });
+
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {
+        getHeader: () => 0,
+        on: () => {}
+      };
+
+      const resultado = await limitador(req, res);
+      expect(resultado).toBeNull();
+    });
+
+    it("deve barrar requisição se o orçamento de bytes for excedido", async () => {
+      const limitador = criarLimitador({
+        orcamento: {
+          msAteLiberar: async () => 5000,
+          duracaoMs: 1000
+        }
+      });
+
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {};
+
+      const resultado = await limitador(req, res);
+      expect(resultado).toEqual({ tipo: "orcamento-de-bytes", ms: 5000 });
+    });
+  });
+
+  describe("criarRateLimiter", () => {
+    it("deve chamar next() quando o limitador retornar null", async () => {
+      const limitadorMock = async () => null;
+      const rateLimiterFn = criarRateLimiter({ limitador: limitadorMock });
+
+      let nextChamado = false;
+      const next = () => {
+        nextChamado = true;
+      };
+
+      await rateLimiterFn({}, {}, next);
+      expect(nextChamado).toBe(true);
+    });
+
+    it("deve retornar status 429 e enviar mensagem de erro quando houver bloqueio", async () => {
+      const limitadorMock = async () => ({ tipo: "requisicoes-por-ip", ms: 2000 });
+      const rateLimiterFn = criarRateLimiter({ limitador: limitadorMock });
+
+      const headers = {};
+      let statusRetornado = 0;
+      let corpoEnviado = null;
+
+      const res = {
+        set: (key, val) => {
+          headers[key] = val;
+        },
+        status: (s) => {
+          statusRetornado = s;
+          return {
+            send: (body) => {
+              corpoEnviado = body;
+              return body;
+            }
+          };
+        }
+      };
+
+      await rateLimiterFn({ ip: "127.0.0.1" }, res, () => {});
+
+      expect(statusRetornado).toBe(429);
+      expect(headers["Retry-After"]).toBe("2");
+      expect(corpoEnviado).toEqual({ message: "Foi detectado comportamento equivalente a teste de carga, não execute teste de carga nesse ambiente. Leia a documentação: https://github.com/ServeRest/ServeRest#teste-de-carga" });
+    });
+  });
+
+  describe("middleware principal", () => {
+    it("deve ser uma função exportada por padrão", () => {
+      expect(typeof rateLimiterModule).toBe("function");
+    });
+  });
+});
+```

@@ -1,0 +1,3 @@
+{"total": {"lines":{"total":167,"covered":93,"skipped":0,"pct":55.68},"statements":{"total":167,"covered":93,"skipped":0,"pct":55.68},"functions":{"total":14,"covered":8,"skipped":0,"pct":57.14},"branches":{"total":11,"covered":9,"skipped":0,"pct":81.81},"branchesTrue":{"total":0,"covered":0,"skipped":0,"pct":"Unknown"}}
+,"/home/administrador/work/w1/src/services/produtos-service.js": {"lines":{"total":167,"covered":93,"skipped":0,"pct":55.68},"functions":{"total":14,"covered":8,"skipped":0,"pct":57.14},"statements":{"total":167,"covered":93,"skipped":0,"pct":55.68},"branches":{"total":11,"covered":9,"skipped":0,"pct":81.81}}
+}

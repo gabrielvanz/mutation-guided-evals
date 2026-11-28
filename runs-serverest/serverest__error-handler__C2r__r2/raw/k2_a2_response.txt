@@ -1,0 +1,310 @@
+```ts
+import { describe, it, expect } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+
+describe("errorHandler", () => {
+  it("should handle headersSent when request timed out", () => {
+    const error = new Error("Timeout after response");
+    const req = {
+      timedout: true,
+      method: "GET",
+      originalUrl: "/users",
+      socket: { destroy: () => {} }
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: false
+    };
+    const next = () => {};
+
+    const result = errorHandler(error, req, res, next);
+    expect(result).toBeUndefined();
+  });
+
+  it("should handle headersSent when response is not writableEnded", () => {
+    let destroyed = false;
+    const error = new Error("Some error");
+    const req = {
+      timedout: false,
+      method: "POST",
+      originalUrl: "/login",
+      socket: { destroy: () => { destroyed = true; } }
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: false
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(destroyed).toBe(true);
+  });
+
+  it("should return 400 for ValidationError schema errors", () => {
+    const error = {
+      name: "ValidationError",
+      inner: [{ path: "field", message: "is required" }]
+    };
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({ field: "field is required" });
+  });
+
+  it("should return 400 for URIError", () => {
+    const error = new URIError("Malformed URI");
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should return 400 for entity.parse.failed", () => {
+    const error = { type: "entity.parse.failed" };
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should return 413 for entity.too.large", () => {
+    const error = { type: "entity.too.large" };
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(413);
+    expect(jsonBody).toEqual({ message: "Payload too large" });
+  });
+
+  it("should return 415 for charset.unsupported", () => {
+    const error = { type: "charset.unsupported", charset: "utf-16" };
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(415);
+    expect(jsonBody).toEqual({ message: "Unsupported charset", charset: "utf-16" });
+  });
+
+  it("should return 415 for encoding.unsupported", () => {
+    const error = { type: "encoding.unsupported", encoding: "br" };
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(415);
+    expect(jsonBody).toEqual({ message: "Unsupported content encoding", encoding: "br" });
+  });
+
+  it("should return 400 for client error with Z_ prefix code", () => {
+    const error = {
+      expose: true,
+      statusCode: 400,
+      code: "Z_DATA_ERROR",
+      message: "data error"
+    };
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({
+      message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+    });
+  });
+
+  it("should return 408 for ETIMEDOUT error code", () => {
+    const error = { code: "ETIMEDOUT" };
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(408);
+    expect(jsonBody).toHaveProperty("message");
+  });
+
+  it("should return general client error if expose is true and statusCode is in 4xx range", () => {
+    const error = {
+      expose: true,
+      statusCode: 422,
+      type: "some.type",
+      message: "Unprocessable entity"
+    };
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(422);
+    expect(jsonBody).toEqual({
+      message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+      error: "some.type"
+    });
+  });
+
+  it("should return 500 with error type when error has type", () => {
+    const error = {
+      type: "database.error",
+      stack: "Error stack"
+    };
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code: number) => {
+        statusCode = code;
+        return {
+          json: (body: any) => {
+            jsonBody = body;
+            return body;
+          }
+        };
+      }
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(statusCode).toBe(500);
+    expect(jsonBody).toHaveProperty("message");
+    expect(jsonBody).toHaveProperty("error", "database.error");
+    expect(jsonBody).toHaveProperty("version");
+  });
+});
+```

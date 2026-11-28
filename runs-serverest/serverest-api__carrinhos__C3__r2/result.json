@@ -1,0 +1,406 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest-api__carrinhos__C3__r2",
+  "started_at": "2026-11-27T15:58:48.651Z",
+  "finished_at": "2026-11-27T16:02:58.933Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest-api",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "api/carrinhos",
+    "mutate_paths": [
+      "src/controllers/carrinhos-controller.js",
+      "src/services/carrinhos-service.js",
+      "src/models/carrinhos-model.js"
+    ],
+    "module_loc": 239,
+    "mutants_total": 145,
+    "human_test_files": [
+      "test/integration/carrinhos/cancelarCompra.test.js",
+      "test/integration/carrinhos/concluirCompra.test.js",
+      "test/integration/carrinhos/contrato.test.js",
+      "test/integration/carrinhos/get.test.js",
+      "test/integration/carrinhos/getOne.test.js",
+      "test/integration/carrinhos/ordem.test.js",
+      "test/integration/carrinhos/post.test.js"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "882ec145097635fde6e2544a9cb134aa979a134d6c25b7b5259d10ca8ef596b4"
+  },
+  "memorization": {
+    "probe_similarity": 0.086,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 18630,
+        "tokens_out": 6821,
+        "usd_ref": 0.004591,
+        "wall_s": 24.4,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 1,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k1_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 4,
+        "tokens_in": 33471,
+        "tokens_out": 9974,
+        "usd_ref": 0.007337,
+        "wall_s": 49.19,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 7.8125,
+        "ms_feedback": 12.6761,
+        "ms_all": 10.3704,
+        "ms_covered": 50
+      },
+      "coverage": {
+        "line_cov": 50.43,
+        "branch_cov": 87.5
+      },
+      "mutants_eval": {
+        "killed": 5,
+        "survived": 9,
+        "no_coverage": 50,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 9,
+        "survived": 5,
+        "no_coverage": 57,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 5,
+        "n_asserts": 9,
+        "sha256": "e5a13db6938838ff7a914f5d4b1c93a186a077601bd8705f7d5e9aef761d92e0"
+      },
+      "prompt_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 7,
+        "repair_calls": 4,
+        "tokens_in": 37892,
+        "tokens_out": 10395,
+        "usd_ref": 0.007947,
+        "wall_s": 104.74,
+        "stryker_s": 40.76
+      }
+    },
+    {
+      "k": 3,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/models/carrinhos-model.js:18:28-18:47:Regex:/^[a-zA-Z0-9]{16}/",
+        "src/controllers/carrinhos-controller.js:22:17-22:30:StringLiteral:\"\"",
+        "src/models/carrinhos-model.js:24:15-29:13:MethodExpression:Joi.array().items(Joi.object({\n  idProduto: Joi.string().required(),\n  quantidade: Joi.number().positive().integer().required()\n})).max(1)",
+        "src/controllers/carrinhos-controller.js:32:42-32:113:ArrowFunction:() => undefined",
+        "src/controllers/carrinhos-controller.js:32:80-32:110:ArithmeticOperator:Number(produto.quantidade) - 0",
+        "src/services/carrinhos-service.js:39:54-39:67:ObjectLiteral:{}",
+        "src/controllers/carrinhos-controller.js:43:9-43:53:EqualityOperator:error.message !== constant.PRODUCT_NOT_FOUND",
+        "src/controllers/carrinhos-controller.js:46:38-46:42:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:46:54-54:2:BlockStatement:{}",
+        "src/controllers/carrinhos-controller.js:51:34-51:38:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:51:5-51:26:CallExpression:;",
+        "src/services/carrinhos-service.js:53:10-53:25:ArrayDeclaration:[]",
+        "src/controllers/carrinhos-controller.js:57:16-57:29:StringLiteral:\"\"",
+        "src/controllers/carrinhos-controller.js:68:24-68:85:ObjectLiteral:{}",
+        "src/controllers/carrinhos-controller.js:74:7-74:31:ConditionalExpression:false",
+        "src/services/carrinhos-service.js:82:57-85:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:95:22-95:124:ArrowFunction:() => undefined",
+        "src/services/carrinhos-service.js:102:3-102:76:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:102:3-102:76:LogicalOperator:Number.isSafeInteger(precoTotal) || Number.isSafeInteger(quantidadeTotal)"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k3_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 10,
+        "repair_calls": 6,
+        "tokens_in": 56059,
+        "tokens_out": 14853,
+        "usd_ref": 0.011547,
+        "wall_s": 127.82,
+        "stryker_s": 40.76
+      }
+    },
+    {
+      "k": 4,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/models/carrinhos-model.js:18:28-18:47:Regex:/^[a-zA-Z0-9]{16}/",
+        "src/controllers/carrinhos-controller.js:22:56-22:72:StringLiteral:\"\"",
+        "src/models/carrinhos-model.js:24:15-29:13:MethodExpression:Joi.array().items(Joi.object({\n  idProduto: Joi.string().required(),\n  quantidade: Joi.number().positive().integer().required()\n})).max(1)",
+        "src/controllers/carrinhos-controller.js:32:80-32:110:ArithmeticOperator:Number(produto.quantidade) - 0",
+        "src/controllers/carrinhos-controller.js:43:55-45:6:BlockStatement:{}",
+        "src/controllers/carrinhos-controller.js:43:9-43:53:EqualityOperator:error.message !== constant.PRODUCT_NOT_FOUND",
+        "src/controllers/carrinhos-controller.js:47:36-47:41:BooleanLiteral:true",
+        "src/controllers/carrinhos-controller.js:47:43-47:64:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:51:5-51:26:CallExpression:;",
+        "src/services/carrinhos-service.js:53:10-53:25:ArrayDeclaration:[]",
+        "src/controllers/carrinhos-controller.js:58:7-58:21:ConditionalExpression:true",
+        "src/controllers/carrinhos-controller.js:76:44-76:103:StringLiteral:``",
+        "src/controllers/carrinhos-controller.js:85:33-88:4:BlockStatement:{}",
+        "src/controllers/carrinhos-controller.js:89:24-89:53:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:95:22-95:124:ArrowFunction:() => undefined",
+        "src/services/carrinhos-service.js:95:50-95:120:ArrowFunction:() => undefined",
+        "src/services/carrinhos-service.js:97:75-97:101:ArithmeticOperator:total - produto.quantidade",
+        "src/services/carrinhos-service.js:102:3-102:76:ConditionalExpression:false",
+        "src/services/carrinhos-service.js:102:3-102:76:LogicalOperator:Number.isSafeInteger(precoTotal) || Number.isSafeInteger(quantidadeTotal)"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k4_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 13,
+        "repair_calls": 8,
+        "tokens_in": 74081,
+        "tokens_out": 19043,
+        "usd_ref": 0.015025,
+        "wall_s": 154.6,
+        "stryker_s": 40.76
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 67.1642,
+        "ms_feedback": 64,
+        "ms_all": 65.493,
+        "ms_covered": 97.8947
+      },
+      "coverage": {
+        "line_cov": 79.06,
+        "branch_cov": 83.87
+      },
+      "mutants_eval": {
+        "killed": 45,
+        "survived": 1,
+        "no_coverage": 21,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 48,
+        "survived": 1,
+        "no_coverage": 26,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 1,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/models/carrinhos-model.js:18:28-18:47:Regex:/^[a-zA-Z0-9]{16}/",
+        "src/controllers/carrinhos-controller.js:22:32-22:54:StringLiteral:\"\"",
+        "src/models/carrinhos-model.js:24:15-29:13:MethodExpression:Joi.array().items(Joi.object({\n  idProduto: Joi.string().required(),\n  quantidade: Joi.number().positive().integer().required()\n})).max(1)",
+        "src/controllers/carrinhos-controller.js:32:42-32:113:ArrowFunction:() => undefined",
+        "src/controllers/carrinhos-controller.js:32:80-32:110:ArithmeticOperator:Number(produto.quantidade) - 0",
+        "src/controllers/carrinhos-controller.js:41:7-41:12:ConditionalExpression:true",
+        "src/controllers/carrinhos-controller.js:43:9-43:53:EqualityOperator:error.message !== constant.PRODUCT_NOT_FOUND",
+        "src/controllers/carrinhos-controller.js:51:34-51:38:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:51:5-51:26:CallExpression:;",
+        "src/controllers/carrinhos-controller.js:52:16-52:30:StringLiteral:\"\"",
+        "src/services/carrinhos-service.js:53:10-53:25:ArrayDeclaration:[]",
+        "src/controllers/carrinhos-controller.js:58:7-58:21:ConditionalExpression:true",
+        "src/controllers/carrinhos-controller.js:74:33-77:4:BlockStatement:{}",
+        "src/controllers/carrinhos-controller.js:79:24-79:53:ObjectLiteral:{}",
+        "src/controllers/carrinhos-controller.js:87:33-87:69:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:95:22-95:124:ArrowFunction:() => undefined",
+        "src/services/carrinhos-service.js:97:75-97:101:ArithmeticOperator:total - produto.quantidade",
+        "src/services/carrinhos-service.js:102:3-102:76:LogicalOperator:Number.isSafeInteger(precoTotal) || Number.isSafeInteger(quantidadeTotal)",
+        "src/services/carrinhos-service.js:114:44-118:2:BlockStatement:{}"
+      ],
+      "tests": {
+        "n_tests": 8,
+        "n_asserts": 17,
+        "sha256": "bf494aaa6f656bbd3edf09f29a4b3ea9af5e6ecfdde526493e6d373df74ea2a6"
+      },
+      "prompt_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__carrinhos__C3__r2/raw/k5_a0_response.txt",
+      "best_k_so_far": 5,
+      "cost_cumulative": {
+        "calls": 16,
+        "repair_calls": 10,
+        "tokens_in": 91765,
+        "tokens_out": 23031,
+        "usd_ref": 0.018389,
+        "wall_s": 250.28,
+        "stryker_s": 102.46
+      }
+    }
+  ],
+  "selected_iteration": 5,
+  "final": {
+    "scores": {
+      "ms_eval": 67.1642,
+      "ms_feedback": 64,
+      "ms_all": 65.493,
+      "ms_covered": 97.8947
+    },
+    "coverage": {
+      "line_cov": 79.06,
+      "branch_cov": 83.87
+    },
+    "cost": {
+      "calls": 16,
+      "repair_calls": 10,
+      "tokens_in": 91765,
+      "tokens_out": 23031,
+      "usd_ref": 0.018389,
+      "wall_s": 250.28,
+      "stryker_s": 102.46
+    },
+    "tests": {
+      "n_tests": 8,
+      "n_asserts": 17,
+      "sha256": "bf494aaa6f656bbd3edf09f29a4b3ea9af5e6ecfdde526493e6d373df74ea2a6"
+    },
+    "gap_cov_ms": 13.567,
+    "valid_rate": 0.3333,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [
+      "clock",
+      "random"
+    ],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest-api__carrinhos__C3__r2/raw"
+  }
+}

@@ -1,0 +1,71 @@
+```ts
+import { describe, it, expect } from "vitest";
+import carrinhosService from "../../src/services/carrinhos-service";
+
+describe("carrinhos-service", () => {
+  it("extrairProdutosDuplicados should return empty array when no duplicates exist", () => {
+    const produtos = [
+      { idProduto: "1", quantidade: 2 },
+      { idProduto: "2", quantidade: 1 },
+    ];
+    const result = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(result).toEqual([]);
+  });
+
+  it("extrairProdutosDuplicados should identify duplicated product IDs", () => {
+    const produtos = [
+      { idProduto: "1", quantidade: 2 },
+      { idProduto: "2", quantidade: 1 },
+      { idProduto: "1", quantidade: 3 },
+      { idProduto: "3", quantidade: 1 },
+      { idProduto: "2", quantidade: 1 },
+    ];
+    const result = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(result).toEqual(["1", "2"]);
+  });
+
+  it("precoTotal should calculate correct total price", () => {
+    const produtos = [
+      { precoUnitario: 10, quantidade: 2 },
+      { precoUnitario: 5.5, quantidade: 4 },
+    ];
+    const result = carrinhosService.precoTotal(produtos);
+    expect(result).toBe(42);
+  });
+
+  it("precoTotal should return 0 for empty product list", () => {
+    const result = carrinhosService.precoTotal([]);
+    expect(result).toBe(0);
+  });
+
+  it("quantidadeTotal should calculate correct total quantity", () => {
+    const produtos = [
+      { quantidade: 2 },
+      { quantidade: 5 },
+      { quantidade: 3 },
+    ];
+    const result = carrinhosService.quantidadeTotal(produtos);
+    expect(result).toBe(10);
+  });
+
+  it("quantidadeTotal should return 0 for empty product list", () => {
+    const result = carrinhosService.quantidadeTotal([]);
+    expect(result).toBe(0);
+  });
+
+  it("totaisSaoSeguros should return true when both are safe integers", () => {
+    const result = carrinhosService.totaisSaoSeguros(100, 10);
+    expect(result).toBe(true);
+  });
+
+  it("totaisSaoSeguros should return false when price is not safe integer", () => {
+    const result = carrinhosService.totaisSaoSeguros(Number.MAX_SAFE_INTEGER + 1, 10);
+    expect(result).toBe(false);
+  });
+
+  it("totaisSaoSeguros should return false when quantity is not safe integer", () => {
+    const result = carrinhosService.totaisSaoSeguros(100, Number.MAX_SAFE_INTEGER + 1);
+    expect(result).toBe(false);
+  });
+});
+```

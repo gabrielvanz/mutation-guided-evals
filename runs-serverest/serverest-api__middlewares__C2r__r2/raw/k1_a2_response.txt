@@ -1,0 +1,95 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API", () => {
+  describe("Authentication Middleware", () => {
+    it("should return 401 when token is missing on a protected route", async () => {
+      const res = await request(app).get("/carrinhos");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should return 401 when token format is invalid", async () => {
+      const res = await request(app)
+        .get("/carrinhos")
+        .set("authorization", "InvalidTokenFormat");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should return 401 when token is malformed or invalid", async () => {
+      const res = await request(app)
+        .get("/carrinhos")
+        .set("authorization", "Bearer invalidtoken123");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should return 403 when a non-admin user tries to access an admin-only route", async () => {
+      const registerRes = await request(app).post("/usuarios").send({
+        nome: "Comum User",
+        email: "user_non_admin_fixed@qa.com",
+        password: "teste",
+        administrador: "false"
+      });
+
+      expect(registerRes.status).toBe(201);
+
+      const loginRes = await request(app).post("/login").send({
+        email: "user_non_admin_fixed@qa.com",
+        password: "teste"
+      });
+
+      expect(loginRes.status).toBe(200);
+      const token = loginRes.body.authorization;
+
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: "Produto Teste",
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({
+        message: "Rota exclusiva para administradores"
+      });
+    });
+  });
+
+  describe("Error Handler Middleware", () => {
+    it("should return 400 when sending invalid JSON body", async () => {
+      const res = await request(app)
+        .post("/usuarios")
+        .set("Content-Type", "application/json")
+        .send("{ invalid json ");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message");
+    });
+
+    it("should handle URIError for invalid URL parameters", async () => {
+      const res = await request(app).get("/usuarios/%E0%A1%A");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+      });
+    });
+  });
+});
+```

@@ -1,0 +1,60 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Usuarios API", () => {
+  it("should create a new user and retrieve it", async () => {
+    const uniqueEmail = `user_${Date.now()}_${Math.random()}@test.com`;
+    const newUser = {
+      nome: "Test User",
+      email: uniqueEmail,
+      password: "secretpassword",
+      administrador: "false"
+    };
+
+    const postRes = await request(app)
+      .post("/usuarios")
+      .send(newUser);
+
+    expect(postRes.status).toBe(201);
+    expect(postRes.body).toHaveProperty("_id");
+    const userId = postRes.body._id;
+
+    const getRes = await request(app).get(`/usuarios/${userId}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body).toHaveProperty("email", uniqueEmail);
+    expect(getRes.body).toHaveProperty("nome", "Test User");
+
+    const listRes = await request(app).get("/usuarios");
+    expect(listRes.status).toBe(200);
+    expect(listRes.body).toHaveProperty("quantidade");
+    expect(listRes.body.quantidade).toBeGreaterThan(0);
+  });
+
+  it("should prevent duplicate emails on creation", async () => {
+    const uniqueEmail = `dup_${Date.now()}@test.com`;
+    const newUser = {
+      nome: "Duplicate User",
+      email: uniqueEmail,
+      password: "password123",
+      administrador: "false"
+    };
+
+    const firstRes = await request(app)
+      .post("/usuarios")
+      .send(newUser);
+    expect(firstRes.status).toBe(201);
+
+    const secondRes = await request(app)
+      .post("/usuarios")
+      .send(newUser);
+    expect(secondRes.status).toBe(400);
+  });
+
+  it("should return 400 for non-existent user ID", async () => {
+    const res = await request(app).get("/usuarios/1234567890abcdef");
+    expect(res.status).toBe(400);
+  });
+});
+```

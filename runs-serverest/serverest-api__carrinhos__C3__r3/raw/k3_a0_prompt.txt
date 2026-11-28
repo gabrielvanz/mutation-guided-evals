@@ -1,0 +1,571 @@
+Improve the Vitest + supertest test file for this API unit: the carrinhos API (files under test: src/controllers/carrinhos-controller.js, src/services/carrinhos-service.js, src/models/carrinhos-model.js) (app import path: `../../src/app`).
+
+Note about this project: This is an Express REST API (CommonJS JavaScript). The application object is exported by src/app.js (`module.exports = app`); import it with a default import. The routes are mounted on the paths listed in the context files. Use supertest (`import request from "supertest"`) and never start a real server.
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: ServeRest como API (testes de API via HTTP com supertest)
+
+- Os testes exercitam a API só por requisições HTTP ao app Express (`request(app).get("/usuarios")`, `.post`, `.put`, `.delete`), com `.send({...})` para o corpo e `.set("authorization", token)` para rotas protegidas. O token vem de `POST /login`.
+- O banco de dados é em memória e compartilhado pelos testes do arquivo. Cada teste cadastra os dados de que precisa, com valores únicos (por exemplo, e-mail e nome com um sufixo exclusivo), e não depende de outro teste nem da ordem de execução.
+- Verifique sempre o status HTTP e o corpo da resposta (`res.status`, `res.body`), com o texto exato das mensagens que aparece no código-fonte.
+- Cubra, para cada rota: o caminho feliz, validação do corpo (campos ausentes, tipos errados, valores em branco ou limites), autenticação e autorização (sem token, token inválido, usuário não administrador), recursos inexistentes, conflitos (e-mail ou nome já usado) e regras de negócio (por exemplo, não excluir usuário com carrinho, estoque insuficiente).
+- Filtros e listas: teste cada parâmetro de consulta suportado e a ordem em que a lista é devolvida.
+- Não importe controllers, services ou models: só o app.
+</conventions>
+
+Read-only context file `src/routes/carrinhos-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const authentication = require('../middlewares/authentication-middleware')
+const controller = require('../controllers/carrinhos-controller')
+const model = require('../models/carrinhos-model')
+const validateSchema = require('../services/validateSchema-service')
+const { filtrosDaLista } = require('../utils/filtrosDaQuery')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.get('/', plano('schema', 'read'), filtrosDaLista(model.schemaGet), etapa('read', controller.get))
+router.get('/:id', plano('schema', 'read'), validateSchema(model.schemaGetOne), etapa('read', controller.getOne))
+router.post('/', plano('auth', 'schema', 'rules', 'write'), authentication.checkToken, validateSchema(model.schemaPost), etapa('rules', controller.post))
+router.delete('/concluir-compra', plano('auth', 'rules'), authentication.checkToken, etapa('rules', controller.concluirCompra))
+router.delete('/cancelar-compra', plano('auth', 'rules'), authentication.checkToken, etapa('rules', controller.cancelarCompra))
+
+module.exports = router
+
+```
+
+Read-only context file `src/utils/rotas-da-api.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+// As rotas da API, numa lista só: o painel de etapas mede só elas, o orçamento de bytes do rate limiter conta só
+// elas e os buscadores não as indexam.
+module.exports = {
+  ROTAS_DA_API: ['/login', '/usuarios', '/produtos', '/carrinhos']
+}
+
+```
+
+Source of `the carrinhos API (files under test: src/controllers/carrinhos-controller.js, src/services/carrinhos-service.js, src/models/carrinhos-model.js)`:
+```js
+// ===== file: src/controllers/carrinhos-controller.js =====
+'use strict'
+
+const constant = require('../utils/constants')
+const service = require('../services/carrinhos-service')
+
+exports.get = async (req, res) => {
+  const carrinhos = await service.getAll(req.query)
+  res.status(200).send({ quantidade: carrinhos.length, carrinhos })
+}
+
+exports.getOne = async (req, res) => {
+  const { id } = req.params
+  const carrinho = await service.getOne(id)
+  if (!carrinho) {
+    return res.status(400).json({ message: constant.CART_NOT_FOUND })
+  }
+  return res.status(200).send(carrinho)
+}
+
+exports.post = async (req, res) => {
+  const { etapas } = res.locals
+  etapas.regras('single_cart', 'no_duplicate_product', 'product_exists', 'enough_stock', 'safe_totals')
+
+  const { idUsuario, possuiCarrinho } = await service.usuarioJaPossuiCarrinho(req.headers.authorization)
+  etapas.regra('single_cart', !possuiCarrinho)
+  if (possuiCarrinho) {
+    return res.status(400).send({ message: constant.LIMIT_JUST_ONE_CART })
+  }
+
+  // O express-validation não devolve ao req.body o número que o Joi converteu. Sem o Number,
+  // quantidade "2" seria gravada como texto e quantidadeTotal viraria "02". O + 0 transforma -0 em 0.
+  const produtos = req.body.produtos.map(produto => ({ ...produto, quantidade: Number(produto.quantidade) + 0 }))
+
+  const idProdutosDuplicados = service.extrairProdutosDuplicados(produtos)
+  etapas.regra('no_duplicate_product', !idProdutosDuplicados.length)
+  if (idProdutosDuplicados.length) {
+    return res.status(400).send({ message: constant.CART_WITH_DUPLICATE_PRODUCT, idProdutosDuplicados })
+  }
+
+  const { produtosComPrecoUnitario, error } = await service.getProdutosComPrecoUnitarioOuErro(produtos)
+  if (error) {
+    // As duas regras são avaliadas item a item e param no primeiro item que falha.
+    if (error.message === constant.PRODUCT_NOT_FOUND) {
+      etapas.regra('product_exists', false, { item: error.index })
+    } else {
+      etapas.regra('product_exists', true)
+      etapas.regra('enough_stock', false, { item: error.index })
+    }
+    return res.status(error.statusCode).send({ message: error.message, item: error.item })
+  }
+  etapas.regra('product_exists', true)
+  etapas.regra('enough_stock', true)
+
+  const precoTotal = service.precoTotal(produtosComPrecoUnitario)
+  const quantidadeTotal = service.quantidadeTotal(produtosComPrecoUnitario)
+  const totaisSeguros = service.totaisSaoSeguros(precoTotal, quantidadeTotal)
+  etapas.regra('safe_totals', totaisSeguros)
+  if (!totaisSeguros) {
+    return res.status(400).send({ message: constant.CART_TOTALS_TOO_BIG })
+  }
+
+  etapas.abrir('write')
+  await service.baixarEstoque(produtosComPrecoUnitario)
+
+  const carrinho = { produtos: produtosComPrecoUnitario, precoTotal, quantidadeTotal, idUsuario }
+
+  const dadosCadastrados = await service.criarCarrinho(carrinho)
+  res.status(201).send({ message: constant.POST_SUCCESS, _id: dadosCadastrados._id })
+}
+
+exports.cancelarCompra = async (req, res) => {
+  const carrinhoDoUsuario = await service.getCarrinhoDoUsuario(req.headers.authorization)
+
+  if (carrinhoDoUsuario.length) {
+    await service.removeCarrinho(carrinhoDoUsuario[0])
+    return res.status(200).send({ message: `${constant.DELETE_SUCCESS}. ${constant.REPLENISHED_STOCK}` })
+  }
+
+  res.status(200).send({ message: constant.NO_CART })
+}
+
+exports.concluirCompra = async (req, res) => {
+  const carrinhoDoUsuario = await service.getCarrinhoDoUsuario(req.headers.authorization)
+
+  if (carrinhoDoUsuario.length) {
+    await service.concluiCompra(carrinhoDoUsuario[0])
+    return res.status(200).send({ message: constant.DELETE_SUCCESS })
+  }
+  res.status(200).send({ message: constant.NO_CART })
+}
+
+// ===== file: src/services/carrinhos-service.js =====
+'use strict'
+
+const Datastore = require('nedb-promises')
+const { join } = require('path')
+
+const alterarValoresParaRegex = require('../utils/alterarValoresParaRegex')
+const { continuarDaMaiorMarca, doMaisNovoAoMaisAntigo, marcarAlteracao, semMarca } = require('../utils/ordemDeAlteracao')
+const authService = require('../services/auth-service')
+const usuariosService = require('../services/usuarios-service')
+const produtosService = require('../services/produtos-service')
+
+const datastore = Datastore.create({ filename: join(__dirname, '../data/carrinhos.db'), autoload: true })
+continuarDaMaiorMarca(datastore)
+
+// Index frequently searched fields for better query performance
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'idUsuario' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'precoTotal' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'quantidadeTotal' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'produtos.idProduto' })
+
+exports.getAll = async queryString => {
+  queryString = alterarValoresParaRegex(queryString)
+  return doMaisNovoAoMaisAntigo(await datastore.find(queryString))
+}
+
+exports.getOne = async id => {
+  return semMarca(await datastore.findOne({ _id: id }))
+}
+
+exports.existeCarrinho = pesquisa => {
+  return datastore.findOne(pesquisa)
+}
+
+exports.existeCarrinhoComProduto = idProduto => {
+  return datastore.findOne({ produtos: { $elemMatch: { idProduto } } })
+}
+
+exports.criarCarrinho = async body => {
+  return datastore.insert({ ...body, alteradoEm: marcarAlteracao() })
+}
+
+exports.extrairProdutosDuplicados = arrayProdutos => {
+  const vistos = new Set()
+  const duplicados = new Set()
+  for (const { idProduto } of arrayProdutos) {
+    if (vistos.has(idProduto)) duplicados.add(idProduto)
+    vistos.add(idProduto)
+  }
+  return [...duplicados]
+}
+
+exports.getProdutosComPrecoUnitarioOuErro = async arrayProdutos => {
+  // Use batch lookup instead of per-item queries to reduce round-trips
+  const { produtosComPreco, error } = await produtosService.getPrecosUnitariosPorLote(arrayProdutos)
+
+  if (error) {
+    const item = { ...error.item, index: error.index }
+    return { error: { ...error, item } }
+  }
+
+  return { produtosComPrecoUnitario: produtosComPreco }
+}
+
+exports.deleteById = async id => {
+  return datastore.remove({ _id: id }, {})
+}
+
+exports.concluiCompra = async carrinho => {
+  await this.deleteById(carrinho._id)
+}
+
+exports.removeCarrinho = async carrinho => {
+  const { produtos, _id } = carrinho
+  await this.reabasteceEstoque(produtos)
+  await this.deleteById(_id)
+}
+
+exports.getCarrinhoDoUsuario = async (authorization) => {
+  const _id = await idUsuario(authorization)
+  return this.getAll({ idUsuario: _id })
+}
+
+exports.usuarioJaPossuiCarrinho = async (authorization) => {
+  const _id = await idUsuario(authorization)
+  return {
+    idUsuario: _id,
+    possuiCarrinho: await this.existeCarrinho({ idUsuario: _id })
+  }
+}
+
+exports.precoTotal = produtos => produtos.reduce((total, produto) => total + produto.precoUnitario * produto.quantidade, 0)
+
+exports.quantidadeTotal = produtos => produtos.reduce((total, produto) => total + produto.quantidade, 0)
+
+// Acima de Number.MAX_SAFE_INTEGER o total seria gravado já arredondado, e o GET /carrinhos passaria a devolver
+// um número que nenhum contrato com Joi.number() aceita, reprovando a lista inteira e não só esse carrinho.
+exports.totaisSaoSeguros = (precoTotal, quantidadeTotal) =>
+  Number.isSafeInteger(precoTotal) && Number.isSafeInteger(quantidadeTotal)
+
+exports.baixarEstoque = async produtos => {
+  // Use batch update to reduce round-trips instead of updating per-item
+  await produtosService.updateQuantidadePorLote(produtos)
+}
+
+exports.reabasteceEstoque = async produtos => {
+  // Use batch restore to reduce round-trips instead of restoring per-item
+  await produtosService.restoreQuantidadePorLote(produtos)
+}
+
+const idUsuario = async (authorization) => {
+  const { email, password } = authService.verifyToken(authorization)
+  const { _id } = await usuariosService.getDadosDoUsuario({ email, password })
+  return _id
+}
+
+// ===== file: src/models/carrinhos-model.js =====
+'use strict'
+
+const { Joi } = require('express-validation')
+
+const filtroDeTexto = require('../utils/filtroDeTexto')
+
+exports.schemaGet = {
+  query: Joi.object({
+    precoTotal: Joi.number().positive().integer(),
+    quantidadeTotal: Joi.number().positive().integer(),
+    idUsuario: filtroDeTexto,
+    _id: filtroDeTexto
+  })
+}
+
+exports.schemaGetOne = {
+  params: Joi.object({
+    id: Joi.string().regex(/^[a-zA-Z0-9]{16}$/).required()
+  })
+}
+
+exports.schemaPost = {
+  body: Joi.object({
+    produtos: Joi.array().items(
+      Joi.object({
+        idProduto: Joi.string().required(),
+        quantidade: Joi.number().positive().integer().required()
+      })
+    ).min(1).required()
+  })
+}
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Carrinhos API", () => {
+  async function criarUsuarioToken(email: string, nome: string) {
+    await request(app)
+      .post("/usuarios")
+      .send({ nome, email, password: "password123", administrador: "true" });
+    const loginRes = await request(app)
+      .post("/login")
+      .send({ email, password: "password123" });
+    return loginRes.body.authorization;
+  }
+
+  async function criarProduto(nome: string, preco: number, quantidade: number, token: string) {
+    const res = await request(app)
+      .post("/produtos")
+      .set("authorization", token)
+      .send({ nome, preco, descricao: "Produto teste", quantidade });
+    return res.body._id;
+  }
+
+  describe("GET /carrinhos", () => {
+    it("should list all carts", async () => {
+      const res = await request(app).get("/carrinhos");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("quantidade");
+      expect(res.body).toHaveProperty("carrinhos");
+      expect(Array.isArray(res.body.carrinhos)).toBe(true);
+    });
+
+    it("should filter carts by query parameters", async () => {
+      const res = await request(app).get("/carrinhos?precoTotal=100");
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.carrinhos)).toBe(true);
+    });
+  });
+
+  describe("GET /carrinhos/:id", () => {
+    it("should return cart not found when ID does not exist", async () => {
+      const res = await request(app).get("/carrinhos/1234567890123456");
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Carrinho não encontrado" });
+    });
+
+    it("should return the correct cart when a valid existing ID is provided", async () => {
+      const token = await criarUsuarioToken("user_getone@email.com", "User GetOne");
+      const prodId = await criarProduto("Produto GetOne", 10, 10, token);
+
+      const postRes = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({ produtos: [{ idProduto: prodId, quantidade: 2 }] });
+
+      const cartId = postRes.body._id;
+
+      const res = await request(app).get(`/carrinhos/${cartId}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("_id", cartId);
+      expect(res.body).toHaveProperty("precoTotal", 20);
+      expect(res.body).toHaveProperty("quantidadeTotal", 2);
+    });
+
+    it("should fail with invalid id format", async () => {
+      const res = await request(app).get("/carrinhos/invalid-id");
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("POST /carrinhos", () => {
+    it("should fail without authorization token", async () => {
+      const res = await request(app)
+        .post("/carrinhos")
+        .send({ produtos: [{ idProduto: "123", quantidade: 1 }] });
+      expect(res.status).toBe(401);
+      expect(res.body).toHaveProperty("message");
+    });
+
+    it("should fail when product does not exist and include error item details", async () => {
+      const token = await criarUsuarioToken("user_cart_1@email.com", "User Cart 1");
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({ produtos: [{ idProduto: "inexistente123", quantidade: 1 }] });
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message", "Produto não encontrado");
+      expect(res.body.item).toHaveProperty("index", 0);
+    });
+
+    it("should fail when quantity exceeds stock", async () => {
+      const token = await criarUsuarioToken("user_cart_2@email.com", "User Cart 2");
+      const prodId = await criarProduto("Produto Estoque", 50, 5, token);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({ produtos: [{ idProduto: prodId, quantidade: 10 }] });
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message", "Produto não possui quantidade suficiente");
+      expect(res.body.item).toHaveProperty("index", 0);
+    });
+
+    it("should fail when sending duplicate products", async () => {
+      const token = await criarUsuarioToken("user_cart_3@email.com", "User Cart 3");
+      const prodId = await criarProduto("Produto Duplicado", 50, 10, token);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [
+            { idProduto: prodId, quantidade: 1 },
+            { idProduto: prodId, quantidade: 2 }
+          ]
+        });
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message", "Não é permitido possuir produto duplicado");
+      expect(res.body.idProdutosDuplicados).toEqual([prodId]);
+    });
+
+    it("should successfully create a cart", async () => {
+      const token = await criarUsuarioToken("user_cart_4@email.com", "User Cart 4");
+      const prodId = await criarProduto("Produto Valido", 25, 10, token);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({ produtos: [{ idProduto: prodId, quantidade: 2 }] });
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+      expect(res.body).toHaveProperty("_id");
+    });
+
+    it("should prevent creating more than one cart per user", async () => {
+      const token = await criarUsuarioToken("user_cart_5@email.com", "User Cart 5");
+      const prodId1 = await criarProduto("Produto Valido A", 10, 10, token);
+      const prodId2 = await criarProduto("Produto Valido B", 15, 10, token);
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({ produtos: [{ idProduto: prodId1, quantidade: 1 }] });
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({ produtos: [{ idProduto: prodId2, quantidade: 1 }] });
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Não é permitido ter mais de 1 carrinho" });
+    });
+
+    it("should fail when cart totals exceed safe integer limits", async () => {
+      const token = await criarUsuarioToken("user_cart_huge@email.com", "User Cart Huge");
+      const prodId = await criarProduto("Produto Enorme", 10, 10, token);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({ produtos: [{ idProduto: prodId, quantidade: Number.MAX_SAFE_INTEGER }] });
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message", "Produto não possui quantidade suficiente");
+    });
+  });
+
+  describe("DELETE /carrinhos/concluir-compra", () => {
+    it("should fail without authorization token", async () => {
+      const res = await request(app).delete("/carrinhos/concluir-compra");
+      expect(res.status).toBe(401);
+    });
+
+    it("should return no cart message when user has no cart", async () => {
+      const token = await criarUsuarioToken("user_concluir_1@email.com", "User Concluir 1");
+      const res = await request(app)
+        .delete("/carrinhos/concluir-compra")
+        .set("authorization", token);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Não foi encontrado carrinho para esse usuário" });
+    });
+
+    it("should successfully complete a purchase and delete the cart", async () => {
+      const token = await criarUsuarioToken("user_concluir_2@email.com", "User Concluir 2");
+      const prodId = await criarProduto("Produto Concluir", 10, 10, token);
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({ produtos: [{ idProduto: prodId, quantidade: 2 }] });
+
+      const res = await request(app)
+        .delete("/carrinhos/concluir-compra")
+        .set("authorization", token);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro excluído com sucesso" });
+    });
+  });
+
+  describe("DELETE /carrinhos/cancelar-compra", () => {
+    it("should fail without authorization token", async () => {
+      const res = await request(app).delete("/carrinhos/cancelar-compra");
+      expect(res.status).toBe(401);
+    });
+
+    it("should return no cart message when user has no cart to cancel", async () => {
+      const token = await criarUsuarioToken("user_cancelar_1@email.com", "User Cancelar 1");
+      const res = await request(app)
+        .delete("/carrinhos/cancelar-compra")
+        .set("authorization", token);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Não foi encontrado carrinho para esse usuário" });
+    });
+
+    it("should successfully cancel a purchase, replenish stock and delete cart", async () => {
+      const token = await criarUsuarioToken("user_cancelar_2@email.com", "User Cancelar 2");
+      const prodId = await criarProduto("Produto Cancelar", 10, 5, token);
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({ produtos: [{ idProduto: prodId, quantidade: 3 }] });
+
+      const res = await request(app)
+        .delete("/carrinhos/cancelar-compra")
+        .set("authorization", token);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro excluído com sucesso. Estoque dos produtos reabastecido" });
+    });
+  });
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 5 changes below (5 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. file src/services/carrinhos-service.js, line 39, operator ObjectLiteral (no test executes this code)
+   line: return datastore.findOne({ produtos: { $elemMatch: { idProduto } } })
+   original fragment: "{ idProduto }"
+   mutated fragment:  "{}"
+2. file src/controllers/carrinhos-controller.js, line 43, operator BlockStatement
+   line: if (error.message === constant.PRODUCT_NOT_FOUND) {
+   original fragment: "{\r\n      etapas.regra('product_exists', false, { item: error.index })\r\n    }"
+   mutated fragment:  "{}"
+3. file src/controllers/carrinhos-controller.js, line 44, operator BooleanLiteral
+   line: etapas.regra('product_exists', false, { item: error.index })
+   original fragment: "false"
+   mutated fragment:  "true"
+4. file src/controllers/carrinhos-controller.js, line 44, operator ObjectLiteral
+   line: etapas.regra('product_exists', false, { item: error.index })
+   original fragment: "{ item: error.index }"
+   mutated fragment:  "{}"
+5. file src/controllers/carrinhos-controller.js, line 58, operator BlockStatement (no test executes this code)
+   line: if (!totaisSeguros) {
+   original fragment: "{\r\n    return res.status(400).send({ message: constant.CART_TOTALS_TOO_BIG })\r\n  }"
+   mutated fragment:  "{}"
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.

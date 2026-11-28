@@ -1,0 +1,27 @@
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("produtos-service", () => {
+  it("should export expected service methods", () => {
+    expect(typeof produtosService.getAll).toBe("function");
+    expect(typeof produtosService.getOne).toBe("function");
+    expect(typeof produtosService.existeProduto).toBe("function");
+    expect(typeof produtosService.criarProduto).toBe("function");
+    expect(typeof produtosService.getPrecosUnitariosPorLote).toBe("function");
+    expect(typeof produtosService.deleteById).toBe("function");
+    expect(typeof produtosService.createOrUpdateById).toBe("function");
+    expect(typeof produtosService.updateById).toBe("function");
+  });
+
+  it("should return an error when batch prices check fails due to missing product", async () => {
+    const result = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "non-existent-id", quantidade: 1 }
+    ]);
+
+    expect(result).toHaveProperty("error");
+    expect(result.error).toMatchObject({
+      statusCode: 400,
+      item: { idProduto: "non-existent-id", quantidade: 1 }
+    });
+  });
+});

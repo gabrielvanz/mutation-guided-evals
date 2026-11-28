@@ -1,0 +1,737 @@
+The Vitest test file below for `the produtos API (files under test: src/controllers/produtos-controller.js, src/services/produtos-service.js, src/models/produtos-model.js)` (import path: `../../src/app`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Note about this project: This is an Express REST API (CommonJS JavaScript). The application object is exported by src/app.js (`module.exports = app`); import it with a default import. The routes are mounted on the paths listed in the context files. Use supertest (`import request from "supertest"`) and never start a real server.
+
+Read-only context file `src/routes/produtos-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const authentication = require('../middlewares/authentication-middleware')
+const controller = require('../controllers/produtos-controller')
+const model = require('../models/produtos-model')
+const validateSchema = require('../services/validateSchema-service')
+const { filtrosDaLista } = require('../utils/filtrosDaQuery')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.get('/', plano('schema', 'read'), filtrosDaLista(model.schemaGet), etapa('read', controller.get))
+router.get('/:id', plano('schema', 'read'), validateSchema(model.schemaGetOne), etapa('read', controller.getOne))
+router.post('/', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaPost), etapa('rules', controller.post))
+router.delete('/:id', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaDelete), etapa('rules', controller.delete))
+router.put('/:id', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaPut), etapa('rules', controller.put))
+
+module.exports = router
+
+```
+
+Read-only context file `src/utils/rotas-da-api.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+// As rotas da API, numa lista só: o painel de etapas mede só elas, o orçamento de bytes do rate limiter conta só
+// elas e os buscadores não as indexam.
+module.exports = {
+  ROTAS_DA_API: ['/login', '/usuarios', '/produtos', '/carrinhos']
+}
+
+```
+
+Source of `the produtos API (files under test: src/controllers/produtos-controller.js, src/services/produtos-service.js, src/models/produtos-model.js)`:
+```js
+// ===== file: src/controllers/produtos-controller.js =====
+'use strict'
+
+const carrinhosService = require('../services/carrinhos-service')
+const constant = require('../utils/constants')
+const service = require('../services/produtos-service')
+
+exports.get = async (req, res) => {
+  const produtos = await service.getAll(req.query)
+  res.status(200).send({ quantidade: produtos.length, produtos })
+}
+
+exports.getOne = async (req, res) => {
+  const { id } = req.params
+  const produto = await service.getOne(id)
+  if (!produto) {
+    return res.status(400).json({ message: constant.PRODUCT_NOT_FOUND })
+  }
+  return res.status(200).send(produto)
+}
+
+exports.post = async (req, res) => {
+  const { nome } = req.body
+  const trimmedName = nome.trim()
+
+  const productExists = await service.existeProduto({ nome: trimmedName })
+
+  if (productExists) {
+    return res.status(400).send({ message: constant.NAME_ALREADY_USED })
+  }
+
+  const { _id } = await service.criarProduto(req.body)
+
+  res.status(201).send({ message: constant.POST_SUCCESS, _id })
+}
+
+exports.delete = async (req, res) => {
+  const carrinhoComProduto = await carrinhosService.existeCarrinhoComProduto(req.params.id)
+  if (carrinhoComProduto) {
+    return res.status(400).send({ message: constant.DELETE_PRODUCT_WITH_CART, idCarrinhos: [carrinhoComProduto._id] })
+  }
+  const quantidadeRegistrosExcluidos = await service.deleteById(req.params.id)
+  const message = quantidadeRegistrosExcluidos === 0 ? constant.DELETE_NONE : constant.DELETE_SUCCESS
+  res.status(200).send({ message })
+}
+
+exports.put = async (req, res) => {
+  const { id } = req.params
+  const { nome } = req.body
+  const product = { nome: nome.trim(), $not: { _id: id } }
+
+  const productExists = await service.existeProduto(product)
+
+  if (productExists) {
+    return res.status(400).json({ message: constant.NAME_ALREADY_USED })
+  }
+
+  const updatedProduct = await service.createOrUpdateById(id, req.body)
+  if (updatedProduct._id !== id) {
+    return res.status(201).json({ message: constant.POST_SUCCESS, _id: updatedProduct._id })
+  }
+
+  return res.status(200).json({ message: constant.PUT_SUCCESS })
+}
+
+// ===== file: src/services/produtos-service.js =====
+'use strict'
+
+const constant = require('../utils/constants')
+const Datastore = require('nedb-promises')
+const { join } = require('path')
+
+const alterarValoresParaRegex = require('../utils/alterarValoresParaRegex')
+const { continuarDaMaiorMarca, doMaisNovoAoMaisAntigo, marcarAlteracao, semMarca } = require('../utils/ordemDeAlteracao')
+
+const datastore = Datastore.create({ filename: join(__dirname, '../data/produtos.db'), autoload: true })
+continuarDaMaiorMarca(datastore)
+
+// Index frequently searched fields for better query performance
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'nome', sparse: true })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'preco' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'quantidade' })
+
+exports.getAll = async queryString => {
+  queryString = alterarValoresParaRegex(queryString)
+  return doMaisNovoAoMaisAntigo(await datastore.find(queryString))
+}
+
+exports.getOne = async id => {
+  return semMarca(await datastore.findOne({ _id: id }))
+}
+
+/* istanbul ignore next */
+exports.getDadosDoProduto = queryString => {
+  return datastore.findOne(queryString)
+}
+
+exports.existeProduto = pesquisa => {
+  return datastore.findOne(pesquisa)
+}
+
+/* istanbul ignore next */
+exports.updateQuantidade = async ({ idProduto, quantidade }) => {
+  const { quantidade: quantidadeEmEstoque } = await this.getDadosDoProduto({ _id: idProduto })
+  const novaQuantidade = quantidadeEmEstoque - quantidade
+  await this.updateById(idProduto, { $set: { quantidade: novaQuantidade } })
+}
+
+/* istanbul ignore next */
+exports.updateQuantidadePorLote = async (arrayProdutosComQuantidade) => {
+  // Batch update to reduce round-trips: fetch all, calculate new quantities, update all
+  const idProdutos = arrayProdutosComQuantidade.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Calculate new quantities and perform updates
+  const updates = arrayProdutosComQuantidade.map(produto => {
+    const { idProduto, quantidade } = produto
+    const produtoAtual = produtosMap.get(idProduto)
+    if (produtoAtual) {
+      const novaQuantidade = produtoAtual.quantidade - quantidade
+      return this.updateById(idProduto, { $set: { quantidade: novaQuantidade } })
+    }
+    return Promise.resolve()
+  })
+
+  await Promise.all(updates)
+}
+
+/* istanbul ignore next */
+exports.restoreQuantidadePorLote = async (arrayProdutosComQuantidade) => {
+  // Batch restore to reduce round-trips: fetch all, calculate restored quantities, update all
+  const idProdutos = arrayProdutosComQuantidade.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Calculate restored quantities and perform updates
+  const updates = arrayProdutosComQuantidade.map(produto => {
+    const { idProduto, quantidade } = produto
+    const produtoAtual = produtosMap.get(idProduto)
+    if (produtoAtual) {
+      // O estoque não passa de Number.MAX_SAFE_INTEGER: um PUT pode ter levado o produto ao limite enquanto o
+      // carrinho estava aberto, e a soma gravaria um número já arredondado.
+      const quantidadeRestaurada = Math.min(produtoAtual.quantidade + quantidade, Number.MAX_SAFE_INTEGER)
+      return this.updateById(idProduto, { $set: { quantidade: quantidadeRestaurada } })
+    }
+    return Promise.resolve()
+  })
+
+  await Promise.all(updates)
+}
+
+exports.criarProduto = async body => {
+  body = formatarValores(body)
+  return datastore.insert({ ...body, alteradoEm: marcarAlteracao() })
+}
+
+/* istanbul ignore next */
+exports.getPrecoUnitarioOuErro = async (produto) => {
+  const quantidade = Number(produto.quantidade)
+  const { idProduto } = produto
+  const existePedido = await this.existeProduto({ _id: idProduto })
+  if (!existePedido) {
+    return { error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade } } }
+  }
+
+  const { quantidade: quantidadeEstoque, preco } = await this.getDadosDoProduto({ _id: idProduto })
+  if (quantidade > quantidadeEstoque) {
+    return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque } } }
+  }
+  return { precoUnitario: preco }
+}
+
+exports.getPrecosUnitariosPorLote = async (arrayProdutos) => {
+  // Fetch all products in one query to reduce round-trips
+  const idProdutos = arrayProdutos.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Validate each product and build result
+  for (let i = 0; i < arrayProdutos.length; i++) {
+    const produto = arrayProdutos[i]
+    const quantidade = Number(produto.quantidade)
+    const { idProduto } = produto
+
+    const produtoEmEstoque = produtosMap.get(idProduto)
+    if (!produtoEmEstoque) {
+      return { error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade }, index: i } }
+    }
+
+    if (quantidade > produtoEmEstoque.quantidade) {
+      return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque: produtoEmEstoque.quantidade }, index: i } }
+    }
+  }
+
+  // Build result with prices
+  const produtosComPreco = arrayProdutos.map((produto, index) => ({
+    ...produto,
+    precoUnitario: produtosMap.get(produto.idProduto).preco
+  }))
+
+  return { produtosComPreco }
+}
+
+exports.deleteById = async id => {
+  return datastore.remove({ _id: id }, {})
+}
+
+exports.createOrUpdateById = async (idDoProdutoQueSeraAlterado, body) => {
+  body = formatarValores(body)
+  // Só o PUT marca: a baixa e a reposição de estoque feitas pelos carrinhos não mudam a posição na lista.
+  return this.updateById(idDoProdutoQueSeraAlterado, { ...body, alteradoEm: marcarAlteracao() })
+}
+
+exports.updateById = async (idDoProdutoQueSeraAlterado, body) => {
+  return datastore.update({ _id: idDoProdutoQueSeraAlterado }, body, { upsert: true, returnUpdatedDocs: true })
+}
+
+function formatarValores (body) {
+  body.nome = body.nome.trim()
+  // O express-validation não devolve ao req.body o número que o Joi converteu, então um texto
+  // como "470" chega aqui. Number, e não parseInt: o Joi aceita "4e2" como 400 e o parseInt leria 4.
+  // O + 0 transforma -0 em 0, como o Joi faz com "-0".
+  body.preco = Number(body.preco) + 0
+  body.quantidade = Number(body.quantidade) + 0
+  if (body.imagem) {
+    body.imagem = body.imagem.trim()
+  }
+  return body
+}
+
+// ===== file: src/models/produtos-model.js =====
+'use strict'
+
+const { Joi } = require('express-validation')
+
+const filtroDeTexto = require('../utils/filtroDeTexto')
+
+exports.schemaGet = {
+  query: Joi.object({
+    _id: filtroDeTexto,
+    nome: filtroDeTexto,
+    preco: Joi.number().positive().integer(),
+    descricao: filtroDeTexto,
+    quantidade: Joi.number().min(0).integer(),
+    imagem: filtroDeTexto
+  })
+}
+
+exports.schemaGetOne = {
+  params: Joi.object({
+    id: Joi.string().regex(/^[a-zA-Z0-9]{16}$/).required()
+  })
+}
+
+exports.schemaPost = {
+  body: Joi.object({
+    nome: Joi.string().trim().required(),
+    preco: Joi.number().positive().integer().required(),
+    descricao: Joi.string().required(),
+    quantidade: Joi.number().min(0).integer().required(),
+    imagem: Joi.string().trim().optional()
+  })
+}
+
+exports.schemaDelete = {
+  params: Joi.object({
+    id: Joi.string().regex(/^[a-zA-Z0-9]{16}$/).required()
+  })
+}
+
+exports.schemaPut = {
+  params: this.schemaDelete.params,
+  body: this.schemaPost.body
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Produtos API", () => {
+  let adminToken: string;
+  let counter = 0;
+
+  const getAdminToken = async () => {
+    if (adminToken) return adminToken;
+    counter++;
+    const email = `admin_prod_${counter}@qa.com`;
+    await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Admin Teste",
+        email,
+        password: "teste",
+        administrador: "true"
+      });
+    const loginRes = await request(app)
+      .post("/login")
+      .send({ email, password: "teste" });
+    adminToken = loginRes.body.authorization;
+    return adminToken;
+  };
+
+  describe("GET /produtos", () => {
+    it("should return all products", async () => {
+      const token = await getAdminToken();
+      counter++;
+      const uniqueName = `Produto Get ${counter}`;
+      await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 100,
+          descricao: "Descricao",
+          quantidade: 10
+        });
+
+      const res = await request(app).get("/produtos");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("quantidade");
+      expect(res.body).toHaveProperty("produtos");
+      expect(Array.isArray(res.body.produtos)).toBe(true);
+      expect(res.body.produtos.length).toBeGreaterThan(0);
+    });
+
+    it("should filter products by query parameters", async () => {
+      const token = await getAdminToken();
+      counter++;
+      const uniqueName = `Produto Filtro ${counter}`;
+      await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 250,
+          descricao: "Descricao Filtro",
+          quantidade: 5
+        });
+
+      const res = await request(app).get(`/produtos?nome=${encodeURIComponent(uniqueName)}`);
+      expect(res.status).toBe(200);
+      expect(res.body.quantidade).toBe(1);
+      expect(res.body.produtos[0].nome).toBe(uniqueName);
+    });
+  });
+
+  describe("GET /produtos/:id", () => {
+    it("should return a product by valid id", async () => {
+      const token = await getAdminToken();
+      counter++;
+      const uniqueName = `Produto GetOne ${counter}`;
+      const createRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 50,
+          descricao: "Descricao GetOne",
+          quantidade: 15
+        });
+
+      const productId = createRes.body._id;
+      const res = await request(app).get(`/produtos/${productId}`);
+      expect(res.status).toBe(200);
+      expect(res.body._id).toBe(productId);
+      expect(res.body.nome).toBe(uniqueName);
+    });
+
+    it("should return 400 when product id does not exist", async () => {
+      const nonExistentId = "1234567890abcdef";
+      const res = await request(app).get(`/produtos/${nonExistentId}`);
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Produto não encontrado" });
+    });
+
+    it("should return validation error for invalid product id format", async () => {
+      const res = await request(app).get("/produtos/invalid-id");
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("POST /produtos", () => {
+    it("should create a product successfully when authorized as admin", async () => {
+      const token = await getAdminToken();
+      counter++;
+      const uniqueName = `Novo Produto ${counter}`;
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 199,
+          descricao: "Produto novo",
+          quantidade: 20
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+      expect(res.body).toHaveProperty("_id");
+    });
+
+    it("should return 400 when product name is already used", async () => {
+      const token = await getAdminToken();
+      counter++;
+      const uniqueName = `Produto Duplicado ${counter}`;
+      const payload = {
+        nome: uniqueName,
+        preco: 100,
+        descricao: "Descricao",
+        quantidade: 10
+      };
+
+      await request(app).post("/produtos").set("authorization", token).send(payload);
+      const res = await request(app).post("/produtos").set("authorization", token).send(payload);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Já existe produto com esse nome" });
+    });
+
+    it("should return 401 when token is missing", async () => {
+      const res = await request(app)
+        .post("/produtos")
+        .send({
+          nome: "Sem Token",
+          preco: 100,
+          descricao: "Descricao",
+          quantidade: 10
+        });
+
+      expect(res.status).toBe(401);
+    });
+
+    it("should return validation error when required fields are missing", async () => {
+      const token = await getAdminToken();
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          preco: 100
+        });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("PUT /produtos/:id", () => {
+    it("should update an existing product successfully", async () => {
+      const token = await getAdminToken();
+      counter++;
+      const uniqueName = `Produto Para Put ${counter}`;
+      const createRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 100,
+          descricao: "Descricao",
+          quantidade: 10
+        });
+
+      const productId = createRes.body._id;
+      counter++;
+      const updatedName = `Produto Atualizado ${counter}`;
+      const res = await request(app)
+        .put(`/produtos/${productId}`)
+        .set("authorization", token)
+        .send({
+          nome: updatedName,
+          preco: 150,
+          descricao: "Descricao Atualizada",
+          quantidade: 12
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro alterado com sucesso" });
+    });
+
+    it("should create or update (upsert) when product id does not exist", async () => {
+      const token = await getAdminToken();
+      const nonExistentId = "abcdef1234567890";
+      counter++;
+      const uniqueName = `Produto Upsert ${counter}`;
+      const res = await request(app)
+        .put(`/produtos/${nonExistentId}`)
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 300,
+          descricao: "Upsert desc",
+          quantidade: 5
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+      expect(res.body._id).toBe(nonExistentId);
+    });
+
+    it("should return 400 when updating with an already used name", async () => {
+      const token = await getAdminToken();
+      counter++;
+      const name1 = `Produto Um ${counter}`;
+      counter++;
+      const name2 = `Produto Dois ${counter}`;
+
+      await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({ nome: name1, preco: 100, descricao: "D1", quantidade: 10 });
+
+      const res2 = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({ nome: name2, preco: 100, descricao: "D2", quantidade: 10 });
+
+      const product2Id = res2.body._id;
+
+      const res = await request(app)
+        .put(`/produtos/${product2Id}`)
+        .set("authorization", token)
+        .send({ nome: name1, preco: 120, descricao: "D2", quantidade: 10 });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Já existe produto com esse nome" });
+    });
+
+    it("should return 401 when updating without token", async () => {
+      const res = await request(app)
+        .put("/produtos/1234567890abcdef")
+        .send({
+          nome: "Sem Token",
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe("DELETE /produtos/:id", () => {
+    it("should delete an existing product successfully", async () => {
+      const token = await getAdminToken();
+      counter++;
+      const uniqueName = `Produto Delete ${counter}`;
+      const createRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      const productId = createRes.body._id;
+      const res = await request(app)
+        .delete(`/produtos/${productId}`)
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro excluído com sucesso" });
+    });
+
+    it("should return delete none message when product does not exist", async () => {
+      const token = await getAdminToken();
+      const nonExistentId = "fedcba0987654321";
+      const res = await request(app)
+        .delete(`/produtos/${nonExistentId}`)
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Nenhum registro excluído" });
+    });
+
+    it("should prevent deletion and return cart error if product is part of a cart", async () => {
+      const token = await getAdminToken();
+      counter++;
+      const uniqueName = `Produto Carrinho ${counter}`;
+      const productRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 50,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      const productId = productRes.body._id;
+
+      counter++;
+      const userEmail = `user_prod_${counter}@qa.com`;
+      await request(app)
+        .post("/usuarios")
+        .send({
+          nome: "User Teste",
+          email: userEmail,
+          password: "teste",
+          administrador: "false"
+        });
+      const loginRes = await request(app)
+        .post("/login")
+        .send({ email: userEmail, password: "teste" });
+      const userToken = loginRes.body.authorization;
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", userToken)
+        .send({
+          produtos: [{ idProduto: productId, quantidade: 2 }]
+        });
+
+      const res = await request(app)
+        .delete(`/produtos/${productId}`)
+        .set("authorization", token);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message", "Não é permitido excluir produto que faz parte de carrinho");
+      expect(res.body).toHaveProperty("idCarrinhos");
+      expect(Array.isArray(res.body.idCarrinhos)).toBe(true);
+    });
+
+    it("should return 401 when deleting without token", async () => {
+      const res = await request(app).delete("/produtos/1234567890abcdef");
+      expect(res.status).toBe(401);
+    });
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v3.2.7 /home/administrador/work/w2
+
+ ❯ test/__generated__/produtos.gen.test.ts (17 tests | 1 failed) 204ms
+   ✓ Produtos API > GET /produtos > should return all products 69ms
+   ✓ Produtos API > GET /produtos > should filter products by query parameters 11ms
+   ✓ Produtos API > GET /produtos/:id > should return a product by valid id 12ms
+   ✓ Produtos API > GET /produtos/:id > should return 400 when product id does not exist 7ms
+   ✓ Produtos API > GET /produtos/:id > should return validation error for invalid product id format 6ms
+   ✓ Produtos API > POST /produtos > should create a product successfully when authorized as admin 5ms
+   ✓ Produtos API > POST /produtos > should return 400 when product name is already used 8ms
+   ✓ Produtos API > POST /produtos > should return 401 when token is missing 4ms
+   ✓ Produtos API > POST /produtos > should return validation error when required fields are missing 7ms
+   ✓ Produtos API > PUT /produtos/:id > should update an existing product successfully 9ms
+   × Produtos API > PUT /produtos/:id > should create or update (upsert) when product id does not exist 14ms
+     → expected 'qKSX06bbFcQs9kzV' to be 'abcdef1234567890' // Object.is equality
+   ✓ Produtos API > PUT /produtos/:id > should return 400 when updating with an already used name 12ms
+   ✓ Produtos API > PUT /produtos/:id > should return 401 when updating without token 3ms
+   ✓ Produtos API > DELETE /produtos/:id > should delete an existing product successfully 8ms
+   ✓ Produtos API > DELETE /produtos/:id > should return delete none message when product does not exist 3ms
+   ✓ Produtos API > DELETE /produtos/:id > should prevent deletion and return cart error if product is part of a cart 18ms
+   ✓ Produtos API > DELETE /produtos/:id > should return 401 when deleting without token 4ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 16 passed (17)
+   Start at  18:10:08
+   Duration  1.58s (transform 81ms, setup 0ms, collect 894ms, tests 204ms, environment 0ms, prepare 125ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/produtos.gen.test.ts > Produtos API > PUT /produtos/:id > should create or update (upsert) when product id does not exist
+AssertionError: expected 'qKSX06bbFcQs9kzV' to be 'abcdef1234567890' // Object.is equality
+
+Expected: "abcdef1234567890"
+Received: "qKSX06bbFcQs9kzV"
+
+ ❯ test/__generated__/produtos.gen.test.ts:220:28
+    218|       expect(res.status).toBe(201);
+    219|       expect(res.body).toHaveProperty("message", "Cadastro realizado c…
+    220|       expect(res.body._id).toBe(nonExistentId);
+       |                            ^
+    221|     });
+    222| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

@@ -1,0 +1,208 @@
+```ts
+import { describe, it, expect } from "vitest";
+import rateLimiterModule, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter exportações e funções", () => {
+  it("deve exportar a constante BYTES_POR_HORA", () => {
+    expect(BYTES_POR_HORA).toBe(250 * 1024 * 1024);
+  });
+
+  describe("criarOrcamentoDeBytes", () => {
+    it("deve retornar 0 ms para liberar quando o orçamento não foi excedido", async () => {
+      const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+      const ms = await orcamento.msAteLiberar("127.0.0.1");
+      expect(ms).toBe(0);
+    });
+
+    it("deve ter duracaoMs calculada corretamente", () => {
+      const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 5 });
+      expect(orcamento.duracaoMs).toBe(5000);
+    });
+
+    it("deve registrar penalidade se o tamanho for maior que zero", async () => {
+      const orcamento = criarOrcamentoDeBytes({ bytes: 10, segundos: 10 });
+      orcamento.registrar("127.0.0.1", 5);
+      const ms = await orcamento.msAteLiberar("127.0.0.1");
+      expect(ms).toBe(0);
+    });
+
+    it("não deve quebrar ao registrar tamanho menor ou igual a zero", async () => {
+      const orcamento = criarOrcamentoDeBytes({ bytes: 10, segundos: 10 });
+      orcamento.registrar("127.0.0.1", 0);
+      orcamento.registrar("127.0.0.1", -5);
+      const ms = await orcamento.msAteLiberar("127.0.0.1");
+      expect(ms).toBe(0);
+    });
+  });
+
+  describe("criarLimitador", () => {
+    it("deve permitir a requisição quando nenhum limite é atingido", async () => {
+      const limitadorMock = {
+        msAteLiberar: async () => 0,
+        duracaoMs: 1000
+      };
+      const globalMock = {
+        consume: async () => {}
+      };
+      const porIpMock = {
+        consume: async () => {}
+      };
+
+      const verificar = criarLimitador({
+        global: globalMock,
+        porIp: porIpMock,
+        orcamento: limitadorMock
+      });
+
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {
+        on: () => {},
+        getHeader: () => 100
+      };
+
+      const resultado = await verificar(req, res);
+      expect(resultado).toBeNull();
+    });
+
+    it("deve barrar requisição se o orçamento de bytes for excedido", async () => {
+      const limitadorMock = {
+        msAteLiberar: async () => 5000,
+        duracaoMs: 1000
+      };
+
+      const verificar = criarLimitador({
+        orcamento: limitadorMock
+      });
+
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {};
+
+      const resultado = await verificar(req, res);
+      expect(resultado).toEqual({ tipo: "orcamento-de-bytes", ms: 5000 });
+    });
+
+    it("deve retornar erro do orçamento se msAteLiberar lançar exceção", async () => {
+      const erroSimulado = new Error("Erro storage");
+      const limitadorMock = {
+        msAteLiberar: async () => { throw erroSimulado; },
+        duracaoMs: 1000
+      };
+
+      const verificar = criarLimitador({
+        orcamento: limitadorMock
+      });
+
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {};
+
+      const resultado = await verificar(req, res);
+      expect(resultado).toEqual({
+        tipo: "orcamento-de-bytes",
+        ms: 1000,
+        erro: erroSimulado
+      });
+    });
+
+    it("deve ignorar verificação de orçamento de API para métodos HEAD ou rotas fora da API", async () => {
+      let chamado = false;
+      const limitadorMock = {
+        msAteLiberar: async () => { chamado = true; return 5000; },
+        duracaoMs: 1000
+      };
+      const globalMock = {
+        consume: async () => {}
+      };
+      const porIpMock = {
+        consume: async () => {}
+      };
+
+      const verificar = criarLimitador({
+        global: globalMock,
+        porIp: porIpMock,
+        orcamento: limitadorMock
+      });
+
+      const req = { method: "HEAD", path: "/usuarios", ip: "127.0.0.1" };
+      const res = { on: () => {} };
+
+      const resultado = await verificar(req, res);
+      expect(chamado).toBe(false);
+      expect(resultado).toBeNull();
+    });
+  });
+
+  describe("criarRateLimiter", () => {
+    it("deve chamar next() se o limitador retornar null", async () => {
+      const limitadorMock = async () => null;
+      const rateLimiter = criarRateLimiter({ limitador: limitadorMock });
+
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {};
+      let nextChamado = false;
+      const next = () => { nextChamado = true; };
+
+      await rateLimiter(req, res, next);
+      expect(nextChamado).toBe(true);
+    });
+
+    it("deve retornar status 429 e mensagem de erro quando houver bloqueio", async () => {
+      const limitadorMock = async () => ({ tipo: "requisicoes-por-ip", ms: 3000 });
+      const rateLimiter = criarRateLimiter({ limitador: limitadorMock });
+
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      let statusEnviado = null;
+      let bodyEnviado = null;
+      let headers = {};
+
+      const res = {
+        status(s) {
+          statusEnviado = s;
+          return this;
+        },
+        send(b) {
+          bodyEnviado = b;
+          return this;
+        },
+        set(h, val) {
+          headers[h] = val;
+        }
+      };
+
+      const next = () => {};
+
+      await rateLimiter(req, res, next);
+
+      expect(statusEnviado).toBe(429);
+      expect(bodyEnviado).toEqual({ message: "Foi detectado comportamento equivalente a teste de carga, não execute teste de carga nesse ambiente. Leia a documentação: https://github.com/ServeRest/ServeRest#teste-de-carga" });
+      expect(headers["Retry-After"]).toBe("3");
+    });
+  });
+
+  describe("middleware principal", () => {
+    it("deve ser uma função", () => {
+      expect(typeof rateLimiterModule).toBe("function");
+    });
+
+    it("deve ignorar e chamar next em ambiente de testes", async () => {
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {
+        locals: {
+          etapas: {
+            ignorar: () => {}
+          }
+        }
+      };
+      let nextChamado = false;
+      const next = () => { nextChamado = true; };
+
+      await rateLimiterModule(req, res, next);
+      expect(nextChamado).toBe(true);
+    });
+  });
+});
+```

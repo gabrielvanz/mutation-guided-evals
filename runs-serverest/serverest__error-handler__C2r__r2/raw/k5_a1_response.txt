@@ -1,0 +1,317 @@
+```ts
+import { describe, it, expect } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+
+describe("errorHandler", () => {
+  it("should handle headers already sent with timedout request", () => {
+    const error = new Error("Test error");
+    error.stack = "Error stack";
+    const req = {
+      timedout: true,
+      method: "GET",
+      originalUrl: "/test",
+      socket: { destroy: () => {} }
+    };
+    let destroyed = false;
+    req.socket.destroy = () => {
+      destroyed = true;
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: false
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(destroyed).toBe(true);
+  });
+
+  it("should handle headers already sent with writableEnded true", () => {
+    const error = new Error("Test error");
+    error.stack = "Error stack";
+    const req = {
+      timedout: false,
+      method: "POST",
+      originalUrl: "/test",
+      socket: { destroy: () => {} }
+    };
+    let destroyed = false;
+    req.socket.destroy = () => {
+      destroyed = true;
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: true
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(destroyed).toBe(false);
+  });
+
+  it("should handle ValidationError", () => {
+    const error = {
+      name: "ValidationError",
+      details: [{ message: "field is required", path: ["field"], type: "any.required" }]
+    };
+    const req = {};
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(400);
+    expect(jsonCalledWith).toBeDefined();
+  });
+
+  it("should handle URIError", () => {
+    const error = new URIError("Malformed URI");
+    const req = {};
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(400);
+    expect(jsonCalledWith).toEqual({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should handle entity.parse.failed", () => {
+    const error = { type: "entity.parse.failed" };
+    const req = {};
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(400);
+    expect(jsonCalledWith).toEqual({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should handle entity.too.large", () => {
+    const error = { type: "entity.too.large" };
+    const req = {};
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(413);
+    expect(jsonCalledWith).toEqual({ message: "Payload too large" });
+  });
+
+  it("should handle parameters.too.many", () => {
+    const error = { type: "parameters.too.many" };
+    const req = {};
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(413);
+    expect(jsonCalledWith).toEqual({ message: "Payload too large" });
+  });
+
+  it("should handle charset.unsupported", () => {
+    const error = { type: "charset.unsupported", charset: "iso-8859-1" };
+    const req = {};
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(415);
+    expect(jsonCalledWith).toEqual({ message: "Unsupported charset", charset: "iso-8859-1" });
+  });
+
+  it("should handle encoding.unsupported", () => {
+    const error = { type: "encoding.unsupported", encoding: "deflate" };
+    const req = {};
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(415);
+    expect(jsonCalledWith).toEqual({ message: "Unsupported content encoding", encoding: "deflate" });
+  });
+
+  it("should handle Z_ compressed body client error", () => {
+    const error = { expose: true, statusCode: 400, code: "Z_DATA_ERROR", message: "data error" };
+    const req = {};
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(400);
+    expect(jsonCalledWith).toEqual({
+      message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+    });
+  });
+
+  it("should handle ETIMEDOUT code", () => {
+    const error = { code: "ETIMEDOUT" };
+    const req = {};
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(408);
+    expect(jsonCalledWith).toHaveProperty("message");
+  });
+
+  it("should handle general client error", () => {
+    const error = { expose: true, statusCode: 400, type: "custom.error", message: "bad request" };
+    const req = {};
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(400);
+    expect(jsonCalledWith).toEqual({
+      message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+      error: "custom.error"
+    });
+  });
+
+  it("should handle internal error with error type", () => {
+    const error = { type: "database.error", stack: "stack trace", message: "db down" };
+    const req = { body: {} };
+    let statusCalled = 0;
+    let jsonCalledWith = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCalled = code;
+        return {
+          json: (body) => {
+            jsonCalledWith = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCalled).toBe(500);
+    expect(jsonCalledWith).toHaveProperty("message");
+    expect(jsonCalledWith).toHaveProperty("error", "database.error");
+    expect(jsonCalledWith).toHaveProperty("version");
+  });
+});
+```

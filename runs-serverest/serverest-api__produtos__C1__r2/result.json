@@ -1,0 +1,147 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest-api__produtos__C1__r2",
+  "started_at": "2026-11-27T16:00:36.070Z",
+  "finished_at": "2026-11-27T16:01:28.470Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest-api",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "api/produtos",
+    "mutate_paths": [
+      "src/controllers/produtos-controller.js",
+      "src/services/produtos-service.js",
+      "src/models/produtos-model.js"
+    ],
+    "module_loc": 273,
+    "mutants_total": 176,
+    "human_test_files": [
+      "test/integration/produtos/contrato.test.js",
+      "test/integration/produtos/delete.test.js",
+      "test/integration/produtos/get.test.js",
+      "test/integration/produtos/getOne.test.js",
+      "test/integration/produtos/ordem.test.js",
+      "test/integration/produtos/post.test.js",
+      "test/integration/produtos/put.test.js"
+    ]
+  },
+  "condition": "C1",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": null
+  },
+  "memorization": {
+    "probe_similarity": 0.2198,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 10.1266,
+        "ms_feedback": 8.046,
+        "ms_all": 9.0361,
+        "ms_covered": 45.4545
+      },
+      "coverage": {
+        "line_cov": 50.79,
+        "branch_cov": 87.5
+      },
+      "mutants_eval": {
+        "killed": 8,
+        "survived": 6,
+        "no_coverage": 65,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 7,
+        "survived": 12,
+        "no_coverage": 68,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 5,
+        "n_asserts": 9,
+        "sha256": "8e49163a4138370302f14862954b287646efaf2c3955a54a84ba706d9c3b758e"
+      },
+      "prompt_file": "runs-serverest/serverest-api__produtos__C1__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__produtos__C1__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 1,
+        "repair_calls": 0,
+        "tokens_in": 4068,
+        "tokens_out": 469,
+        "usd_ref": 0.000594,
+        "wall_s": 52.4,
+        "stryker_s": 42.3
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 10.1266,
+      "ms_feedback": 8.046,
+      "ms_all": 9.0361,
+      "ms_covered": 45.4545
+    },
+    "coverage": {
+      "line_cov": 50.79,
+      "branch_cov": 87.5
+    },
+    "cost": {
+      "calls": 1,
+      "repair_calls": 0,
+      "tokens_in": 4068,
+      "tokens_out": 469,
+      "usd_ref": 0.000594,
+      "wall_s": 52.4,
+      "stryker_s": 42.3
+    },
+    "tests": {
+      "n_tests": 5,
+      "n_asserts": 9,
+      "sha256": "8e49163a4138370302f14862954b287646efaf2c3955a54a84ba706d9c3b758e"
+    },
+    "gap_cov_ms": 41.7539,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest-api__produtos__C1__r2/raw"
+  }
+}

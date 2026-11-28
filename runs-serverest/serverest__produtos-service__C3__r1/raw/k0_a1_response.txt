@@ -1,0 +1,146 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found by query", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente 12345" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a new product and format values", async () => {
+    const novoProduto = await produtosService.criarProduto({
+      nome: "  Produto Teste  ",
+      preco: "100.50",
+      quantidade: "10",
+      descricao: "Teste",
+      imagem: " http://imagem.com/img.png "
+    });
+
+    expect(novoProduto).toHaveProperty("_id");
+    expect(novoProduto.nome).toBe("Produto Teste");
+    expect(novoProduto.preco).toBe(100.50);
+    expect(novoProduto.quantidade).toBe(10);
+    expect(novoProduto.imagem).toBe("http://imagem.com/img.png");
+    expect(novoProduto).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "id-inexistente-lote", quantidade: 1 }
+    ]);
+
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.item.idProduto).toBe("id-inexistente-lote");
+  });
+
+  it("should return error when stock is insufficient in batch", async () => {
+    const produtoCriado = await produtosService.criarProduto({
+      nome: "Produto Estoque Lote",
+      preco: 50,
+      quantidade: 2,
+      descricao: "Teste"
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: produtoCriado._id, quantidade: 5 }
+    ]);
+
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.item.quantidadeEstoque).toBe(2);
+  });
+
+  it("should return prices when all products in batch are valid", async () => {
+    const produtoCriado = await produtosService.criarProduto({
+      nome: "Produto Valido Lote",
+      preco: 75,
+      quantidade: 10,
+      descricao: "Teste"
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: produtoCriado._id, quantidade: 2 }
+    ]);
+
+    expect(resultado).toHaveProperty("produtosComPreco");
+    expect(resultado.produtosComPreco[0].precoUnitario).toBe(75);
+  });
+});
+
+describe("deleteById", () => {
+  it("should remove product by id and return count", async () => {
+    const produtoCriado = await produtosService.criarProduto({
+      nome: "Produto para Deletar",
+      preco: 10,
+      quantidade: 5,
+      descricao: "Teste"
+    });
+
+    const numRemoved = await produtosService.deleteById(produtoCriado._id);
+    expect(numRemoved).toBe(1);
+
+    const produtoBuscado = await produtosService.getOne(produtoCriado._id);
+    expect(produtoBuscado).toBeNull();
+  });
+});
+
+describe("createOrUpdateById", () => {
+  it("should update product and format values", async () => {
+    const produtoCriado = await produtosService.criarProduto({
+      nome: "Produto Original",
+      preco: 20,
+      quantidade: 5,
+      descricao: "Teste"
+    });
+
+    const produtoAtualizado = await produtosService.createOrUpdateById(produtoCriado._id, {
+      nome: "  Produto Atualizado  ",
+      preco: "30.99",
+      quantidade: "15",
+      descricao: "Atualizado"
+    });
+
+    expect(produtoAtualizado.nome).toBe("Produto Atualizado");
+    expect(produtoAtualizado.preco).toBe(30.99);
+    expect(produtoAtualizado.quantidade).toBe(15);
+    expect(produtoAtualizado).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("updateById", () => {
+  it("should update product directly", async () => {
+    const produtoCriado = await produtosService.criarProduto({
+      nome: "Produto Update Direto",
+      preco: 10,
+      quantidade: 5,
+      descricao: "Teste"
+    });
+
+    const resultado = await produtosService.updateById(produtoCriado._id, {
+      $set: { quantidade: 99 }
+    });
+
+    expect(resultado.quantidade).toBe(99);
+  });
+});
+```

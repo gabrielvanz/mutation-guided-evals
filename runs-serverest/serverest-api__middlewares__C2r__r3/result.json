@@ -1,0 +1,322 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest-api__middlewares__C2r__r3",
+  "started_at": "2026-11-27T21:06:50.563Z",
+  "finished_at": "2026-11-27T21:09:27.672Z",
+  "status": "invalid_all_iterations",
+  "error": null,
+  "subject": {
+    "library": "serverest-api",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "api/middlewares",
+    "mutate_paths": [
+      "src/middlewares/error-handler.js",
+      "src/middlewares/authentication-middleware.js"
+    ],
+    "module_loc": 136,
+    "mutants_total": 0,
+    "human_test_files": [
+      "test/integration/outros/error-handler.test.js",
+      "test/integration/usuarios/contrato.test.js",
+      "test/integration/usuarios/delete.test.js",
+      "test/integration/usuarios/get.test.js",
+      "test/integration/usuarios/getOne.test.js",
+      "test/integration/usuarios/ordem.test.js",
+      "test/integration/usuarios/post.test.js",
+      "test/integration/usuarios/put.test.js",
+      "test/integration/produtos/contrato.test.js",
+      "test/integration/produtos/delete.test.js",
+      "test/integration/produtos/get.test.js",
+      "test/integration/produtos/getOne.test.js",
+      "test/integration/produtos/ordem.test.js",
+      "test/integration/produtos/post.test.js",
+      "test/integration/produtos/put.test.js",
+      "test/integration/carrinhos/cancelarCompra.test.js",
+      "test/integration/carrinhos/concluirCompra.test.js",
+      "test/integration/carrinhos/contrato.test.js",
+      "test/integration/carrinhos/get.test.js",
+      "test/integration/carrinhos/getOne.test.js",
+      "test/integration/carrinhos/ordem.test.js",
+      "test/integration/carrinhos/post.test.js",
+      "test/integration/login/post.test.js"
+    ]
+  },
+  "condition": "C2r",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "882ec145097635fde6e2544a9cb134aa979a134d6c25b7b5259d10ca8ef596b4"
+  },
+  "memorization": {
+    "probe_similarity": 0.0674,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 11051,
+        "tokens_out": 2056,
+        "usd_ref": 0.001928,
+        "wall_s": 22.44,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 1,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k1_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 4,
+        "tokens_in": 21908,
+        "tokens_out": 4171,
+        "usd_ref": 0.003859,
+        "wall_s": 49.11,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 2,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k2_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 9,
+        "repair_calls": 6,
+        "tokens_in": 33343,
+        "tokens_out": 6683,
+        "usd_ref": 0.006008,
+        "wall_s": 76.49,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 3,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k3_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 12,
+        "repair_calls": 8,
+        "tokens_in": 45390,
+        "tokens_out": 9927,
+        "usd_ref": 0.00851,
+        "wall_s": 103.73,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 4,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k4_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 15,
+        "repair_calls": 10,
+        "tokens_in": 56593,
+        "tokens_out": 12388,
+        "usd_ref": 0.010614,
+        "wall_s": 130.31,
+        "stryker_s": 0
+      }
+    },
+    {
+      "k": 5,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__middlewares__C2r__r3/raw/k5_a0_response.txt",
+      "best_k_so_far": null,
+      "cost_cumulative": {
+        "calls": 18,
+        "repair_calls": 12,
+        "tokens_in": 66407,
+        "tokens_out": 14536,
+        "usd_ref": 0.012455,
+        "wall_s": 157.11,
+        "stryker_s": 0
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": null,
+      "ms_feedback": null,
+      "ms_all": null,
+      "ms_covered": null
+    },
+    "coverage": {
+      "line_cov": null,
+      "branch_cov": null
+    },
+    "cost": {
+      "calls": 18,
+      "repair_calls": 12,
+      "tokens_in": 66407,
+      "tokens_out": 14536,
+      "usd_ref": 0.012455,
+      "wall_s": 157.11,
+      "stryker_s": 0
+    },
+    "tests": {
+      "n_tests": 0,
+      "n_asserts": 0,
+      "sha256": ""
+    },
+    "gap_cov_ms": null,
+    "valid_rate": 0,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [
+      "clock",
+      "random"
+    ],
+    "flaky": false,
+    "reruns": 0
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest-api__middlewares__C2r__r3/raw"
+  }
+}

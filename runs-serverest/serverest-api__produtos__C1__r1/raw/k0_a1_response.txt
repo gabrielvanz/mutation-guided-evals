@@ -1,0 +1,41 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Produtos API", () => {
+  it("should get all products", async () => {
+    const res = await request(app).get("/produtos");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("quantidade");
+    expect(res.body).toHaveProperty("produtos");
+    expect(Array.isArray(res.body.produtos)).toBe(true);
+  });
+
+  it("should return 400 for non-existent product id", async () => {
+    const res = await request(app).get("/produtos/1234567890123456");
+    expect(res.status).toBe(400);
+  });
+
+  it("should create a new product and retrieve it", async () => {
+    const uniqueName = "Produto Teste A1";
+    const newProduct = {
+      nome: uniqueName,
+      preco: 100,
+      descricao: "Descricao do produto teste",
+      quantidade: 10,
+    };
+
+    const postRes = await request(app).post("/produtos").send(newProduct);
+    expect(postRes.status).toBe(201);
+    expect(postRes.body).toHaveProperty("_id");
+
+    const productId = postRes.body._id;
+
+    const getRes = await request(app).get(`/produtos/${productId}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body._id).toBe(productId);
+    expect(getRes.body.nome).toBe(uniqueName);
+  });
+});
+```

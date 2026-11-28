@@ -1,0 +1,80 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API", () => {
+  describe("Authentication Middleware", () => {
+    it("should return 401 when token is missing on a protected route", async () => {
+      const res = await request(app).get("/carrinhos");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({ message: "Token de acesso ausente, inválido ou expirado" });
+    });
+
+    it("should return 401 when token format is invalid", async () => {
+      const res = await request(app)
+        .get("/carrinhos")
+        .set("authorization", "InvalidTokenFormat");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({ message: "Token de acesso ausente, inválido ou expirado" });
+    });
+
+    it("should return 401 when token is malformed or invalid", async () => {
+      const res = await request(app)
+        .get("/carrinhos")
+        .set("authorization", "Bearer invalid.jwt.token");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({ message: "Token de acesso ausente, inválido ou expirado" });
+    });
+
+    it("should return 403 when a non-admin user tries to access admin-only routes", async () => {
+      const signupRes = await request(app)
+        .post("/usuarios")
+        .send({
+          nome: "Normal User",
+          email: "normaluserauth@test.com",
+          password: "password123",
+          administrador: "false"
+        });
+
+      expect(signupRes.status).toBe(201);
+
+      const loginRes = await request(app)
+        .post("/login")
+        .send({ email: "normaluserauth@test.com", password: "password123" });
+
+      expect(loginRes.status).toBe(200);
+      const token = loginRes.body.authorization;
+
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: "Produto Teste",
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({ message: "Rota exclusiva para administradores" });
+    });
+  });
+
+  describe("Error Handler Middleware", () => {
+    it("should return 400 when malformed JSON body is sent", async () => {
+      const res = await request(app)
+        .post("/usuarios")
+        .set("Content-Type", "application/json")
+        .send("{ invalid json ");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("Adicione aspas em todos os valores");
+    });
+  });
+});
+```

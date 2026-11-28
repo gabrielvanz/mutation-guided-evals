@@ -1,0 +1,231 @@
+```ts
+import { describe, it, expect } from "vitest";
+import rateLimiterModule, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter exportações principais e auxiliares", () => {
+  it("deve exportar BYTES_POR_HORA com valor numérico", () => {
+    expect(BYTES_POR_HORA).toBe(250 * 1024 * 1024);
+  });
+
+  it("deve exportar uma função principal como default", () => {
+    expect(typeof rateLimiterModule).toBe("function");
+  });
+});
+
+describe("criarOrcamentoDeBytes", () => {
+  it("deve retornar msAteLiberar igual a zero quando não há consumo excedente", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+    const ms = await orcamento.msAteLiberar("127.0.0.1");
+    expect(ms).toBe(0);
+  });
+
+  it("deve conter duracaoMs correta baseada nos segundos informados", () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 5 });
+    expect(orcamento.duracaoMs).toBe(5000);
+  });
+
+  it("não deve falhar ao registrar tamanho menor ou igual a zero", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+    expect(() => orcamento.registrar("127.0.0.1", 0)).not.toThrow();
+    expect(() => orcamento.registrar("127.0.0.1", -10)).not.toThrow();
+    const ms = await orcamento.msAteLiberar("127.0.0.1");
+    expect(ms).toBe(0);
+  });
+});
+
+describe("criarLimitador", () => {
+  it("deve permitir requisição quando nenhum limite é atingido", async () => {
+    const mockGlobal = {
+      consume: async () => {}
+    };
+    const mockPorIp = {
+      consume: async () => {}
+    };
+    const mockOrcamento = {
+      msAteLiberar: async () => 0,
+      duracaoMs: 1000
+    };
+
+    const verificar = criarLimitador({
+      global: mockGlobal as any,
+      porIp: mockPorIp as any,
+      orcamento: mockOrcamento as any
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: () => {} };
+
+    const resultado = await verificar(req, res as any);
+    expect(resultado).toBe(null);
+  });
+
+  it("deve barrar requisição quando o orçamento de bytes é excedido", async () => {
+    const mockOrcamento = {
+      msAteLiberar: async () => 5000,
+      duracaoMs: 1000
+    };
+
+    const verificar = criarLimitador({
+      orcamento: mockOrcamento as any
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: () => {} };
+
+    const resultado = await verificar(req, res as any);
+    expect(resultado).toEqual({
+      tipo: "orcamento-de-bytes",
+      ms: 5000
+    });
+  });
+
+  it("deve ignorar verificação de orçamento de bytes para método HEAD", async () => {
+    let orcamentoChamado = false;
+    const mockOrcamento = {
+      msAteLiberar: async () => {
+        orcamentoChamado = true;
+        return 5000;
+      },
+      duracaoMs: 1000
+    };
+    const mockGlobal = {
+      consume: async () => {}
+    };
+    const mockPorIp = {
+      consume: async () => {}
+    };
+
+    const verificar = criarLimitador({
+      global: mockGlobal as any,
+      porIp: mockPorIp as any,
+      orcamento: mockOrcamento as any
+    });
+
+    const req = { method: "HEAD", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: () => {} };
+
+    const resultado = await verificar(req, res as any);
+    expect(orcamentoChamado).toBe(false);
+    expect(resultado).toBe(null);
+  });
+});
+
+describe("criarRateLimiter", () => {
+  it("deve chamar next() quando o limitador retorna null", async () => {
+    const mockLimitador = async () => null;
+    const rateLimiter = criarRateLimiter({ limitador: mockLimitador });
+
+    let nextChamado = false;
+    const next = () => {
+      nextChamado = true;
+    };
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {
+      set: () => res,
+      status: () => res,
+      send: () => res
+    };
+
+    await rateLimiter(req, res, next);
+    expect(nextChamado).toBe(true);
+  });
+
+  it("deve retornar status 429 e mensagem correta quando há bloqueio por requisições globais", async () => {
+    const mockLimitador = async () => ({
+      tipo: "requisicoes-global",
+      ms: 15000
+    });
+    const rateLimiter = criarRateLimiter({ limitador: mockLimitador });
+
+    let statusEnviado = 0;
+    let corpoEnviado: any = null;
+    const headers: Record<string, string> = {};
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {
+      set: (key: string, val: string) => {
+        headers[key] = val;
+        return res;
+      },
+      status: (code: number) => {
+        statusEnviado = code;
+        return res;
+      },
+      send: (body: any) => {
+        corpoEnviado = body;
+        return res;
+      }
+    };
+
+    await rateLimiter(req, res, () => {});
+
+    expect(statusEnviado).toBe(429);
+    expect(headers["Retry-After"]).toBe("15");
+    expect(corpoEnviado).toEqual({ message: "O servidor está sobrecarregado. Tente novamente mais tarde." });
+  });
+
+  it("deve retornar status 429 para limite por IP", async () => {
+    const mockLimitador = async () => ({
+      tipo: "requisicoes-por-ip",
+      ms: 2000
+    });
+    const rateLimiter = criarRateLimiter({ limitador: mockLimitador });
+
+    let statusEnviado = 0;
+    let corpoEnviado: any = null;
+
+    const req = { method: "GET", path: "/usuarios", ip: "192.168.1.1" };
+    const res = {
+      set: () => res,
+      status: (code: number) => {
+        statusEnviado = code;
+        return res;
+      },
+      send: (body: any) => {
+        corpoEnviado = body;
+        return res;
+      }
+    };
+
+    await rateLimiter(req, res, () => {});
+
+    expect(statusEnviado).toBe(429);
+    expect(corpoEnviado).toEqual({ message: "Muitas requisições originadas deste IP, por favor tente novamente mais tarde." });
+  });
+
+  it("deve retornar status 429 para orçamento de bytes excedido", async () => {
+    const mockLimitador = async () => ({
+      tipo: "orcamento-de-bytes",
+      ms: 3000
+    });
+    const rateLimiter = criarRateLimiter({ limitador: mockLimitador });
+
+    let statusEnviado = 0;
+    let corpoEnviado: any = null;
+
+    const req = { method: "GET", path: "/usuarios", ip: "10.0.0.1" };
+    const res = {
+      set: () => res,
+      status: (code: number) => {
+        statusEnviado = code;
+        return res;
+      },
+      send: (body: any) => {
+        corpoEnviado = body;
+        return res;
+      }
+    };
+
+    await rateLimiter(req, res, () => {});
+
+    expect(statusEnviado).toBe(429);
+    expect(corpoEnviado).toEqual({ message: "Limite de download excedido. Tente novamente mais tarde." });
+  });
+});
+```

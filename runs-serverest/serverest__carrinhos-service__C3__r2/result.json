@@ -1,0 +1,464 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest__carrinhos-service__C3__r2",
+  "started_at": "2026-11-27T20:42:53.838Z",
+  "finished_at": "2026-11-27T20:45:55.174Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "src/services/carrinhos-service.js",
+    "module_loc": 118,
+    "mutants_total": 61,
+    "human_test_files": [
+      "test/unit/carrinhos-service.test.js",
+      "test/integration/carrinhos/cancelarCompra.test.js",
+      "test/integration/carrinhos/concluirCompra.test.js",
+      "test/integration/carrinhos/contrato.test.js",
+      "test/integration/carrinhos/get.test.js",
+      "test/integration/carrinhos/getOne.test.js",
+      "test/integration/carrinhos/ordem.test.js",
+      "test/integration/carrinhos/post.test.js"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "3207ea1273280d442b5ac2a36ea16851d195944ffcfe06a480b6320e7f5c957e"
+  },
+  "memorization": {
+    "probe_similarity": 0.0552,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 37.5,
+        "ms_all": 33.9623,
+        "ms_covered": 81.8182
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 3,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 12,
+        "n_asserts": 13,
+        "sha256": "f65f82152751f1a12ed7041e909d1cfebb9694dfe33b36701391aee4b7760e6f"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 4764,
+        "tokens_out": 1789,
+        "usd_ref": 0.001192,
+        "wall_s": 36.75,
+        "stryker_s": 18.52
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 38.7097,
+        "ms_all": 34.6154,
+        "ms_covered": 85.7143
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 2,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:12:64-12:86:StringLiteral:\"\"",
+        "src/services/carrinhos-service.js:12:99-12:103:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/services/carrinhos-service.js:25:39-28:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:30:30-32:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:34:38-36:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:39:28-39:71:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:39:54-39:67:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:56:68-66:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:14-63:4:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:7-60:12:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:62:12-62:41:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:62:21-62:39:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:65:10-65:56:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:76:44-80:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:84:22-84:40:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:87:60-93:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:89:10-92:4:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:91:47-91:65:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:116:59-116:78:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 25,
+        "n_asserts": 26,
+        "sha256": "8d7c675d08933f430a15122811d7c4915c8e28f4d753f027f6c8889a3a495b32"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 1,
+        "tokens_in": 9384,
+        "tokens_out": 3284,
+        "usd_ref": 0.002252,
+        "wall_s": 63.99,
+        "stryker_s": 36.94
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 43.75,
+        "ms_all": 37.7358,
+        "ms_covered": 86.9565
+      },
+      "coverage": {
+        "line_cov": 61.86,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 14,
+        "survived": 2,
+        "no_coverage": 16,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 19,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:12:99-12:103:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/services/carrinhos-service.js:25:39-28:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:30:30-32:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:34:38-36:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:39:28-39:71:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:39:54-39:67:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:56:68-66:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:14-63:4:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:7-60:12:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:62:12-62:41:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:62:21-62:39:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:65:10-65:56:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:76:44-80:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:84:22-84:40:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:87:60-93:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:89:10-92:4:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:91:47-91:65:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:116:59-116:78:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 25,
+        "n_asserts": 27,
+        "sha256": "a07469758e941108000d82c6ddca152a6bcfdb62b508787d1a4da8dc150ba658"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 1,
+        "tokens_in": 14534,
+        "tokens_out": 4812,
+        "usd_ref": 0.003378,
+        "wall_s": 96.83,
+        "stryker_s": 60.55
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 38.0952,
+        "ms_feedback": 56.25,
+        "ms_all": 49.0566,
+        "ms_covered": 86.6667
+      },
+      "coverage": {
+        "line_cov": 66.94,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 8,
+        "survived": 2,
+        "no_coverage": 11,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 18,
+        "survived": 2,
+        "no_coverage": 12,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 18,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:12:99-12:103:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/services/carrinhos-service.js:30:30-32:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:34:38-36:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:39:28-39:71:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:39:54-39:67:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:56:68-66:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:14-63:4:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:7-60:12:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:62:12-62:41:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:62:21-62:39:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:65:10-65:56:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:76:44-80:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:84:22-84:40:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:87:60-93:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:89:10-92:4:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:91:47-91:65:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:116:59-116:78:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 25,
+        "n_asserts": 30,
+        "sha256": "c8661c125ac20465f83f6db209d061252da741553137855f15eb5e2751302181"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k3_a0_response.txt",
+      "best_k_so_far": 3,
+      "cost_cumulative": {
+        "calls": 5,
+        "repair_calls": 1,
+        "tokens_in": 19631,
+        "tokens_out": 6451,
+        "usd_ref": 0.004544,
+        "wall_s": 130.47,
+        "stryker_s": 85.3
+      }
+    },
+    {
+      "k": 4,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 14,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:12:99-12:103:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/services/carrinhos-service.js:56:68-66:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:14-63:4:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:7-60:12:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:62:12-62:41:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:62:21-62:39:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:65:10-65:56:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:76:44-80:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:84:22-84:40:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:87:60-93:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:89:10-92:4:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:91:47-91:65:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:116:59-116:78:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k4_a0_response.txt",
+      "best_k_so_far": 3,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 3,
+        "tokens_in": 36305,
+        "tokens_out": 13125,
+        "usd_ref": 0.008881,
+        "wall_s": 153.79,
+        "stryker_s": 85.3
+      }
+    },
+    {
+      "k": 5,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 14,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:12:99-12:103:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/services/carrinhos-service.js:56:68-66:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:14-63:4:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:7-60:12:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:62:12-62:41:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:62:21-62:39:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:65:10-65:56:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:76:44-80:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:84:22-84:40:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:87:60-93:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:89:10-92:4:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:91:47-91:65:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:116:59-116:78:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r2/raw/k5_a0_response.txt",
+      "best_k_so_far": 3,
+      "cost_cumulative": {
+        "calls": 11,
+        "repair_calls": 5,
+        "tokens_in": 53000,
+        "tokens_out": 20160,
+        "usd_ref": 0.013364,
+        "wall_s": 181.34,
+        "stryker_s": 85.3
+      }
+    }
+  ],
+  "selected_iteration": 3,
+  "final": {
+    "scores": {
+      "ms_eval": 38.0952,
+      "ms_feedback": 56.25,
+      "ms_all": 49.0566,
+      "ms_covered": 86.6667
+    },
+    "coverage": {
+      "line_cov": 66.94,
+      "branch_cov": 100
+    },
+    "cost": {
+      "calls": 11,
+      "repair_calls": 5,
+      "tokens_in": 53000,
+      "tokens_out": 20160,
+      "usd_ref": 0.013364,
+      "wall_s": 181.34,
+      "stryker_s": 85.3
+    },
+    "tests": {
+      "n_tests": 25,
+      "n_asserts": 30,
+      "sha256": "c8661c125ac20465f83f6db209d061252da741553137855f15eb5e2751302181"
+    },
+    "gap_cov_ms": 17.8834,
+    "valid_rate": 0.6667,
+    "tokens_per_pp": 7681.81
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [
+      "no_assertion"
+    ],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest__carrinhos-service__C3__r2/raw"
+  }
+}

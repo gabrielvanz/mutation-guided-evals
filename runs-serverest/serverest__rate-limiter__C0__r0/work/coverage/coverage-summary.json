@@ -1,0 +1,3 @@
+{"total": {"lines":{"total":66,"covered":62,"skipped":0,"pct":93.93},"statements":{"total":77,"covered":73,"skipped":0,"pct":94.8},"functions":{"total":12,"covered":11,"skipped":0,"pct":91.66},"branches":{"total":52,"covered":48,"skipped":0,"pct":92.3},"branchesTrue":{"total":0,"covered":0,"skipped":0,"pct":"Unknown"}}
+,"/home/administrador/work/w1/src/middlewares/rate-limiter.js": {"lines":{"total":66,"covered":62,"skipped":0,"pct":93.93},"functions":{"total":12,"covered":11,"skipped":0,"pct":91.66},"statements":{"total":77,"covered":73,"skipped":0,"pct":94.8},"branches":{"total":52,"covered":48,"skipped":0,"pct":92.3}}
+}

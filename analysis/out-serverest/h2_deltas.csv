@@ -1,0 +1,7 @@
+module,d_ms_eval,d_line
+serverest-api/carrinhos,2.9851000000000028,0.8499999999999943
+serverest-api/produtos,0.0,0.0
+serverest-api/usuarios,11.428600000000003,0.0
+serverest/carrinhos-service,4.761900000000001,7.619999999999997
+serverest/produtos-service,17.307650000000002,7.789999999999999
+serverest/rate-limiter,20.9677,8.61

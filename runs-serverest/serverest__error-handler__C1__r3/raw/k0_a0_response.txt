@@ -1,0 +1,208 @@
+```ts
+import { describe, it, expect, vi } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+
+describe("errorHandler middleware", () => {
+  it("should handle headers already sent by destroying socket and logging error/warn", () => {
+    const error = new Error("Late error");
+    const req = { method: "GET", originalUrl: "/test", timedout: true, socket: { destroy: vi.fn() } };
+    const res = { headersSent: true };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(req.socket.destroy).toHaveBeenCalled();
+  });
+
+  it("should handle ValidationError by returning status 400 with schema error message", () => {
+    const error = new Error("Validation Failed");
+    error.name = "ValidationError";
+    const req = {};
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.any(String)
+      })
+    );
+  });
+
+  it("should handle URIError by returning status 400", () => {
+    const error = new URIError("Malformed URI");
+    const req = {};
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should handle entity.parse.failed error type", () => {
+    const error = new Error("Parse failed");
+    error.type = "entity.parse.failed";
+    const req = {};
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("Adicione aspas em todos os valores")
+      })
+    );
+  });
+
+  it("should handle entity.too.large or parameters.too.many error types", () => {
+    const error = new Error("Too large");
+    error.type = "entity.too.large";
+    const req = {};
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(413);
+    expect(res.json).toHaveBeenCalledWith({ message: "Payload too large" });
+  });
+
+  it("should handle charset.unsupported error type", () => {
+    const error = new Error("Unsupported charset");
+    error.type = "charset.unsupported";
+    error.charset = "utf-16";
+    const req = {};
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(res.json).toHaveBeenCalledWith({ message: "Unsupported charset", charset: "utf-16" });
+  });
+
+  it("should handle encoding.unsupported error type", () => {
+    const error = new Error("Unsupported encoding");
+    error.type = "encoding.unsupported";
+    error.encoding = "br";
+    const req = {};
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(res.json).toHaveBeenCalledWith({ message: "Unsupported content encoding", encoding: "br" });
+  });
+
+  it("should handle client error with Zlib code", () => {
+    const error = new Error("Zlib error");
+    error.expose = true;
+    error.statusCode = 400;
+    error.code = "Z_DATA_ERROR";
+    const req = {};
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+      })
+    );
+  });
+
+  it("should handle ETIMEDOUT error code", () => {
+    const error = new Error("Timeout");
+    error.code = "ETIMEDOUT";
+    const req = {};
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(408);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.any(String)
+      })
+    );
+  });
+
+  it("should handle generic client errors (ehErroDoCliente)", () => {
+    const error = new Error("Bad Request");
+    error.expose = true;
+    error.statusCode = 400;
+    const req = {};
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados."
+      })
+    );
+  });
+
+  it("should handle unexpected errors with error.type returning status 500", () => {
+    const error = new Error("Internal failure");
+    error.type = "database.error";
+    const req = { body: {} };
+    const res = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn()
+    };
+    const next = vi.fn();
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: "database.error",
+        version: expect.any(String)
+      })
+    );
+  });
+});
+```

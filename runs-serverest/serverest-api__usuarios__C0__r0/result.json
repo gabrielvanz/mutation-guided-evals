@@ -1,0 +1,139 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest-api__usuarios__C0__r0",
+  "started_at": "2026-11-27T15:02:59.186Z",
+  "finished_at": "2026-11-27T15:03:40.951Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest-api",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "api/usuarios",
+    "mutate_paths": [
+      "src/controllers/usuarios-controller.js",
+      "src/services/usuarios-service.js",
+      "src/models/usuarios-model.js"
+    ],
+    "module_loc": 136,
+    "mutants_total": 79,
+    "human_test_files": [
+      "test/integration/usuarios/contrato.test.js",
+      "test/integration/usuarios/delete.test.js",
+      "test/integration/usuarios/get.test.js",
+      "test/integration/usuarios/getOne.test.js",
+      "test/integration/usuarios/ordem.test.js",
+      "test/integration/usuarios/post.test.js",
+      "test/integration/usuarios/put.test.js"
+    ]
+  },
+  "condition": "C0",
+  "repetition": 0,
+  "c0_scope": "module",
+  "model": null,
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": null
+  },
+  "memorization": {
+    "probe_similarity": 0.7164,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 60.5263,
+        "ms_feedback": 70.7317,
+        "ms_all": 65.8228,
+        "ms_covered": 68.4211
+      },
+      "coverage": {
+        "line_cov": 95.16,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 23,
+        "survived": 13,
+        "no_coverage": 2,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 29,
+        "survived": 11,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 34,
+        "n_asserts": 0,
+        "sha256": "a968fa89797656a6b40e6543558b264fe0b6fd876542b1d49f81651fddff6c57"
+      },
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 0,
+        "repair_calls": 0,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "usd_ref": 0,
+        "wall_s": 41.77,
+        "stryker_s": 35.38
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 60.5263,
+      "ms_feedback": 70.7317,
+      "ms_all": 65.8228,
+      "ms_covered": 68.4211
+    },
+    "coverage": {
+      "line_cov": 95.16,
+      "branch_cov": 100
+    },
+    "cost": {
+      "calls": 0,
+      "repair_calls": 0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "usd_ref": 0,
+      "wall_s": 41.77,
+      "stryker_s": 35.38
+    },
+    "tests": {
+      "n_tests": 34,
+      "n_asserts": 0,
+      "sha256": "a968fa89797656a6b40e6543558b264fe0b6fd876542b1d49f81651fddff6c57"
+    },
+    "gap_cov_ms": 29.3372,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest-api__usuarios__C0__r0/raw"
+  }
+}

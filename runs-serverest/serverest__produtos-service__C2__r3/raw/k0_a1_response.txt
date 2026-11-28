@@ -1,0 +1,79 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found by search criteria", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente XYZ" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a product with formatted values and timestamp", async () => {
+    const novoProduto = {
+      nome: "  Produto Teste  ",
+      preco: "199.99",
+      quantidade: "10",
+      descricao: "Teste",
+      imagem: " http://imagem.com/img.png "
+    };
+
+    const resultado = await produtosService.criarProduto(novoProduto);
+    expect(resultado).toHaveProperty("_id");
+    expect(resultado.nome).toBe("Produto Teste");
+    expect(resultado.preco).toBe(199.99);
+    expect(resultado.quantidade).toBe(10);
+    expect(resultado.imagem).toBe("http://imagem.com/img.png");
+    expect(resultado).toHaveProperty("alteradoEm");
+
+    await produtosService.deleteById(resultado._id);
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const lote = [
+      { idProduto: "inexistente-123", quantidade: 2 }
+    ];
+    const resultado = await produtosService.getPrecosUnitariosPorLote(lote);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.item.idProduto).toBe("inexistente-123");
+    expect(resultado.error.index).toBe(0);
+  });
+});
+
+describe("deleteById", () => {
+  it("should delete product by id and return removed count", async () => {
+    const removidos = await produtosService.deleteById("id-que-nao-existe-para-remover");
+    expect(removidos).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should update product by id directly", async () => {
+    const id = "id-update-direto";
+    const body = { nome: "Direto", preco: 10, quantidade: 1 };
+
+    const resultado = await produtosService.updateById(id, { $set: body });
+    expect(resultado).toHaveProperty("_id", id);
+
+    await produtosService.deleteById(id);
+  });
+});
+```

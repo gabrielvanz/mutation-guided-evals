@@ -1,0 +1,10 @@
+module,C0,C1,C2,C2r,C3
+serverest-api/carrinhos,30.8841,40.0596,41.0596,6.1923,2.8169
+serverest-api/middlewares,22.1707,46.6337,,,
+serverest-api/produtos,43.2345,41.7539,16.7246,16.3346,14.3854
+serverest-api/usuarios,29.3372,22.193,19.4903,2.7027,3.2741
+serverest/carrinhos-controller,20.8333,,,,
+serverest/carrinhos-service,29.4475,25.3577,25.3577,24.7046,24.7046
+serverest/error-handler,16.557,,,,
+serverest/produtos-service,45.1152,30.0183,26.08875,23.103,21.2682
+serverest/rate-limiter,6.9071,52.6699,60.8992,53.4188,39.8914

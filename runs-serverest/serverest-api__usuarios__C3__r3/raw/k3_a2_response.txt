@@ -1,0 +1,233 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Usuarios API", () => {
+  it("should get empty or list of users", async () => {
+    const res = await request(app).get("/usuarios");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("quantidade");
+    expect(res.body).toHaveProperty("usuarios");
+    expect(Array.isArray(res.body.usuarios)).toBe(true);
+  });
+
+  it("should filter users by query parameters", async () => {
+    const uniqueEmail = "filter_user_abc@test.com";
+    await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Filterable User",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "true"
+      });
+
+    const res = await request(app).get(`/usuarios?email=${uniqueEmail}`);
+    expect(res.status).toBe(200);
+    expect(res.body.quantidade).toBe(1);
+    expect(res.body.usuarios[0].email).toBe(uniqueEmail);
+  });
+
+  it("should create a new user successfully", async () => {
+    const uniqueEmail = "user_test_success_abc@test.com";
+    const res = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Test User",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "true"
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+    expect(res.body).toHaveProperty("_id");
+  });
+
+  it("should reject user creation with duplicate email and return specific message object", async () => {
+    const uniqueEmail = "dup_user_test_abc@test.com";
+    const payload = {
+      nome: "First User",
+      email: uniqueEmail,
+      password: "password123",
+      administrador: "false"
+    };
+
+    const firstRes = await request(app).post("/usuarios").send(payload);
+    expect(firstRes.status).toBe(201);
+
+    const secondRes = await request(app).post("/usuarios").send({
+      ...payload,
+      nome: "Second User"
+    });
+
+    expect(secondRes.status).toBe(400);
+    expect(secondRes.body).toEqual({ message: "Este email já está sendo usado" });
+  });
+
+  it("should prevent updating user email to one that is already used by another user", async () => {
+    const emailA = "email_a_abc@test.com";
+    const emailB = "email_b_abc@test.com";
+
+    const userARes = await request(app).post("/usuarios").send({
+      nome: "User A",
+      email: emailA,
+      password: "123",
+      administrador: "false"
+    });
+    const userBRes = await request(app).post("/usuarios").send({
+      nome: "User B",
+      email: emailB,
+      password: "123",
+      administrador: "false"
+    });
+
+    const userBId = userBRes.body._id;
+
+    const updateRes = await request(app)
+      .put(`/usuarios/${userBId}`)
+      .send({
+        nome: "User B Updated",
+        email: emailA,
+        password: "123",
+        administrador: "false"
+      });
+
+    expect(updateRes.status).toBe(400);
+    expect(updateRes.body).toEqual({ message: "Este email já está sendo usado" });
+  });
+
+  it("should return user not found for non-existent id in getOne", async () => {
+    const fakeId = "1234567890abcdef";
+    const res = await request(app).get(`/usuarios/${fakeId}`);
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Usuário não encontrado" });
+  });
+
+  it("should get a specific user by id", async () => {
+    const uniqueEmail = "getone_user_test_abc@test.com";
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Get One User",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "true"
+      });
+
+    const userId = createRes.body._id;
+
+    const res = await request(app).get(`/usuarios/${userId}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("_id", userId);
+    expect(res.body).toHaveProperty("email", uniqueEmail);
+  });
+
+  it("should delete an existing user", async () => {
+    const uniqueEmail = "del_user_test_abc@test.com";
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "To Delete",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "false"
+      });
+
+    const userId = createRes.body._id;
+
+    const res = await request(app).delete(`/usuarios/${userId}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Registro excluído com sucesso" });
+  });
+
+  it("should prevent deleting a user who has an active cart and return cart id", async () => {
+    const uniqueEmail = "cart_user_abc@test.com";
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "User With Cart",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "false"
+      });
+
+    const userId = createRes.body._id;
+
+    const loginRes = await request(app).post("/login").send({
+      email: uniqueEmail,
+      password: "password123"
+    });
+    const token = loginRes.body.authorization;
+
+    const produtoRes = await request(app).post("/produtos").set("authorization", token).send({
+      nome: "Produto Cart abc",
+      preco: 10,
+      descricao: "Teste",
+      quantidade: 10
+    });
+    const produtoId = produtoRes.body._id;
+
+    const carrinhoRes = await request(app).post("/carrinhos").set("authorization", token).send({
+      produtos: [{ idProduto: produtoId, quantidade: 1 }]
+    });
+    expect(carrinhoRes.status).toBe(400);
+
+    const deleteRes = await request(app).delete(`/usuarios/${userId}`);
+    expect(deleteRes.status).toBe(400);
+    expect(deleteRes.body).toHaveProperty("message", "Não é permitido excluir usuário com carrinho cadastrado");
+    expect(deleteRes.body).toHaveProperty("idCarrinho");
+  });
+
+  it("should return delete none when user does not exist", async () => {
+    const nonExistentId = "nonexistentid123";
+    const res = await request(app).delete(`/usuarios/${nonExistentId}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Nenhum registro excluído" });
+  });
+
+  it("should update an existing user with put", async () => {
+    const uniqueEmail = "put_user_test_abc@test.com";
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Before Update",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "false"
+      });
+
+    const userId = createRes.body._id;
+
+    const res = await request(app)
+      .put(`/usuarios/${userId}`)
+      .send({
+        nome: "After Update",
+        email: uniqueEmail,
+        password: "newpassword123",
+        administrador: "true"
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Registro alterado com sucesso" });
+  });
+
+  it("should upsert a user with put if id does not exist", async () => {
+    const newId = "fedcba0987654321";
+    const uniqueEmail = "upsert_user_test_abc@test.com";
+    const res = await request(app)
+      .put(`/usuarios/${newId}`)
+      .send({
+        nome: "Upserted User",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "true"
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+    expect(res.body).toHaveProperty("_id");
+  });
+});
+```

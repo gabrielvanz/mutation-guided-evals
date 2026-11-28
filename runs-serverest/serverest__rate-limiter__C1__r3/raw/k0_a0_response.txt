@@ -1,0 +1,107 @@
+```ts
+import { describe, it, expect } from "vitest";
+import rateLimiterModule, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter middleware", () => {
+  it("exports the expected functions and constants", () => {
+    expect(typeof rateLimiterModule).toBe("function");
+    expect(typeof criarLimitador).toBe("function");
+    expect(typeof criarOrcamentoDeBytes).toBe("function");
+    expect(typeof criarRateLimiter).toBe("function");
+    expect(typeof BYTES_POR_HORA).toBe("number");
+  });
+
+  it("bypasses rate limiting in test environment", async () => {
+    let nextCalled = false;
+    const req = { method: "GET", path: "/api/test", ip: "127.0.0.1" };
+    const res = {
+      locals: {
+        etapas: {
+          ignorar: () => {}
+        }
+      }
+    };
+    const next = () => {
+      nextCalled = true;
+    };
+
+    await rateLimiterModule(req, res, next);
+    expect(nextCalled).toBe(true);
+  });
+
+  it("allows request when limiters do not block", async () => {
+    const mockLimitador = async () => null;
+    const limiter = criarRateLimiter({ limitador: mockLimitador });
+
+    let nextCalled = false;
+    const req = { method: "GET", path: "/api/test", ip: "127.0.0.1" };
+    const res = {
+      status: (code: number) => {
+        expect(code).toBeUndefined();
+        return res;
+      },
+      send: () => {}
+    };
+    const next = () => {
+      nextCalled = true;
+    };
+
+    await limiter(req, res, next);
+    expect(nextCalled).toBe(true);
+  });
+
+  it("blocks request when limit is exceeded", async () => {
+    const mockLimitador = async () => ({ tipo: "requisicoes-por-ip", ms: 5000 });
+    const limiter = criarRateLimiter({ limitador: mockLimitador });
+
+    let statusCode = 0;
+    let sentBody: any = null;
+    let retryAfterHeader = "";
+
+    const req = { method: "GET", path: "/api/test", ip: "127.0.0.1" };
+    const res = {
+      status: (code: number) => {
+        statusCode = code;
+        return res;
+      },
+      send: (body: any) => {
+        sentBody = body;
+      },
+      set: (header: string, val: string) => {
+        if (header === "Retry-After") {
+          retryAfterHeader = val;
+        }
+      }
+    };
+    const next = () => {
+      throw new Error("next should not be called");
+    };
+
+    await limiter(req, res, next);
+    expect(statusCode).toBe(429);
+    expect(sentBody).toBeDefined();
+    expect(retryAfterHeader).toBe("5");
+  });
+
+  it("manages byte budget correctly", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+    const chave = "192.168.1.1";
+
+    const msBefore = await orcamento.msAteLiberar(chave);
+    expect(msBefore).toBe(0);
+
+    orcamento.registrar(chave, 50);
+    const msAfterSmall = await orcamento.msAteLiberar(chave);
+    expect(msAfterSmall).toBe(0);
+
+    orcamento.registrar(chave, 60);
+    const msAfterOverflow = await orcamento.msAteLiberar(chave);
+    expect(msAfterOverflow).toBeGreaterThan(0);
+  });
+});
+```

@@ -1,0 +1,79 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente XYZ" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("deleteById", () => {
+  it("should return zero removed documents for non-existent id", async () => {
+    const removidos = await produtosService.deleteById("id-inexistente-para-remover");
+    expect(removidos).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should upsert or update product by id", async () => {
+    const resultado = await produtosService.updateById("id-teste-update", {
+      $set: { nome: "Produto Atualizado", preco: 10, quantidade: 5 }
+    });
+    expect(resultado).toBeDefined();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a new product with formatted values", async () => {
+    const novoProduto = await produtosService.criarProduto({
+      nome: "  Produto Teste  ",
+      preco: "470",
+      quantidade: "10",
+      descricao: "Teste",
+      imagem: " imagem.jpg "
+    });
+    expect(novoProduto).toHaveProperty("_id");
+    expect(novoProduto.nome).toBe("Produto Teste");
+    expect(novoProduto.preco).toBe(470);
+    expect(novoProduto.quantidade).toBe(10);
+    expect(novoProduto.imagem).toBe("imagem.jpg");
+  });
+});
+
+describe("createOrUpdateById", () => {
+  it("should update product and set alteradoEm mark", async () => {
+    const resultado = await produtosService.createOrUpdateById("id-teste-put", {
+      nome: "Produto PUT",
+      preco: 100,
+      quantidade: 20
+    });
+    expect(resultado).toBeDefined();
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "id-inexistente-lote", quantidade: 1 }
+    ]);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+  });
+});
+```

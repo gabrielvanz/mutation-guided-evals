@@ -1,0 +1,150 @@
+import { describe, it, expect } from "vitest";
+import rateLimiterModule, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter module", () => {
+  it("should export BYTES_POR_HORA as a number", () => {
+    expect(BYTES_POR_HORA).toBe(250 * 1024 * 1024);
+  });
+
+  describe("criarOrcamentoDeBytes", () => {
+    it("should allow getting msAteLiberar as 0 initially", async () => {
+      const orcamento = criarOrcamentoDeBytes({ bytes: 1000, segundos: 10 });
+      const ms = await orcamento.msAteLiberar("127.0.0.1");
+      expect(ms).toBe(0);
+      expect(orcamento.duracaoMs).toBe(10000);
+    });
+
+    it("should not penalize for zero or negative sizes", async () => {
+      const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+      orcamento.registrar("127.0.0.1", 0);
+      orcamento.registrar("127.0.0.1", -50);
+      const ms = await orcamento.msAteLiberar("127.0.0.1");
+      expect(ms).toBe(0);
+    });
+  });
+
+  describe("criarLimitador", () => {
+    it("should return null when within limits", async () => {
+      const mockGlobal = {
+        consume: async () => ({})
+      };
+      const mockPorIp = {
+        consume: async () => ({})
+      };
+      const mockOrcamento = {
+        msAteLiberar: async () => 0,
+        duracaoMs: 1000
+      };
+
+      const limitador = criarLimitador({
+        global: mockGlobal as any,
+        porIp: mockPorIp as any,
+        orcamento: mockOrcamento as any
+      });
+
+      const req = {
+        method: "GET",
+        path: "/usuarios",
+        ip: "127.0.0.1"
+      };
+      const res = {
+        on: () => {}
+      };
+
+      const resultado = await limitador(req, res);
+      expect(resultado).toBe(null);
+    });
+
+    it("should skip budget check for HEAD requests", async () => {
+      let budgetChecked = false;
+      const mockOrcamento = {
+        msAteLiberar: async () => {
+          budgetChecked = true;
+          return 0;
+        },
+        duracaoMs: 1000
+      };
+      const mockGlobal = { consume: async () => ({}) };
+      const mockPorIp = { consume: async () => ({}) };
+
+      const limitador = criarLimitador({
+        global: mockGlobal as any,
+        porIp: mockPorIp as any,
+        orcamento: mockOrcamento as any
+      });
+
+      const req = {
+        method: "HEAD",
+        path: "/usuarios",
+        ip: "127.0.0.1"
+      };
+      const res = { on: () => {} };
+
+      const resultado = await limitador(req, res);
+      expect(budgetChecked).toBe(false);
+      expect(resultado).toBe(null);
+    });
+  });
+
+  describe("criarRateLimiter", () => {
+    it("should call next when limitador returns null", async () => {
+      const mockLimitador = async () => null;
+      const rateLimiterFn = criarRateLimiter({ limitador: mockLimitador });
+
+      const req = {};
+      const res = {};
+      let nextCalled = false;
+      const next = () => {
+        nextCalled = true;
+      };
+
+      await rateLimiterFn(req, res, next);
+      expect(nextCalled).toBe(true);
+    });
+
+    it("should return 429 and set Retry-After when blocked", async () => {
+      const mockLimitador = async () => ({
+        tipo: "requisicoes-por-ip",
+        ms: 5000
+      });
+      const rateLimiterFn = criarRateLimiter({ limitador: mockLimitador });
+
+      const req = { ip: "127.0.0.1" };
+      let statusSet = 0;
+      let sentBody: any = null;
+      let headers: Record<string, string> = {};
+
+      const res = {
+        set: (key: string, val: string) => {
+          headers[key] = val;
+        },
+        status: (s: number) => {
+          statusSet = s;
+          return {
+            send: (b: any) => {
+              sentBody = b;
+              return b;
+            }
+          };
+        }
+      };
+
+      await rateLimiterFn(req, res, () => {});
+
+      expect(statusSet).toBe(429);
+      expect(headers["Retry-After"]).toBe("5");
+      expect(sentBody).toEqual({ message: "Foi detectado comportamento equivalente a teste de carga, não execute teste de carga nesse ambiente. Leia a documentação: https://github.com/ServeRest/ServeRest#teste-de-carga" });
+    });
+  });
+
+  describe("default exported middleware", () => {
+    it("should be a function", () => {
+      expect(typeof rateLimiterModule).toBe("function");
+    });
+  });
+});

@@ -1,0 +1,323 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Produtos API", () => {
+  let adminToken: string;
+
+  const getAdminToken = async () => {
+    if (adminToken) return adminToken;
+    const email = "admin_produtos_test@qa.com";
+    await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Admin Test",
+        email,
+        password: "teste",
+        administrador: "true"
+      });
+    const loginRes = await request(app)
+      .post("/login")
+      .send({
+        email,
+        password: "teste"
+      });
+    adminToken = loginRes.body.authorization;
+    return adminToken;
+  };
+
+  describe("GET /produtos", () => {
+    it("should return all products successfully", async () => {
+      const token = await getAdminToken();
+      const uniqueName = "Produto Get All";
+      await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 100,
+          descricao: "Descricao",
+          quantidade: 10
+        });
+
+      const res = await request(app).get("/produtos");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("quantidade");
+      expect(res.body).toHaveProperty("produtos");
+      expect(Array.isArray(res.body.produtos)).toBe(true);
+      expect(res.body.quantidade).toBeGreaterThanOrEqual(1);
+    });
+
+    it("should filter products by query parameters", async () => {
+      const token = await getAdminToken();
+      const uniqueName = "Produto Filter Unique";
+      await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 250,
+          descricao: "Filter desc",
+          quantidade: 5
+        });
+
+      const res = await request(app).get(`/produtos?nome=${encodeURIComponent(uniqueName)}`);
+      expect(res.status).toBe(200);
+      expect(res.body.quantidade).toBe(1);
+      expect(res.body.produtos[0].nome).toBe(uniqueName);
+    });
+  });
+
+  describe("GET /produtos/:id", () => {
+    it("should return a single product by valid id", async () => {
+      const token = await getAdminToken();
+      const uniqueName = "Produto Get One By ID";
+      const postRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 50,
+          descricao: "One desc",
+          quantidade: 2
+        });
+
+      const productId = postRes.body._id;
+      const res = await request(app).get(`/produtos/${productId}`);
+      expect(res.status).toBe(200);
+      expect(res.body._id).toBe(productId);
+      expect(res.body.nome).toBe(uniqueName);
+    });
+
+    it("should return 400 when product id does not exist", async () => {
+      const res = await request(app).get("/produtos/1234567890123456");
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Produto não encontrado" });
+    });
+
+    it("should return validation error for malformed id", async () => {
+      const res = await request(app).get("/produtos/invalid-id");
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message");
+    });
+  });
+
+  describe("POST /produtos", () => {
+    it("should create a product successfully when user is admin", async () => {
+      const token = await getAdminToken();
+      const uniqueName = "Novo Produto Post Success";
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 199,
+          descricao: "Produto legal",
+          quantidade: 15
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual({
+        message: "Cadastro realizado com sucesso",
+        _id: expect.any(String)
+      });
+    });
+
+    it("should reject product creation with duplicate name", async () => {
+      const token = await getAdminToken();
+      const uniqueName = "Duplicado Produto Nome";
+      const payload = {
+        nome: uniqueName,
+        preco: 100,
+        descricao: "Desc",
+        quantidade: 10
+      };
+
+      await request(app).post("/produtos").set("authorization", token).send(payload);
+      const res = await request(app).post("/produtos").set("authorization", token).send(payload);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Já existe produto com esse nome" });
+    });
+
+    it("should require authentication token", async () => {
+      const res = await request(app)
+        .post("/produtos")
+        .send({
+          nome: "Sem Token Produto",
+          preco: 10,
+          descricao: "Desc",
+          quantidade: 1
+        });
+
+      expect(res.status).toBe(401);
+      expect(res.body).toHaveProperty("message");
+    });
+  });
+
+  describe("PUT /produtos/:id", () => {
+    it("should update an existing product successfully", async () => {
+      const token = await getAdminToken();
+      const uniqueName = "Produto Original Para Update";
+      const postRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 80,
+          descricao: "Original",
+          quantidade: 5
+        });
+
+      const productId = postRes.body._id;
+      const updatedName = "Produto Modificado Atualizado";
+      const res = await request(app)
+        .put(`/produtos/${productId}`)
+        .set("authorization", token)
+        .send({
+          nome: updatedName,
+          preco: 90,
+          descricao: "Atualizado",
+          quantidade: 8
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro alterado com sucesso" });
+    });
+
+    it("should create product via put if id does not exist", async () => {
+      const token = await getAdminToken();
+      const randomId = "abc123xyz7890123";
+      const uniqueName = "Put Upsert Produto Test";
+      const res = await request(app)
+        .put(`/produtos/${randomId}`)
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 120,
+          descricao: "Upsert desc",
+          quantidade: 10
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual({
+        message: "Cadastro realizado com sucesso",
+        _id: randomId
+      });
+    });
+
+    it("should reject update if product name is already used by another product", async () => {
+      const token = await getAdminToken();
+      const name1 = "Prod Alpha Unique";
+      const name2 = "Prod Beta Unique";
+
+      await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({ nome: name1, preco: 10, descricao: "Desc", quantidade: 1 });
+
+      const p2 = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({ nome: name2, preco: 10, descricao: "Desc", quantidade: 1 });
+
+      const p2Id = p2.body._id;
+
+      const res = await request(app)
+        .put(`/produtos/${p2Id}`)
+        .set("authorization", token)
+        .send({ nome: name1, preco: 15, descricao: "Desc", quantidade: 2 });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Já existe produto com esse nome" });
+    });
+  });
+
+  describe("DELETE /produtos/:id", () => {
+    it("should delete an existing product successfully", async () => {
+      const token = await getAdminToken();
+      const uniqueName = "Produto Para Exclusao Direta";
+      const postRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 40,
+          descricao: "Delete desc",
+          quantidade: 3
+        });
+
+      const productId = postRes.body._id;
+      const res = await request(app)
+        .delete(`/produtos/${productId}`)
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro excluído com sucesso" });
+    });
+
+    it("should return delete none message when product id does not exist", async () => {
+      const token = await getAdminToken();
+      const res = await request(app)
+        .delete("/produtos/9999999999999999")
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Nenhum registro excluído" });
+    });
+
+    it("should prevent deleting a product associated with a cart", async () => {
+      const adminTokenVal = await getAdminToken();
+      const uniqueName = "Produto Vinculado ao Carrinho";
+      const postRes = await request(app)
+        .post("/produtos")
+        .set("authorization", adminTokenVal)
+        .send({
+          nome: uniqueName,
+          preco: 50,
+          descricao: "Cart desc",
+          quantidade: 10
+        });
+
+      const productId = postRes.body._id;
+
+      const clientEmail = "client_carrinho_produtos@qa.com";
+      await request(app)
+        .post("/usuarios")
+        .send({
+          nome: "Client Test",
+          email: clientEmail,
+          password: "teste",
+          administrador: "false"
+        });
+
+      const loginRes = await request(app)
+        .post("/login")
+        .send({
+          email: clientEmail,
+          password: "teste"
+        });
+      const clientToken = loginRes.body.authorization;
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", clientToken)
+        .send({
+          produtos: [
+            { idProduto: productId, quantidade: 2 }
+          ]
+        });
+
+      const res = await request(app)
+        .delete(`/produtos/${productId}`)
+        .set("authorization", adminTokenVal);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message", "Não é permitido excluir produto que faz parte de carrinho");
+      expect(res.body).toHaveProperty("idCarrinhos");
+      expect(Array.isArray(res.body.idCarrinhos)).toBe(true);
+    });
+  });
+});
+```

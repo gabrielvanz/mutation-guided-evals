@@ -1,0 +1,410 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest__carrinhos-service__C2r__r2",
+  "started_at": "2026-11-27T16:20:15.873Z",
+  "finished_at": "2026-11-27T16:38:41.384Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "src/services/carrinhos-service.js",
+    "module_loc": 118,
+    "mutants_total": 61,
+    "human_test_files": [
+      "test/unit/carrinhos-service.test.js",
+      "test/integration/carrinhos/cancelarCompra.test.js",
+      "test/integration/carrinhos/concluirCompra.test.js",
+      "test/integration/carrinhos/contrato.test.js",
+      "test/integration/carrinhos/get.test.js",
+      "test/integration/carrinhos/getOne.test.js",
+      "test/integration/carrinhos/ordem.test.js",
+      "test/integration/carrinhos/post.test.js"
+    ]
+  },
+  "condition": "C2r",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "3207ea1273280d442b5ac2a36ea16851d195944ffcfe06a480b6320e7f5c957e"
+  },
+  "memorization": {
+    "probe_similarity": 0.0552,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 37.5,
+        "ms_all": 33.9623,
+        "ms_covered": 81.8182
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 3,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 11,
+        "n_asserts": 11,
+        "sha256": "d7822ecfd5052381eb1f2589bf5c95fac1f81ec46c0c90c3a18fbf48b99226b2"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 4692,
+        "tokens_out": 1626,
+        "usd_ref": 0.00112,
+        "wall_s": 34.53,
+        "stryker_s": 18.24
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 37.5,
+        "ms_all": 33.9623,
+        "ms_covered": 81.8182
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 3,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 10,
+        "sha256": "d744bbb24c6809b106f3f74bf4e0e5892da506970ff782f1b0d3e03656f4ce28"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k1_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 2,
+        "tokens_in": 9306,
+        "tokens_out": 3115,
+        "usd_ref": 0.002177,
+        "wall_s": 67.96,
+        "stryker_s": 35.44
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 38.7097,
+        "ms_all": 34.6154,
+        "ms_covered": 85.7143
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 2,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 11,
+        "n_asserts": 11,
+        "sha256": "d17000408a42c6ecd5837ad9ca86ac708c0d9f24285ad4d3728e31ed4e07df93"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 3,
+        "tokens_in": 13977,
+        "tokens_out": 4718,
+        "usd_ref": 0.003285,
+        "wall_s": 103,
+        "stryker_s": 54.09
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 38.7097,
+        "ms_all": 34.6154,
+        "ms_covered": 85.7143
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 2,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 10,
+        "sha256": "79f53d783a2879ed19598237a9c61099affd7eb48bd977e3005015dca39a5224"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k3_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 4,
+        "tokens_in": 18593,
+        "tokens_out": 6211,
+        "usd_ref": 0.004344,
+        "wall_s": 137.4,
+        "stryker_s": 72.29
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 37.5,
+        "ms_all": 33.9623,
+        "ms_covered": 81.8182
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 3,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 11,
+        "n_asserts": 11,
+        "sha256": "b73b6b9e22140fef44f346a73dec9da0bcb5ed785cc657165506f747142ee484"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k4_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 10,
+        "repair_calls": 5,
+        "tokens_in": 23285,
+        "tokens_out": 7856,
+        "usd_ref": 0.005471,
+        "wall_s": 470.64,
+        "stryker_s": 88.73
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 38.7097,
+        "ms_all": 34.6154,
+        "ms_covered": 85.7143
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 2,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 11,
+        "n_asserts": 11,
+        "sha256": "0bef417ddb87f21a0395c50a8b7d8092cd38a5da7ac815252bc1874263bac87c"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw/k5_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 12,
+        "repair_calls": 6,
+        "tokens_in": 27966,
+        "tokens_out": 9479,
+        "usd_ref": 0.006588,
+        "wall_s": 1105.51,
+        "stryker_s": 106.36
+      }
+    }
+  ],
+  "selected_iteration": 2,
+  "final": {
+    "scores": {
+      "ms_eval": 28.5714,
+      "ms_feedback": 38.7097,
+      "ms_all": 34.6154,
+      "ms_covered": 85.7143
+    },
+    "coverage": {
+      "line_cov": 59.32,
+      "branch_cov": 100
+    },
+    "cost": {
+      "calls": 12,
+      "repair_calls": 6,
+      "tokens_in": 27966,
+      "tokens_out": 9479,
+      "usd_ref": 0.006588,
+      "wall_s": 1105.51,
+      "stryker_s": 106.36
+    },
+    "tests": {
+      "n_tests": 11,
+      "n_asserts": 11,
+      "sha256": "d17000408a42c6ecd5837ad9ca86ac708c0d9f24285ad4d3728e31ed4e07df93"
+    },
+    "gap_cov_ms": 24.7046,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [
+      "no_assertion"
+    ],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest__carrinhos-service__C2r__r2/raw"
+  }
+}

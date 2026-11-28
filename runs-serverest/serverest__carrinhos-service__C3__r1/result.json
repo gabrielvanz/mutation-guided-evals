@@ -1,0 +1,511 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest__carrinhos-service__C3__r1",
+  "started_at": "2026-11-27T15:44:37.760Z",
+  "finished_at": "2026-11-27T15:47:26.464Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "src/services/carrinhos-service.js",
+    "module_loc": 118,
+    "mutants_total": 61,
+    "human_test_files": [
+      "test/unit/carrinhos-service.test.js",
+      "test/integration/carrinhos/cancelarCompra.test.js",
+      "test/integration/carrinhos/concluirCompra.test.js",
+      "test/integration/carrinhos/contrato.test.js",
+      "test/integration/carrinhos/get.test.js",
+      "test/integration/carrinhos/getOne.test.js",
+      "test/integration/carrinhos/ordem.test.js",
+      "test/integration/carrinhos/post.test.js"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 1,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "3207ea1273280d442b5ac2a36ea16851d195944ffcfe06a480b6320e7f5c957e"
+  },
+  "memorization": {
+    "probe_similarity": 0.0552,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 37.5,
+        "ms_all": 33.9623,
+        "ms_covered": 81.8182
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 3,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 11,
+        "n_asserts": 11,
+        "sha256": "7074276775235b3bd4bfd9d536c695add34ec181e7c2fe1c1e5af99786d57be9"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 2,
+        "repair_calls": 1,
+        "tokens_in": 4699,
+        "tokens_out": 1640,
+        "usd_ref": 0.001126,
+        "wall_s": 33.17,
+        "stryker_s": 16.92
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 38.7097,
+        "ms_all": 34.6154,
+        "ms_covered": 85.7143
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 2,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:12:64-12:86:StringLiteral:\"\"",
+        "src/services/carrinhos-service.js:12:99-12:103:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/services/carrinhos-service.js:25:39-28:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:30:30-32:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:34:38-36:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:39:28-39:71:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:39:54-39:67:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:56:68-66:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:14-63:4:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:7-60:12:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:62:12-62:41:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:62:21-62:39:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:65:10-65:56:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:76:44-80:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:84:22-84:40:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:87:60-93:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:89:10-92:4:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:91:47-91:65:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:116:59-116:78:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 24,
+        "n_asserts": 24,
+        "sha256": "11c31eb86018d15a2e2ed611a2bce322ebe897ba47af0e87077cf2a947dd397b"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 1,
+        "tokens_in": 9250,
+        "tokens_out": 3092,
+        "usd_ref": 0.002162,
+        "wall_s": 61.08,
+        "stryker_s": 36.02
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 38.7097,
+        "ms_all": 34.6154,
+        "ms_covered": 85.7143
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 2,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 19,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:12:99-12:103:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/services/carrinhos-service.js:25:39-28:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:30:30-32:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:34:38-36:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:39:28-39:71:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:39:54-39:67:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:56:68-66:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:14-63:4:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:7-60:12:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:62:12-62:41:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:62:21-62:39:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:65:10-65:56:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:76:44-80:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:84:22-84:40:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:87:60-93:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:89:10-92:4:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:91:47-91:65:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:116:59-116:78:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 24,
+        "n_asserts": 24,
+        "sha256": "11c31eb86018d15a2e2ed611a2bce322ebe897ba47af0e87077cf2a947dd397b"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k2_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 1,
+        "tokens_in": 14357,
+        "tokens_out": 4544,
+        "usd_ref": 0.003253,
+        "wall_s": 87.94,
+        "stryker_s": 54.32
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 38.7097,
+        "ms_all": 34.6154,
+        "ms_covered": 85.7143
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 2,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 19,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:12:99-12:103:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/services/carrinhos-service.js:25:39-28:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:30:30-32:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:34:38-36:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:39:28-39:71:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:39:54-39:67:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:56:68-66:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:14-63:4:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:7-60:12:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:62:12-62:41:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:62:21-62:39:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:65:10-65:56:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:76:44-80:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:84:22-84:40:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:87:60-93:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:89:10-92:4:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:91:47-91:65:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:116:59-116:78:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 24,
+        "n_asserts": 24,
+        "sha256": "11c31eb86018d15a2e2ed611a2bce322ebe897ba47af0e87077cf2a947dd397b"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k3_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 5,
+        "repair_calls": 1,
+        "tokens_in": 19464,
+        "tokens_out": 5996,
+        "usd_ref": 0.004345,
+        "wall_s": 115,
+        "stryker_s": 72.47
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 37.5,
+        "ms_all": 33.9623,
+        "ms_covered": 81.8182
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 3,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 19,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:12:99-12:103:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/services/carrinhos-service.js:25:39-28:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:30:30-32:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:34:38-36:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:39:28-39:71:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:39:54-39:67:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:56:68-66:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:14-63:4:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:7-60:12:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:62:12-62:41:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:62:21-62:39:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:65:10-65:56:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:76:44-80:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:84:22-84:40:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:87:60-93:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:89:10-92:4:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:91:47-91:65:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:116:59-116:78:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 24,
+        "n_asserts": 24,
+        "sha256": "11c31eb86018d15a2e2ed611a2bce322ebe897ba47af0e87077cf2a947dd397b"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k4_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 1,
+        "tokens_in": 24571,
+        "tokens_out": 7448,
+        "usd_ref": 0.005436,
+        "wall_s": 140.8,
+        "stryker_s": 89.58
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 38.7097,
+        "ms_all": 34.6154,
+        "ms_covered": 85.7143
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 2,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 19,
+      "survivor_ids": [
+        "src/services/carrinhos-service.js:12:99-12:103:BooleanLiteral:false",
+        "src/services/carrinhos-service.js:13:1-13:33:CallExpression:;",
+        "src/services/carrinhos-service.js:25:39-28:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:30:30-32:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:34:38-36:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:39:28-39:71:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:39:54-39:67:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:56:68-66:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:14-63:4:BlockStatement:{}",
+        "src/services/carrinhos-service.js:60:7-60:12:ConditionalExpression:true",
+        "src/services/carrinhos-service.js:62:12-62:41:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:62:21-62:39:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:65:10-65:56:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:76:44-80:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:84:22-84:40:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:87:60-93:2:BlockStatement:{}",
+        "src/services/carrinhos-service.js:89:10-92:4:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:91:47-91:65:ObjectLiteral:{}",
+        "src/services/carrinhos-service.js:116:59-116:78:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 24,
+        "n_asserts": 24,
+        "sha256": "11c31eb86018d15a2e2ed611a2bce322ebe897ba47af0e87077cf2a947dd397b"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C3__r1/raw/k5_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 7,
+        "repair_calls": 1,
+        "tokens_in": 29678,
+        "tokens_out": 8900,
+        "usd_ref": 0.006528,
+        "wall_s": 168.7,
+        "stryker_s": 108.75
+      }
+    }
+  ],
+  "selected_iteration": 1,
+  "final": {
+    "scores": {
+      "ms_eval": 28.5714,
+      "ms_feedback": 38.7097,
+      "ms_all": 34.6154,
+      "ms_covered": 85.7143
+    },
+    "coverage": {
+      "line_cov": 59.32,
+      "branch_cov": 100
+    },
+    "cost": {
+      "calls": 7,
+      "repair_calls": 1,
+      "tokens_in": 29678,
+      "tokens_out": 8900,
+      "usd_ref": 0.006528,
+      "wall_s": 168.7,
+      "stryker_s": 108.75
+    },
+    "tests": {
+      "n_tests": 24,
+      "n_asserts": 24,
+      "sha256": "11c31eb86018d15a2e2ed611a2bce322ebe897ba47af0e87077cf2a947dd397b"
+    },
+    "gap_cov_ms": 24.7046,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [
+      "no_assertion"
+    ],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest__carrinhos-service__C3__r1/raw"
+  }
+}

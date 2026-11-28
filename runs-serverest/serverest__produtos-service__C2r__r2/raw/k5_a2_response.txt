@@ -1,0 +1,134 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente 123456" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("deleteById", () => {
+  it("should return zero removed count for non-existent id", async () => {
+    const removedCount = await produtosService.deleteById("id-inexistente");
+    expect(removedCount).toBe(0);
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a product with formatted values", async () => {
+    const body = {
+      nome: "  Produto Teste  ",
+      preco: "100.50",
+      quantidade: "10",
+      descricao: "Teste",
+      imagem: " imagem.jpg "
+    };
+    const novoProduto = await produtosService.criarProduto(body);
+    expect(novoProduto).toHaveProperty("_id");
+    expect(novoProduto.nome).toBe("Produto Teste");
+    expect(novoProduto.preco).toBe(100.50);
+    expect(novoProduto.quantidade).toBe(10);
+    expect(novoProduto.imagem).toBe("imagem.jpg");
+    expect(novoProduto).toHaveProperty("alteradoEm");
+
+    await produtosService.deleteById(novoProduto._id);
+  });
+});
+
+describe("updateById", () => {
+  it("should update product by id", async () => {
+    const criado = await produtosService.criarProduto({
+      nome: "Para Atualizar",
+      preco: 10,
+      quantidade: 5
+    });
+
+    const atualizado = await produtosService.updateById(criado._id, { $set: { preco: 20 } });
+    expect(atualizado.preco).toBe(20);
+
+    await produtosService.deleteById(criado._id);
+  });
+});
+
+describe("createOrUpdateById", () => {
+  it("should create or update product by id with formatted values and alteration mark", async () => {
+    const id = "id-customizado-put";
+    const body = {
+      nome: "  PUT Produto  ",
+      preco: "50",
+      quantidade: "5"
+    };
+
+    const resultado = await produtosService.createOrUpdateById.call(produtosService, id, body);
+    expect(resultado._id).toBe(id);
+    expect(resultado.nome).toBe("PUT Produto");
+    expect(resultado.preco).toBe(50);
+    expect(resultado.quantidade).toBe(5);
+    expect(resultado).toHaveProperty("alteradoEm");
+
+    await produtosService.deleteById(id);
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "inexistente-lote", quantidade: 1 }
+    ]);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.index).toBe(0);
+  });
+
+  it("should return error when stock is insufficient in batch", async () => {
+    const produto = await produtosService.criarProduto({
+      nome: "Estoque Baixo Lote",
+      preco: 10,
+      quantidade: 2
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: produto._id, quantidade: 5 }
+    ]);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.index).toBe(0);
+
+    await produtosService.deleteById(produto._id);
+  });
+
+  it("should return unit prices when batch is valid", async () => {
+    const produto = await produtosService.criarProduto({
+      nome: "Estoque Suficiente Lote",
+      preco: 25.5,
+      quantidade: 10
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: produto._id, quantidade: 2, outroCampo: "abc" }
+    ]);
+    expect(resultado).toHaveProperty("produtosComPreco");
+    expect(resultado.produtosComPreco).toHaveLength(1);
+    expect(resultado.produtosComPreco[0].precoUnitario).toBe(25.5);
+    expect(resultado.produtosComPreco[0].outroCampo).toBe("abc");
+
+    await produtosService.deleteById(produto._id);
+  });
+});
+```

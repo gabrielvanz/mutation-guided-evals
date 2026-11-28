@@ -1,0 +1,311 @@
+Improve the Vitest test file for the module `src/services/carrinhos-service.js` (import path: `../../src/services/carrinhos-service`).
+
+Note about this project: The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports.
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: ServeRest (API REST de estudo em Node/Express, JavaScript CommonJS)
+
+- Este projeto não é UnJS nem TypeScript: os módulos são CommonJS (`exports.nome = ...` ou `module.exports = função`), com mensagens e textos em português. Os testes que você escreve continuam em Vitest.
+- Os testes originais do projeto usam títulos descritivos em português ("Deve retornar ...") e comparam valores concretos, sem depender de ordem de execução entre testes.
+- Respostas de erro e mensagens vêm de constantes do projeto: confira o texto exato no código-fonte antes de usar numa asserção.
+- Cubra: entradas vazias ou só com espaços, tipos inesperados, valores em limites (zero, negativos, muito grandes), campos ausentes, ordem de chaves e os caminhos de erro de cada função exportada.
+- Para middlewares e controllers, use objetos simples no lugar de `req`/`res`/`next` (`status`, `json` e `send` devolvem o próprio `res`) e verifique o status e o corpo enviados.
+</conventions>
+
+Source of `src/services/carrinhos-service.js`:
+```js
+'use strict'
+
+const Datastore = require('nedb-promises')
+const { join } = require('path')
+
+const alterarValoresParaRegex = require('../utils/alterarValoresParaRegex')
+const { continuarDaMaiorMarca, doMaisNovoAoMaisAntigo, marcarAlteracao, semMarca } = require('../utils/ordemDeAlteracao')
+const authService = require('../services/auth-service')
+const usuariosService = require('../services/usuarios-service')
+const produtosService = require('../services/produtos-service')
+
+const datastore = Datastore.create({ filename: join(__dirname, '../data/carrinhos.db'), autoload: true })
+continuarDaMaiorMarca(datastore)
+
+// Index frequently searched fields for better query performance
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'idUsuario' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'precoTotal' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'quantidadeTotal' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'produtos.idProduto' })
+
+exports.getAll = async queryString => {
+  queryString = alterarValoresParaRegex(queryString)
+  return doMaisNovoAoMaisAntigo(await datastore.find(queryString))
+}
+
+exports.getOne = async id => {
+  return semMarca(await datastore.findOne({ _id: id }))
+}
+
+exports.existeCarrinho = pesquisa => {
+  return datastore.findOne(pesquisa)
+}
+
+exports.existeCarrinhoComProduto = idProduto => {
+  return datastore.findOne({ produtos: { $elemMatch: { idProduto } } })
+}
+
+exports.criarCarrinho = async body => {
+  return datastore.insert({ ...body, alteradoEm: marcarAlteracao() })
+}
+
+exports.extrairProdutosDuplicados = arrayProdutos => {
+  const vistos = new Set()
+  const duplicados = new Set()
+  for (const { idProduto } of arrayProdutos) {
+    if (vistos.has(idProduto)) duplicados.add(idProduto)
+    vistos.add(idProduto)
+  }
+  return [...duplicados]
+}
+
+exports.getProdutosComPrecoUnitarioOuErro = async arrayProdutos => {
+  // Use batch lookup instead of per-item queries to reduce round-trips
+  const { produtosComPreco, error } = await produtosService.getPrecosUnitariosPorLote(arrayProdutos)
+
+  if (error) {
+    const item = { ...error.item, index: error.index }
+    return { error: { ...error, item } }
+  }
+
+  return { produtosComPrecoUnitario: produtosComPreco }
+}
+
+exports.deleteById = async id => {
+  return datastore.remove({ _id: id }, {})
+}
+
+exports.concluiCompra = async carrinho => {
+  await this.deleteById(carrinho._id)
+}
+
+exports.removeCarrinho = async carrinho => {
+  const { produtos, _id } = carrinho
+  await this.reabasteceEstoque(produtos)
+  await this.deleteById(_id)
+}
+
+exports.getCarrinhoDoUsuario = async (authorization) => {
+  const _id = await idUsuario(authorization)
+  return this.getAll({ idUsuario: _id })
+}
+
+exports.usuarioJaPossuiCarrinho = async (authorization) => {
+  const _id = await idUsuario(authorization)
+  return {
+    idUsuario: _id,
+    possuiCarrinho: await this.existeCarrinho({ idUsuario: _id })
+  }
+}
+
+exports.precoTotal = produtos => produtos.reduce((total, produto) => total + produto.precoUnitario * produto.quantidade, 0)
+
+exports.quantidadeTotal = produtos => produtos.reduce((total, produto) => total + produto.quantidade, 0)
+
+// Acima de Number.MAX_SAFE_INTEGER o total seria gravado já arredondado, e o GET /carrinhos passaria a devolver
+// um número que nenhum contrato com Joi.number() aceita, reprovando a lista inteira e não só esse carrinho.
+exports.totaisSaoSeguros = (precoTotal, quantidadeTotal) =>
+  Number.isSafeInteger(precoTotal) && Number.isSafeInteger(quantidadeTotal)
+
+exports.baixarEstoque = async produtos => {
+  // Use batch update to reduce round-trips instead of updating per-item
+  await produtosService.updateQuantidadePorLote(produtos)
+}
+
+exports.reabasteceEstoque = async produtos => {
+  // Use batch restore to reduce round-trips instead of restoring per-item
+  await produtosService.restoreQuantidadePorLote(produtos)
+}
+
+const idUsuario = async (authorization) => {
+  const { email, password } = authService.verifyToken(authorization)
+  const { _id } = await usuariosService.getDadosDoUsuario({ email, password })
+  return _id
+}
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect } from "vitest";
+import carrinhosService from "../../src/services/carrinhos-service";
+
+describe("extrairProdutosDuplicados", () => {
+  it("should return an empty array when there are no duplicate products", () => {
+    const produtos = [
+      { idProduto: "1", quantidade: 2 },
+      { idProduto: "2", quantidade: 1 }
+    ];
+    const result = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(result).toEqual([]);
+  });
+
+  it("should extract duplicate product IDs when products appear multiple times", () => {
+    const produtos = [
+      { idProduto: "1", quantidade: 2 },
+      { idProduto: "2", quantidade: 1 },
+      { idProduto: "1", quantidade: 3 }
+    ];
+    const result = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(result).toEqual(["1"]);
+  });
+});
+
+describe("precoTotal", () => {
+  it("should calculate total price correctly for a list of products", () => {
+    const produtos = [
+      { precoUnitario: 10, quantidade: 2 },
+      { precoUnitario: 5, quantidade: 4 }
+    ];
+    const result = carrinhosService.precoTotal(produtos);
+    expect(result).toBe(40);
+  });
+
+  it("should return zero when product list is empty", () => {
+    const result = carrinhosService.precoTotal([]);
+    expect(result).toBe(0);
+  });
+});
+
+describe("quantidadeTotal", () => {
+  it("should calculate total quantity correctly for a list of products", () => {
+    const produtos = [
+      { quantidade: 2 },
+      { quantidade: 5 }
+    ];
+    const result = carrinhosService.quantidadeTotal(produtos);
+    expect(result).toBe(7);
+  });
+
+  it("should return zero when product list is empty", () => {
+    const result = carrinhosService.quantidadeTotal([]);
+    expect(result).toBe(0);
+  });
+});
+
+describe("totaisSaoSeguros", () => {
+  it("should return true when both totals are safe integers", () => {
+    const result = carrinhosService.totaisSaoSeguros(100, 50);
+    expect(result).toBe(true);
+  });
+
+  it("should return false when price total is not a safe integer", () => {
+    const result = carrinhosService.totaisSaoSeguros(Number.MAX_SAFE_INTEGER + 1, 10);
+    expect(result).toBe(false);
+  });
+
+  it("should return false when quantity total is not a safe integer", () => {
+    const result = carrinhosService.totaisSaoSeguros(100, Number.MAX_SAFE_INTEGER + 1);
+    expect(result).toBe(false);
+  });
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 20 changes below (20 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. line 12, operator StringLiteral
+   line: const datastore = Datastore.create({ filename: join(__dirname, '../data/carrinhos.db'), autoload: true })
+   original fragment: "'../data/carrinhos.db'"
+   mutated fragment:  "\"\""
+2. line 12, operator BooleanLiteral
+   line: const datastore = Datastore.create({ filename: join(__dirname, '../data/carrinhos.db'), autoload: true })
+   original fragment: "true"
+   mutated fragment:  "false"
+3. line 13, operator CallExpression
+   line: continuarDaMaiorMarca(datastore)
+   original fragment: "continuarDaMaiorMarca(datastore)"
+   mutated fragment:  ";"
+4. line 25, operator BlockStatement (no test executes this code)
+   line: exports.getAll = async queryString => {
+   original fragment: "{\r\n  queryString = alterarValoresParaRegex(queryString)\r\n  return doMaisNovoAoMaisAntigo(await datastore.find(queryString))\r\n}"
+   mutated fragment:  "{}"
+5. line 30, operator BlockStatement (no test executes this code)
+   line: exports.getOne = async id => {
+   original fragment: "{\r\n  return semMarca(await datastore.findOne({ _id: id }))\r\n}"
+   mutated fragment:  "{}"
+6. line 34, operator BlockStatement (no test executes this code)
+   line: exports.existeCarrinho = pesquisa => {
+   original fragment: "{\r\n  return datastore.findOne(pesquisa)\r\n}"
+   mutated fragment:  "{}"
+7. line 39, operator ObjectLiteral (no test executes this code)
+   line: return datastore.findOne({ produtos: { $elemMatch: { idProduto } } })
+   original fragment: "{ produtos: { $elemMatch: { idProduto } } }"
+   mutated fragment:  "{}"
+8. line 39, operator ObjectLiteral (no test executes this code)
+   line: return datastore.findOne({ produtos: { $elemMatch: { idProduto } } })
+   original fragment: "{ idProduto }"
+   mutated fragment:  "{}"
+9. line 56, operator BlockStatement (no test executes this code)
+   line: exports.getProdutosComPrecoUnitarioOuErro = async arrayProdutos => {
+   original fragment: "{\r\n  // Use batch lookup instead of per-item queries to reduce round-trips\r\n  const { produtosComPreco, error } = await produtosService.getPrecosUnitariosPorLote(arrayProdutos)\r\n\r\n  if (error) {\r\n    ..."
+   mutated fragment:  "{}"
+10. line 60, operator BlockStatement (no test executes this code)
+   line: if (error) {
+   original fragment: "{\r\n    const item = { ...error.item, index: error.index }\r\n    return { error: { ...error, item } }\r\n  }"
+   mutated fragment:  "{}"
+11. line 60, operator ConditionalExpression (no test executes this code)
+   line: if (error) {
+   original fragment: "error"
+   mutated fragment:  "true"
+12. line 62, operator ObjectLiteral (no test executes this code)
+   line: return { error: { ...error, item } }
+   original fragment: "{ error: { ...error, item } }"
+   mutated fragment:  "{}"
+13. line 62, operator ObjectLiteral (no test executes this code)
+   line: return { error: { ...error, item } }
+   original fragment: "{ ...error, item }"
+   mutated fragment:  "{}"
+14. line 65, operator ObjectLiteral (no test executes this code)
+   line: return { produtosComPrecoUnitario: produtosComPreco }
+   original fragment: "{ produtosComPrecoUnitario: produtosComPreco }"
+   mutated fragment:  "{}"
+15. line 76, operator BlockStatement (no test executes this code)
+   line: exports.removeCarrinho = async carrinho => {
+   original fragment: "{\r\n  const { produtos, _id } = carrinho\r\n  await this.reabasteceEstoque(produtos)\r\n  await this.deleteById(_id)\r\n}"
+   mutated fragment:  "{}"
+16. line 84, operator ObjectLiteral (no test executes this code)
+   line: return this.getAll({ idUsuario: _id })
+   original fragment: "{ idUsuario: _id }"
+   mutated fragment:  "{}"
+17. line 87, operator BlockStatement (no test executes this code)
+   line: exports.usuarioJaPossuiCarrinho = async (authorization) => {
+   original fragment: "{\r\n  const _id = await idUsuario(authorization)\r\n  return {\r\n    idUsuario: _id,\r\n    possuiCarrinho: await this.existeCarrinho({ idUsuario: _id })\r\n  }\r\n}"
+   mutated fragment:  "{}"
+18. line 89, operator ObjectLiteral (no test executes this code)
+   line: return {
+   original fragment: "{\r\n    idUsuario: _id,\r\n    possuiCarrinho: await this.existeCarrinho({ idUsuario: _id })\r\n  }"
+   mutated fragment:  "{}"
+19. line 91, operator ObjectLiteral (no test executes this code)
+   line: possuiCarrinho: await this.existeCarrinho({ idUsuario: _id })
+   original fragment: "{ idUsuario: _id }"
+   mutated fragment:  "{}"
+20. line 116, operator ObjectLiteral (no test executes this code)
+   line: const { _id } = await usuariosService.getDadosDoUsuario({ email, password })
+   original fragment: "{ email, password }"
+   mutated fragment:  "{}"
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.

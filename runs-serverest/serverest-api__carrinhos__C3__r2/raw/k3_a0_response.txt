@@ -1,0 +1,138 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("carrinhos API", () => {
+  it("should list all carrinhos", async () => {
+    const res = await request(app).get("/carrinhos");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("quantidade");
+    expect(res.body).toHaveProperty("carrinhos");
+    expect(Array.isArray(res.body.carrinhos)).toBe(true);
+  });
+
+  it("should filter carrinhos by query parameters", async () => {
+    const res = await request(app).get("/carrinhos?precoTotal=100&quantidadeTotal=2");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("quantidade");
+    expect(res.body).toHaveProperty("carrinhos");
+  });
+
+  it("should return 400 for non-existent carrinho by id", async () => {
+    const res = await request(app).get("/carrinhos/1234567890abcdef");
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Carrinho não encontrado" });
+  });
+
+  it("should validate id format in getOne with exact 16 hex characters", async () => {
+    const resTooShort = await request(app).get("/carrinhos/1234567890abcde");
+    expect(resTooShort.status).toBe(400);
+
+    const resNonHex = await request(app).get("/carrinhos/1234567890abcdefG");
+    expect(resNonHex.status).toBe(400);
+  });
+
+  it("should require authentication to post a carrinho", async () => {
+    const res = await request(app)
+      .post("/carrinhos")
+      .send({
+        produtos: [{ idProduto: "123456", quantidade: 1 }]
+      });
+    expect(res.status).toBe(401);
+  });
+
+  it("should validate minimum 1 product when posting a carrinho", async () => {
+    const email = `testuser_${Date.now()}_${Math.random()}@test.com`;
+    const password = "password123";
+    const nome = "Test User";
+
+    await request(app).post("/usuarios").send({ nome, email, password });
+    const loginRes = await request(app).post("/login").send({ email, password });
+    const token = loginRes.body.authorization;
+
+    const res = await request(app)
+      .post("/carrinhos")
+      .set("authorization", token)
+      .send({ produtos: [] });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("should reject posting a carrinho with duplicate products", async () => {
+    const email = `testuser_${Date.now()}_${Math.random()}@test.com`;
+    const password = "password123";
+    const nome = "Test User";
+
+    await request(app).post("/usuarios").send({ nome, email, password });
+    const loginRes = await request(app).post("/login").send({ email, password });
+    const token = loginRes.body.authorization;
+
+    // Register a product first
+    const prodRes = await request(app)
+      .post("/produtos")
+      .set("authorization", token)
+      .send({ nome: `Prod_${Date.now()}`, preco: 10, descricao: "Desc", quantidade: 50 });
+    const productId = prodRes.body._id;
+
+    const res = await request(app)
+      .post("/carrinhos")
+      .set("authorization", token)
+      .send({
+        produtos: [
+          { idProduto: productId, quantidade: 2 },
+          { idProduto: productId, quantidade: 1 }
+        ]
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body).toHaveProperty("idProdutosDuplicados");
+    expect(res.body.idProdutosDuplicados).toEqual([productId]);
+  });
+
+  it("should return NO_CART message when cancelling purchase without a cart", async () => {
+    const email = `testuser_${Date.now()}_${Math.random()}@test.com`;
+    const password = "password123";
+    const nome = "Test User";
+
+    await request(app).post("/usuarios").send({ nome, email, password });
+    const loginRes = await request(app).post("/login").send({ email, password });
+    const token = loginRes.body.authorization;
+
+    const res = await request(app)
+      .delete("/carrinhos/cancelar-compra")
+      .set("authorization", token);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Não foi encontrado nenhum carrinho para esse usuário" });
+  });
+
+  it("should return NO_CART message when concluding purchase without a cart", async () => {
+    const email = `testuser_${Date.now()}_${Math.random()}@test.com`;
+    const password = "password123";
+    const nome = "Test User";
+
+    await request(app).post("/usuarios").send({ nome, email, password });
+    const loginRes = await request(app).post("/login").send({ email, password });
+    const token = loginRes.body.authorization;
+
+    const res = await request(app)
+      .delete("/carrinhos/concluir-compra")
+      .set("authorization", token);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Não foi encontrado nenhum carrinho para esse usuário" });
+  });
+
+  it("should require authentication to cancel a purchase", async () => {
+    const res = await request(app).delete("/carrinhos/cancelar-compra");
+    expect(res.status).toBe(401);
+  });
+
+  it("should require authentication to conclude a purchase", async () => {
+    const res = await request(app).delete("/carrinhos/concluir-compra");
+    expect(res.status).toBe(401);
+  });
+});
+```

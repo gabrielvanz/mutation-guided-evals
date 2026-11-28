@@ -1,0 +1,87 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API tests", () => {
+  it("should return 401 when accessing a protected route without authorization header", async () => {
+    const res = await request(app).post("/carrinhos").send({
+      produtos: []
+    });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when accessing a protected route with malformed authorization header", async () => {
+    const res = await request(app)
+      .post("/carrinhos")
+      .set("authorization", "InvalidTokenFormat")
+      .send({
+        produtos: []
+      });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when accessing an admin route without being an administrator", async () => {
+    const email = "user_regular_mw@email.com";
+    const password = "teste";
+
+    await request(app).post("/usuarios").send({
+      nome: "Regular User",
+      email,
+      password,
+      administrador: "false"
+    });
+
+    const loginRes = await request(app).post("/login").send({
+      email,
+      password
+    });
+
+    const token = loginRes.body.authorization;
+
+    const res = await request(app)
+      .post("/produtos")
+      .set("authorization", token)
+      .send({
+        nome: "Produto Teste Middleware",
+        preco: 100,
+        descricao: "Desc",
+        quantidade: 10
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({
+      message: "Rota exclusiva para administradores"
+    });
+  });
+
+  it("should return 400 when malformed JSON entity is sent", async () => {
+    const res = await request(app)
+      .post("/usuarios")
+      .set("content-type", "application/json")
+      .send('{"nome": "Invalid JSON without quotes}');
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should return 400 when URI decode error occurs in route params", async () => {
+    const res = await request(app).get("/usuarios/%c0%c0");
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+});
+```

@@ -1,0 +1,436 @@
+```ts
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import carrinhosController from "../../src/controllers/carrinhos-controller";
+import service from "../../src/services/carrinhos-service";
+import constant from "../../src/utils/constants";
+
+vi.mock("../../src/services/carrinhos-service", () => ({
+  getAll: vi.fn(),
+  getOne: vi.fn(),
+  usuarioJaPossuiCarrinho: vi.fn(),
+  extrairProdutosDuplicados: vi.fn(),
+  getProdutosComPrecoUnitarioOuErro: vi.fn(),
+  precoTotal: vi.fn(),
+  quantidadeTotal: vi.fn(),
+  totaisSaoSeguros: vi.fn(),
+  baixarEstoque: vi.fn(),
+  criarCarrinho: vi.fn(),
+  getCarrinhoDoUsuario: vi.fn(),
+  removeCarrinho: vi.fn(),
+  concluiCompra: vi.fn()
+}));
+
+describe("carrinhos-controller", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("get", () => {
+    it("should return all carts successfully", async () => {
+      const mockCarrinhos = [{ _id: "1", produtos: [] }];
+      vi.mocked(service.getAll).mockResolvedValueOnce(mockCarrinhos as any);
+
+      const req = { query: {} };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+        }
+      };
+
+      await carrinhosController.get(req as any, res as any);
+
+      expect(statusSent).toBe(200);
+      expect(bodySent).toEqual({ quantidade: 1, carrinhos: mockCarrinhos });
+      expect(service.getAll).toHaveBeenCalledWith(req.query);
+    });
+  });
+
+  describe("getOne", () => {
+    it("should return cart when found", async () => {
+      const mockCarrinho = { _id: "1", produtos: [] };
+      vi.mocked(service.getOne).mockResolvedValueOnce(mockCarrinho as any);
+
+      const req = { params: { id: "1" } };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+        },
+        json: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      await carrinhosController.getOne(req as any, res as any);
+
+      expect(statusSent).toBe(200);
+      expect(bodySent).toEqual(mockCarrinho);
+      expect(service.getOne).toHaveBeenCalledWith("1");
+    });
+
+    it("should return 400 when cart is not found", async () => {
+      vi.mocked(service.getOne).mockResolvedValueOnce(null as any);
+
+      const req = { params: { id: "999" } };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+        },
+        json: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      await carrinhosController.getOne(req as any, res as any);
+
+      expect(statusSent).toBe(400);
+      expect(bodySent).toEqual({ message: constant.CART_NOT_FOUND });
+    });
+  });
+
+  describe("post", () => {
+    it("should create cart successfully", async () => {
+      const etapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "p1", quantidade: "2" }] }
+      };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        locals: { etapas },
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      vi.mocked(service.usuarioJaPossuiCarrinho).mockResolvedValueOnce({ idUsuario: "u1", possuiCarrinho: false });
+      vi.mocked(service.extrairProdutosDuplicados).mockReturnValueOnce([]);
+      const produtosComPreco = [{ idProduto: "p1", quantidade: 2, precoUnitario: 10 }];
+      vi.mocked(service.getProdutosComPrecoUnitarioOuErro).mockResolvedValueOnce({ produtosComPrecoUnitario: produtosComPreco, error: null } as any);
+      vi.mocked(service.precoTotal).mockReturnValueOnce(20);
+      vi.mocked(service.quantidadeTotal).mockReturnValueOnce(2);
+      vi.mocked(service.totaisSaoSeguros).mockReturnValueOnce(true);
+      vi.mocked(service.baixarEstoque).mockResolvedValueOnce(undefined);
+      vi.mocked(service.criarCarrinho).mockResolvedValueOnce({ _id: "c1" } as any);
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(statusSent).toBe(201);
+      expect(bodySent).toEqual({ message: constant.POST_SUCCESS, _id: "c1" });
+      expect(etapas.abrir).toHaveBeenCalledWith("write");
+      expect(service.baixarEstoque).toHaveBeenCalledWith(produtosComPreco);
+    });
+
+    it("should return 400 when user already has a cart", async () => {
+      const etapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [] }
+      };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        locals: { etapas },
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      vi.mocked(service.usuarioJaPossuiCarrinho).mockResolvedValueOnce({ idUsuario: "u1", possuiCarrinho: true });
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(statusSent).toBe(400);
+      expect(bodySent).toEqual({ message: constant.LIMIT_JUST_ONE_CART });
+      expect(etapas.regra).toHaveBeenCalledWith("single_cart", false);
+    });
+
+    it("should return 400 when duplicate products exist", async () => {
+      const etapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "p1", quantidade: 1 }, { idProduto: "p1", quantidade: 2 }] }
+      };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        locals: { etapas },
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      vi.mocked(service.usuarioJaPossuiCarrinho).mockResolvedValueOnce({ idUsuario: "u1", possuiCarrinho: false });
+      vi.mocked(service.extrairProdutosDuplicados).mockReturnValueOnce(["p1"]);
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(statusSent).toBe(400);
+      expect(bodySent).toEqual({ message: constant.CART_WITH_DUPLICATE_PRODUCT, idProdutosDuplicados: ["p1"] });
+    });
+
+    it("should return error status when product price retrieval fails (product not found)", async () => {
+      const etapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "p999", quantidade: 1 }] }
+      };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        locals: { etapas },
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      vi.mocked(service.usuarioJaPossuiCarrinho).mockResolvedValueOnce({ idUsuario: "u1", possuiCarrinho: false });
+      vi.mocked(service.extrairProdutosDuplicados).mockReturnValueOnce([]);
+      vi.mocked(service.getProdutosComPrecoUnitarioOuErro).mockResolvedValueOnce({
+        produtosComPrecoUnitario: null,
+        error: { message: constant.PRODUCT_NOT_FOUND, statusCode: 400, index: 0, item: "p999" }
+      } as any);
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(statusSent).toBe(400);
+      expect(bodySent).toEqual({ message: constant.PRODUCT_NOT_FOUND, item: "p999" });
+      expect(etapas.regra).toHaveBeenCalledWith("product_exists", false, { item: 0 });
+    });
+
+    it("should return error status when enough stock fails", async () => {
+      const etapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "p1", quantidade: 100 }] }
+      };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        locals: { etapas },
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      vi.mocked(service.usuarioJaPossuiCarrinho).mockResolvedValueOnce({ idUsuario: "u1", possuiCarrinho: false });
+      vi.mocked(service.extrairProdutosDuplicados).mockReturnValueOnce([]);
+      vi.mocked(service.getProdutosComPrecoUnitarioOuErro).mockResolvedValueOnce({
+        produtosComPrecoUnitario: null,
+        error: { message: "Produto não possui estoque suficiente", statusCode: 400, index: 0, item: "p1" }
+      } as any);
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(statusSent).toBe(400);
+      expect(bodySent).toEqual({ message: "Produto não possui estoque suficiente", item: "p1" });
+      expect(etapas.regra).toHaveBeenCalledWith("enough_stock", false, { item: 0 });
+    });
+
+    it("should return 400 when totals are not safe", async () => {
+      const etapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "p1", quantidade: 1 }] }
+      };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        locals: { etapas },
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      vi.mocked(service.usuarioJaPossuiCarrinho).mockResolvedValueOnce({ idUsuario: "u1", possuiCarrinho: false });
+      vi.mocked(service.extrairProdutosDuplicados).mockReturnValueOnce([]);
+      vi.mocked(service.getProdutosComPrecoUnitarioOuErro).mockResolvedValueOnce({ produtosComPrecoUnitario: [], error: null } as any);
+      vi.mocked(service.precoTotal).mockReturnValueOnce(Number.MAX_SAFE_INTEGER + 1);
+      vi.mocked(service.quantidadeTotal).mockReturnValueOnce(1);
+      vi.mocked(service.totaisSaoSeguros).mockReturnValueOnce(false);
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(statusSent).toBe(400);
+      expect(bodySent).toEqual({ message: constant.CART_TOTALS_TOO_BIG });
+      expect(etapas.regra).toHaveBeenCalledWith("safe_totals", false);
+    });
+  });
+
+  describe("cancelarCompra", () => {
+    it("should remove cart and replenish stock when cart exists", async () => {
+      const mockCarrinho = { _id: "c1" };
+      vi.mocked(service.getCarrinhoDoUsuario).mockResolvedValueOnce([mockCarrinho] as any);
+      vi.mocked(service.removeCarrinho).mockResolvedValueOnce(undefined);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      await carrinhosController.cancelarCompra(req as any, res as any);
+
+      expect(statusSent).toBe(200);
+      expect(bodySent).toEqual({ message: `${constant.DELETE_SUCCESS}. ${constant.REPLENISHED_STOCK}` });
+      expect(service.removeCarrinho).toHaveBeenCalledWith(mockCarrinho);
+    });
+
+    it("should return NO_CART message when cart does not exist", async () => {
+      vi.mocked(service.getCarrinhoDoUsuario).mockResolvedValueOnce([]);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      await carrinhosController.cancelarCompra(req as any, res as any);
+
+      expect(statusSent).toBe(200);
+      expect(bodySent).toEqual({ message: constant.NO_CART });
+    });
+  });
+
+  describe("concluirCompra", () => {
+    it("should conclude purchase successfully when cart exists", async () => {
+      const mockCarrinho = { _id: "c1" };
+      vi.mocked(service.getCarrinhoDoUsuario).mockResolvedValueOnce([mockCarrinho] as any);
+      vi.mocked(service.concluiCompra).mockResolvedValueOnce(undefined);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      await carrinhosController.concluirCompra(req as any, res as any);
+
+      expect(statusSent).toBe(200);
+      expect(bodySent).toEqual({ message: constant.DELETE_SUCCESS });
+      expect(service.concluiCompra).toHaveBeenCalledWith(mockCarrinho);
+    });
+
+    it("should return NO_CART message when cart does not exist", async () => {
+      vi.mocked(service.getCarrinhoDoUsuario).mockResolvedValueOnce([]);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      let statusSent = 0;
+      let bodySent: any = null;
+      const res = {
+        status: (code: number) => {
+          statusSent = code;
+          return res;
+        },
+        send: (data: any) => {
+          bodySent = data;
+          return res;
+        }
+      };
+
+      await carrinhosController.concluirCompra(req as any, res as any);
+
+      expect(statusSent).toBe(200);
+      expect(bodySent).toEqual({ message: constant.NO_CART });
+    });
+  });
+});
+```

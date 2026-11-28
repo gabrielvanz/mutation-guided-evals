@@ -1,0 +1,225 @@
+```ts
+import { describe, it, expect, vi } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+import logger from "../../src/utils/logger";
+
+describe("errorHandler", () => {
+  function mockResponse() {
+    const res: any = {
+      headersSent: false,
+      writableEnded: false,
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
+      send: vi.fn().mockReturnThis()
+    };
+    return res;
+  }
+
+  it("should handle headersSent true when response is not writableEnded", () => {
+    const req: any = {
+      method: "GET",
+      originalUrl: "/usuarios",
+      timedout: true,
+      socket: {
+        destroy: vi.fn()
+      }
+    };
+    const res = mockResponse();
+    res.headersSent = true;
+    const error = new Error("Test error");
+    error.stack = "stack trace";
+
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.socket.destroy).toHaveBeenCalled();
+  });
+
+  it("should handle headersSent true when response is writableEnded", () => {
+    const req: any = {
+      method: "GET",
+      originalUrl: "/usuarios",
+      timedout: false,
+      socket: {
+        destroy: vi.fn()
+      }
+    };
+    const res = mockResponse();
+    res.headersSent = true;
+    res.writableEnded = true;
+    const error = new Error("Test error");
+
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.socket.destroy).not.toHaveBeenCalled();
+  });
+
+  it("should handle ValidationError", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = {
+      name: "ValidationError",
+      details: {
+        body: [
+          {
+            context: { label: "email" },
+            type: "string.email",
+            message: "email must be a valid email"
+          }
+        ]
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      email: "email deve ser um email válido"
+    });
+  });
+
+  it("should handle URIError", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error = new URIError("Malformed URI");
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should handle entity.parse.failed", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = { type: "entity.parse.failed" };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it.each([
+    "entity.too.large",
+    "parameters.too.many"
+  ])("should handle payload too large for type %s", (type) => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = { type };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(413);
+    expect(res.json).toHaveBeenCalledWith({ message: "Payload too large" });
+  });
+
+  it("should handle charset.unsupported", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = { type: "charset.unsupported", charset: "utf-16" };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(res.json).toHaveBeenCalledWith({ message: "Unsupported charset", charset: "utf-16" });
+  });
+
+  it("should handle encoding.unsupported", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = { type: "encoding.unsupported", encoding: "deflate" };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(res.json).toHaveBeenCalledWith({ message: "Unsupported content encoding", encoding: "deflate" });
+  });
+
+  it("should handle Zlib client error (ehErroDoCliente with Z_ prefix)", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = {
+      expose: true,
+      statusCode: 400,
+      code: "Z_DATA_ERROR",
+      message: "data error"
+    };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+    });
+  });
+
+  it("should handle ETIMEDOUT code", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = { code: "ETIMEDOUT" };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(408);
+    expect(res.json).toHaveBeenCalledWith({ message: "Timeout da requisição atingido" });
+  });
+
+  it("should handle general client error", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = {
+      expose: true,
+      statusCode: 400,
+      type: "entity.unknown"
+    };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+      error: "entity.unknown"
+    });
+  });
+
+  it("should handle server error with error type", () => {
+    const req: any = { body: {} };
+    const res = mockResponse();
+    const error: any = { type: "some.server.error", stack: "stack" };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Abra uma issue informando essa resposta. https://github.com/ServeRest/ServeRest/issues",
+        error: "some.server.error"
+      })
+    );
+  });
+});
+```

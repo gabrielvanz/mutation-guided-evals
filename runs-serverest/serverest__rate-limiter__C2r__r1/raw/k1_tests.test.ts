@@ -1,0 +1,124 @@
+import { describe, it, expect } from "vitest";
+import rateLimiterModule, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter exportações principais", () => {
+  it("deve exportar BYTES_POR_HORA como um número positivo", () => {
+    expect(typeof BYTES_POR_HORA).toBe("number");
+    expect(BYTES_POR_HORA).toBeGreaterThan(0);
+  });
+
+  it("deve exportar criarOrcamentoDeBytes como função", () => {
+    expect(typeof criarOrcamentoDeBytes).toBe("function");
+  });
+
+  it("deve exportar criarLimitador como função", () => {
+    expect(typeof criarLimitador).toBe("function");
+  });
+
+  it("deve exportar criarRateLimiter como função", () => {
+    expect(typeof criarRateLimiter).toBe("function");
+  });
+
+  it("deve exportar uma função de middleware padrão", () => {
+    expect(typeof rateLimiterModule).toBe("function");
+  });
+});
+
+describe("criarOrcamentoDeBytes", () => {
+  it("deve retornar um objeto com duracaoMs, msAteLiberar e registrar", () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 1000, segundos: 10 });
+    expect(orcamento.duracaoMs).toBe(10000);
+    expect(typeof orcamento.msAteLiberar).toBe("function");
+    expect(typeof orcamento.registrar).toBe("function");
+  });
+
+  it("deve retornar 0 para msAteLiberar quando chave não excedeu orçamento", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 1000, segundos: 10 });
+    const ms = await orcamento.msAteLiberar("127.0.0.1");
+    expect(ms).toBe(0);
+  });
+
+  it("não deve lançar erro ao registrar tamanho zero ou negativo", () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 1000, segundos: 10 });
+    expect(() => orcamento.registrar("127.0.0.1", 0)).not.toThrow();
+    expect(() => orcamento.registrar("127.0.0.1", -50)).not.toThrow();
+  });
+});
+
+describe("criarLimitador", () => {
+  it("deve retornar uma função verificar", () => {
+    const limitador = criarLimitador();
+    expect(typeof limitador).toBe("function");
+  });
+
+  it("deve permitir requisições que não atingem limites", async () => {
+    const limitador = criarLimitador();
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {
+      getHeader: () => undefined,
+      on: (event: string, cb: Function) => {}
+    };
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toBeNull();
+  });
+});
+
+describe("criarRateLimiter", () => {
+  it("deve retornar um middleware assíncrono", () => {
+    const middleware = criarRateLimiter();
+    expect(typeof middleware).toBe("function");
+  });
+
+  it("deve chamar next() quando o limitador retorna null", async () => {
+    const limitadorMock = async () => null;
+    const middleware = criarRateLimiter({ limitador: limitadorMock });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {};
+    let chamadoNext = false;
+    const next = () => { chamadoNext = true; };
+
+    await middleware(req, res, next);
+    expect(chamadoNext).toBe(true);
+  });
+
+  it("deve retornar status 429 e mensagem de erro quando houver bloqueio", async () => {
+    const limitadorMock = async () => ({ tipo: "requisicoes-por-ip", ms: 5000 });
+    const middleware = criarRateLimiter({ limitador: limitadorMock });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    
+    let statusEnviado = 0;
+    let corpoEnviado = null;
+    let headersDefinidos: Record<string, string> = {};
+
+    const res = {
+      status(s: number) {
+        statusEnviado = s;
+        return this;
+      },
+      send(body: any) {
+        corpoEnviado = body;
+        return this;
+      },
+      set(field: string, val: string) {
+        headersDefinidos[field] = val;
+        return this;
+      }
+    };
+
+    const next = () => {};
+
+    await middleware(req, res, next);
+
+    expect(statusEnviado).toBe(429);
+    expect(corpoEnviado).toEqual({ message: "Foi detectado comportamento equivalente a teste de carga, não execute teste de carga nesse ambiente. Leia a documentação: https://github.com/ServeRest/ServeRest#teste-de-carga" });
+    expect(headersDefinidos["Retry-After"]).toBe("5");
+  });
+});

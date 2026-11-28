@@ -1,0 +1,121 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found by query", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente 123456" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("deleteById", () => {
+  it("should delete product by id and return count of removed documents", async () => {
+    const removidos = await produtosService.deleteById("id-inexistente-remover");
+    expect(removidos).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should update or insert product by id", async () => {
+    const resultado = await produtosService.updateById("id-teste-update", {
+      $set: { nome: "Produto Atualizado" }
+    });
+    expect(resultado).toBeDefined();
+    expect(resultado.nome).toBe("Produto Atualizado");
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a new product with formatted values and alteration mark", async () => {
+    const novoProduto = await produtosService.criarProduto({
+      nome: "  Mouse Gamer  ",
+      preco: "150.50",
+      quantidade: "10",
+      descricao: "Mouse RGB",
+      imagem: " http://imagem.com/mouse.jpg "
+    });
+
+    expect(novoProduto).toBeDefined();
+    expect(novoProduto._id).toBeTypeOf("string");
+    expect(novoProduto.nome).toBe("Mouse Gamer");
+    expect(novoProduto.preco).toBe(150.50);
+    expect(novoProduto.quantidade).toBe(10);
+    expect(novoProduto.imagem).toBe("http://imagem.com/mouse.jpg");
+    expect(novoProduto.alteradoEm).toBeTypeOf("number");
+  });
+});
+
+describe("createOrUpdateById", () => {
+  it("should format values and update product with alteration mark", async () => {
+    const produtoAtualizado = await produtosService.createOrUpdateById("id-teste-create-or-update", {
+      nome: "  Teclado Mecanico  ",
+      preco: "300",
+      quantidade: "5"
+    });
+
+    expect(produtoAtualizado).toBeDefined();
+    expect(produtoAtualizado.nome).toBe("Teclado Mecanico");
+    expect(produtoAtualizado.preco).toBe(300);
+    expect(produtoAtualizado.quantidade).toBe(5);
+    expect(produtoAtualizado.alteradoEm).toBeTypeOf("number");
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "id-inexistente-lote", quantidade: 1 }
+    ]);
+
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.item.idProduto).toBe("id-inexistente-lote");
+  });
+
+  it("should return error when stock is insufficient in batch", async () => {
+    const criado = await produtosService.criarProduto({
+      nome: "Monitor",
+      preco: "1000",
+      quantidade: "2"
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: criado._id, quantidade: 5 }
+    ]);
+
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.item.quantidadeEstoque).toBe(2);
+  });
+
+  it("should return products with unit prices when batch is valid", async () => {
+    const criado = await produtosService.criarProduto({
+      nome: "Headset",
+      preco: "250",
+      quantidade: "10"
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: criado._id, quantidade: 2 }
+    ]);
+
+    expect(resultado).toHaveProperty("produtosComPreco");
+    expect(resultado.produtosComPreco[0].precoUnitario).toBe(250);
+  });
+});
+```

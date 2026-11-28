@@ -1,0 +1,89 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("middlewares API", () => {
+  describe("authentication-middleware & error-handler", () => {
+    it("should reject request without authorization header on protected routes", async () => {
+      const res = await request(app).get("/carrinhos");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should reject request with malformed authorization header", async () => {
+      const res = await request(app)
+        .get("/carrinhos")
+        .set("authorization", "InvalidFormat token");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should reject request with invalid token", async () => {
+      const res = await request(app)
+        .get("/carrinhos")
+        .set("authorization", "Bearer invalidtoken123");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should reject non-admin user trying to access admin-only routes", async () => {
+      const uniqueEmail = `user_${Date.now()}_${Math.random()}@qa.com`;
+      const createRes = await request(app)
+        .post("/usuarios")
+        .send({
+          nome: "User Comum",
+          email: uniqueEmail,
+          password: "teste",
+          administrador: "false"
+        });
+
+      expect(createRes.status).toBe(201);
+
+      const loginRes = await request(app)
+        .post("/login")
+        .send({
+          email: uniqueEmail,
+          password: "teste"
+        });
+
+      expect(loginRes.status).toBe(200);
+      const token = loginRes.body.authorization;
+
+      const productRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: `Produto_${Date.now()}`,
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      expect(productRes.status).toBe(403);
+      expect(productRes.body).toEqual({
+        message: "Rota exclusiva para administradores"
+      });
+    });
+
+    it("should handle malformed JSON body via error-handler", async () => {
+      const res = await request(app)
+        .post("/usuarios")
+        .set("Content-Type", "application/json")
+        .send("{ malformed json");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message");
+    });
+  });
+});
+```

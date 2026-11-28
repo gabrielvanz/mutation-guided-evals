@@ -1,0 +1,308 @@
+```ts
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import carrinhosController from "../../src/controllers/carrinhos-controller";
+import carrinhosService from "../../src/services/carrinhos-service";
+import constant from "../../src/utils/constants";
+
+describe("carrinhos-controller", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe("get", () => {
+    it("should return 200 with all carts", async () => {
+      const mockCarrinhos = [{ _id: "1", precoTotal: 100 }];
+      vi.spyOn(carrinhosService, "getAll").mockResolvedValue(mockCarrinhos as any);
+
+      const req = { query: {} };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.get(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({
+        quantidade: 1,
+        carrinhos: mockCarrinhos
+      });
+    });
+  });
+
+  describe("getOne", () => {
+    it("should return 400 when cart is not found", async () => {
+      vi.spyOn(carrinhosService, "getOne").mockResolvedValue(null);
+
+      const req = { params: { id: "invalid-id" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.getOne(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: constant.CART_NOT_FOUND });
+    });
+
+    it("should return 200 with cart when found", async () => {
+      const mockCarrinho = { _id: "valid-id", precoTotal: 50 };
+      vi.spyOn(carrinhosService, "getOne").mockResolvedValue(mockCarrinho as any);
+
+      const req = { params: { id: "valid-id" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.getOne(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith(mockCarrinho);
+    });
+  });
+
+  describe("post", () => {
+    it("should return 400 when user already has a cart", async () => {
+      vi.spyOn(carrinhosService, "usuarioJaPossuiCarrinho").mockResolvedValue({
+        idUsuario: "user-1",
+        possuiCarrinho: { _id: "cart-1" }
+      } as any);
+
+      const req = { headers: { authorization: "Bearer token" }, body: { produtos: [] } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn(),
+        locals: {
+          etapas: {
+            regras: vi.fn(),
+            regra: vi.fn(),
+            abrir: vi.fn()
+          }
+        }
+      };
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({ message: constant.LIMIT_JUST_ONE_CART });
+    });
+
+    it("should return 400 when products have duplicates", async () => {
+      vi.spyOn(carrinhosService, "usuarioJaPossuiCarrinho").mockResolvedValue({
+        idUsuario: "user-1",
+        possuiCarrinho: null
+      } as any);
+      vi.spyOn(carrinhosService, "extrairProdutosDuplicados").mockReturnValue(["prod-1"]);
+
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "prod-1", quantidade: 1 }, { idProduto: "prod-1", quantidade: 2 }] }
+      };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn(),
+        locals: {
+          etapas: {
+            regras: vi.fn(),
+            regra: vi.fn(),
+            abrir: vi.fn()
+          }
+        }
+      };
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        message: constant.CART_WITH_DUPLICATE_PRODUCT,
+        idProdutosDuplicados: ["prod-1"]
+      });
+    });
+
+    it("should return error status when product service returns error", async () => {
+      vi.spyOn(carrinhosService, "usuarioJaPossuiCarrinho").mockResolvedValue({
+        idUsuario: "user-1",
+        possuiCarrinho: null
+      } as any);
+      vi.spyOn(carrinhosService, "extrairProdutosDuplicados").mockReturnValue([]);
+      vi.spyOn(carrinhosService, "getProdutosComPrecoUnitarioOuErro").mockResolvedValue({
+        error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, index: 0, item: { idProduto: "prod-1" } }
+      } as any);
+
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "prod-1", quantidade: 1 }] }
+      };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn(),
+        locals: {
+          etapas: {
+            regras: vi.fn(),
+            regra: vi.fn(),
+            abrir: vi.fn()
+          }
+        }
+      };
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        message: constant.PRODUCT_NOT_FOUND,
+        item: { idProduto: "prod-1", index: 0 }
+      });
+    });
+
+    it("should return 400 when cart totals are not safe", async () => {
+      vi.spyOn(carrinhosService, "usuarioJaPossuiCarrinho").mockResolvedValue({
+        idUsuario: "user-1",
+        possuiCarrinho: null
+      } as any);
+      vi.spyOn(carrinhosService, "extrairProdutosDuplicados").mockReturnValue([]);
+      vi.spyOn(carrinhosService, "getProdutosComPrecoUnitarioOuErro").mockResolvedValue({
+        produtosComPrecoUnitario: [{ idProduto: "prod-1", precoUnitario: 10, quantidade: 1 }]
+      } as any);
+      vi.spyOn(carrinhosService, "precoTotal").mockReturnValue(10);
+      vi.spyOn(carrinhosService, "quantidadeTotal").mockReturnValue(1);
+      vi.spyOn(carrinhosService, "totaisSaoSeguros").mockReturnValue(false);
+
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "prod-1", quantidade: 1 }] }
+      };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn(),
+        locals: {
+          etapas: {
+            regras: vi.fn(),
+            regra: vi.fn(),
+            abrir: vi.fn()
+          }
+        }
+      };
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({ message: constant.CART_TOTALS_TOO_BIG });
+    });
+
+    it("should return 201 and create cart successfully", async () => {
+      vi.spyOn(carrinhosService, "usuarioJaPossuiCarrinho").mockResolvedValue({
+        idUsuario: "user-1",
+        possuiCarrinho: null
+      } as any);
+      vi.spyOn(carrinhosService, "extrairProdutosDuplicados").mockReturnValue([]);
+      vi.spyOn(carrinhosService, "getProdutosComPrecoUnitarioOuErro").mockResolvedValue({
+        produtosComPrecoUnitario: [{ idProduto: "prod-1", precoUnitario: 10, quantidade: 2 }]
+      } as any);
+      vi.spyOn(carrinhosService, "precoTotal").mockReturnValue(20);
+      vi.spyOn(carrinhosService, "quantidadeTotal").mockReturnValue(2);
+      vi.spyOn(carrinhosService, "totaisSaoSeguros").mockReturnValue(true);
+      vi.spyOn(carrinhosService, "baixarEstoque").mockResolvedValue(undefined);
+      vi.spyOn(carrinhosService, "criarCarrinho").mockResolvedValue({ _id: "new-cart-id" } as any);
+
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "prod-1", quantidade: "2" }] }
+      };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn(),
+        locals: {
+          etapas: {
+            regras: vi.fn(),
+            regra: vi.fn(),
+            abrir: vi.fn()
+          }
+        }
+      };
+
+      await carrinhosController.post(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.send).toHaveBeenCalledWith({
+        message: constant.POST_SUCCESS,
+        _id: "new-cart-id"
+      });
+    });
+  });
+
+  describe("cancelarCompra", () => {
+    it("should return NO_CART message when user has no cart", async () => {
+      vi.spyOn(carrinhosService, "getCarrinhoDoUsuario").mockResolvedValue([] as any);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.cancelarCompra(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({ message: constant.NO_CART });
+    });
+
+    it("should remove cart and replenish stock when user has a cart", async () => {
+      const mockCarrinho = { _id: "cart-1", produtos: [] };
+      vi.spyOn(carrinhosService, "getCarrinhoDoUsuario").mockResolvedValue([mockCarrinho] as any);
+      vi.spyOn(carrinhosService, "removeCarrinho").mockResolvedValue(undefined);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.cancelarCompra(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({
+        message: `${constant.DELETE_SUCCESS}. ${constant.REPLENISHED_STOCK}`
+      });
+      expect(carrinhosService.removeCarrinho).toHaveBeenCalledWith(mockCarrinho);
+    });
+  });
+
+  describe("concluirCompra", () => {
+    it("should return NO_CART message when user has no cart", async () => {
+      vi.spyOn(carrinhosService, "getCarrinhoDoUsuario").mockResolvedValue([] as any);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.concluirCompra(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({ message: constant.NO_CART });
+    });
+
+    it("should complete purchase successfully when user has a cart", async () => {
+      const mockCarrinho = { _id: "cart-1", produtos: [] };
+      vi.spyOn(carrinhosService, "getCarrinhoDoUsuario").mockResolvedValue([mockCarrinho] as any);
+      vi.spyOn(carrinhosService, "concluiCompra").mockResolvedValue(undefined);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.concluirCompra(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({ message: constant.DELETE_SUCCESS });
+      expect(carrinhosService.concluiCompra).toHaveBeenCalledWith(mockCarrinho);
+    });
+  });
+});
+```

@@ -1,0 +1,510 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest__rate-limiter__C3__r2",
+  "started_at": "2026-11-27T20:53:19.944Z",
+  "finished_at": "2026-11-27T20:58:10.147Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "src/middlewares/rate-limiter.js",
+    "module_loc": 165,
+    "mutants_total": 131,
+    "human_test_files": [
+      "test/unit/orcamento-de-bytes.test.js",
+      "test/unit/resposta-do-limite.test.js"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "3207ea1273280d442b5ac2a36ea16851d195944ffcfe06a480b6320e7f5c957e"
+  },
+  "memorization": {
+    "probe_similarity": 0.1289,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 40.3226,
+        "ms_feedback": 31.8841,
+        "ms_all": 35.8779,
+        "ms_covered": 46.5347
+      },
+      "coverage": {
+        "line_cov": 90.06,
+        "branch_cov": 73.52
+      },
+      "mutants_eval": {
+        "killed": 25,
+        "survived": 24,
+        "no_coverage": 13,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 22,
+        "survived": 30,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 11,
+        "n_asserts": 17,
+        "sha256": "b51959d9db0adb0ad48f1e3f5b98fc6ba1eb681178135c6e471466e473cb3547"
+      },
+      "prompt_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 1,
+        "repair_calls": 0,
+        "tokens_in": 3350,
+        "tokens_out": 2006,
+        "usd_ref": 0.001137,
+        "wall_s": 34.89,
+        "stryker_s": 23.6
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 51.6129,
+        "ms_feedback": 50.7246,
+        "ms_all": 51.145,
+        "ms_covered": 59.292
+      },
+      "coverage": {
+        "line_cov": 95.36,
+        "branch_cov": 80.48
+      },
+      "mutants_eval": {
+        "killed": 32,
+        "survived": 21,
+        "no_coverage": 9,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 35,
+        "survived": 25,
+        "no_coverage": 9,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/rate-limiter.js:22:44-25:2:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:38:19-42:2:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:59:32-61:6:BlockStatement:{}",
+        "src/middlewares/rate-limiter.js:98:22-99:58:LogicalOperator:(await consumir(global, 'global', 'requisicoes-global')) && (await consumir(porIp, req.ip, 'requisicoes-por-ip'))",
+        "src/middlewares/rate-limiter.js:98:55-98:75:StringLiteral:\"\"",
+        "src/middlewares/rate-limiter.js:104:14-104:21:StringLiteral:\"\"",
+        "src/middlewares/rate-limiter.js:104:23-104:102:ArrowFunction:() => undefined",
+        "src/middlewares/rate-limiter.js:116:48-128:4:BlockStatement:{}",
+        "src/middlewares/rate-limiter.js:118:17-118:27:ArithmeticOperator:agora - ms",
+        "src/middlewares/rate-limiter.js:120:41-120:69:ArithmeticOperator:marcado - FOLGA_DA_JANELA_MS",
+        "src/middlewares/rate-limiter.js:121:5-121:30:CallExpression:;",
+        "src/middlewares/rate-limiter.js:122:9-122:35:EqualityOperator:fimDaJanela.size > maximo",
+        "src/middlewares/rate-limiter.js:123:58-123:77:ConditionalExpression:false",
+        "src/middlewares/rate-limiter.js:123:58-123:77:EqualityOperator:fimDaOutra < agora",
+        "src/middlewares/rate-limiter.js:124:11-124:37:ConditionalExpression:false",
+        "src/middlewares/rate-limiter.js:124:39-124:90:CallExpression:;",
+        "src/middlewares/rate-limiter.js:127:12-127:16:BooleanLiteral:false",
+        "src/middlewares/rate-limiter.js:141:11-141:98:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:155:7-155:60:LogicalOperator:aplicacaoExecutandoLocalmente() && ehAmbienteDeTestes",
+        "src/middlewares/rate-limiter.js:156:5-156:31:OptionalChaining:res.locals.etapas.ignorar"
+      ],
+      "tests": {
+        "n_tests": 17,
+        "n_asserts": 30,
+        "sha256": "23d926e1575d5573859d2c1317aa93154a569e4d04364bf0d1656a1b0718b793"
+      },
+      "prompt_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 1,
+        "tokens_in": 18797,
+        "tokens_out": 9798,
+        "usd_ref": 0.005799,
+        "wall_s": 84.08,
+        "stryker_s": 50.77
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 58.0645,
+        "ms_feedback": 53.6232,
+        "ms_all": 55.7252,
+        "ms_covered": 57.0313
+      },
+      "coverage": {
+        "line_cov": 97.35,
+        "branch_cov": 89.36
+      },
+      "mutants_eval": {
+        "killed": 36,
+        "survived": 23,
+        "no_coverage": 3,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 37,
+        "survived": 32,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/rate-limiter.js:22:44-25:2:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:35:69-35:72:StringLiteral:\"\"",
+        "src/middlewares/rate-limiter.js:52:42-52:79:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:59:32-61:6:BlockStatement:{}",
+        "src/middlewares/rate-limiter.js:60:11-60:22:EqualityOperator:tamanho <= 0",
+        "src/middlewares/rate-limiter.js:103:9-103:14:ConditionalExpression:true",
+        "src/middlewares/rate-limiter.js:118:17-118:27:ArithmeticOperator:agora - ms",
+        "src/middlewares/rate-limiter.js:120:41-120:69:ArithmeticOperator:marcado - FOLGA_DA_JANELA_MS",
+        "src/middlewares/rate-limiter.js:122:37-125:6:BlockStatement:{}",
+        "src/middlewares/rate-limiter.js:122:9-122:35:EqualityOperator:fimDaJanela.size > maximo",
+        "src/middlewares/rate-limiter.js:123:58-123:77:EqualityOperator:fimDaOutra > agora",
+        "src/middlewares/rate-limiter.js:124:11-124:37:ConditionalExpression:false",
+        "src/middlewares/rate-limiter.js:124:39-124:90:CallExpression:;",
+        "src/middlewares/rate-limiter.js:126:5-126:32:CallExpression:;",
+        "src/middlewares/rate-limiter.js:127:12-127:16:BooleanLiteral:false",
+        "src/middlewares/rate-limiter.js:141:11-141:98:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:141:20-141:27:StringLiteral:\"\"",
+        "src/middlewares/rate-limiter.js:155:7-155:60:ConditionalExpression:true",
+        "src/middlewares/rate-limiter.js:155:7-155:60:LogicalOperator:aplicacaoExecutandoLocalmente() && ehAmbienteDeTestes",
+        "src/middlewares/rate-limiter.js:156:5-156:31:OptionalChaining:res.locals.etapas.ignorar"
+      ],
+      "tests": {
+        "n_tests": 17,
+        "n_asserts": 32,
+        "sha256": "482045ee992201b874f78ff1a9729ac090b75691fd3fc87f8a716eb8596218c1"
+      },
+      "prompt_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 1,
+        "tokens_in": 27548,
+        "tokens_out": 14065,
+        "usd_ref": 0.008381,
+        "wall_s": 129.37,
+        "stryker_s": 80.43
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 61.2903,
+        "ms_feedback": 55.0725,
+        "ms_all": 58.0153,
+        "ms_covered": 58.4615
+      },
+      "coverage": {
+        "line_cov": 98.67,
+        "branch_cov": 91.3
+      },
+      "mutants_eval": {
+        "killed": 38,
+        "survived": 23,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 38,
+        "survived": 31,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/rate-limiter.js:22:44-25:2:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:52:42-52:79:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:116:48-128:4:BlockStatement:{}",
+        "src/middlewares/rate-limiter.js:118:17-118:27:ArithmeticOperator:agora - ms",
+        "src/middlewares/rate-limiter.js:120:41-120:69:ArithmeticOperator:marcado - FOLGA_DA_JANELA_MS",
+        "src/middlewares/rate-limiter.js:121:5-121:30:CallExpression:;",
+        "src/middlewares/rate-limiter.js:122:37-125:6:BlockStatement:{}",
+        "src/middlewares/rate-limiter.js:122:9-122:35:EqualityOperator:fimDaJanela.size > maximo",
+        "src/middlewares/rate-limiter.js:123:58-123:77:EqualityOperator:fimDaOutra < agora",
+        "src/middlewares/rate-limiter.js:123:58-123:77:EqualityOperator:fimDaOutra > agora",
+        "src/middlewares/rate-limiter.js:124:11-124:37:ConditionalExpression:false",
+        "src/middlewares/rate-limiter.js:124:39-124:90:CallExpression:;",
+        "src/middlewares/rate-limiter.js:126:5-126:32:CallExpression:;",
+        "src/middlewares/rate-limiter.js:127:12-127:16:BooleanLiteral:false",
+        "src/middlewares/rate-limiter.js:141:11-141:98:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:141:20-141:27:StringLiteral:\"\"",
+        "src/middlewares/rate-limiter.js:141:38-141:96:StringLiteral:``",
+        "src/middlewares/rate-limiter.js:155:7-155:60:ConditionalExpression:true",
+        "src/middlewares/rate-limiter.js:155:7-155:60:LogicalOperator:aplicacaoExecutandoLocalmente() && ehAmbienteDeTestes",
+        "src/middlewares/rate-limiter.js:156:5-156:31:OptionalChaining:res.locals.etapas.ignorar"
+      ],
+      "tests": {
+        "n_tests": 21,
+        "n_asserts": 38,
+        "sha256": "a702f58da1f3579c8c635da65d9c37f667da132264bcde099d6a905377d4bc86"
+      },
+      "prompt_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k3_a0_response.txt",
+      "best_k_so_far": 3,
+      "cost_cumulative": {
+        "calls": 7,
+        "repair_calls": 3,
+        "tokens_in": 54213,
+        "tokens_out": 29019,
+        "usd_ref": 0.017029,
+        "wall_s": 194.69,
+        "stryker_s": 110.36
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 61.2903,
+        "ms_feedback": 56.5217,
+        "ms_all": 58.7786,
+        "ms_covered": 59.2308
+      },
+      "coverage": {
+        "line_cov": 98.67,
+        "branch_cov": 91.48
+      },
+      "mutants_eval": {
+        "killed": 38,
+        "survived": 23,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 39,
+        "survived": 30,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/rate-limiter.js:13:43-16:2:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:22:44-25:2:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:57:34-57:65:ConditionalExpression:true",
+        "src/middlewares/rate-limiter.js:116:48-128:4:BlockStatement:{}",
+        "src/middlewares/rate-limiter.js:118:17-118:27:ArithmeticOperator:agora - ms",
+        "src/middlewares/rate-limiter.js:120:41-120:69:ArithmeticOperator:marcado - FOLGA_DA_JANELA_MS",
+        "src/middlewares/rate-limiter.js:120:9-120:69:ConditionalExpression:true",
+        "src/middlewares/rate-limiter.js:121:5-121:30:CallExpression:;",
+        "src/middlewares/rate-limiter.js:122:37-125:6:BlockStatement:{}",
+        "src/middlewares/rate-limiter.js:122:9-122:35:EqualityOperator:fimDaJanela.size > maximo",
+        "src/middlewares/rate-limiter.js:123:58-123:77:EqualityOperator:fimDaOutra < agora",
+        "src/middlewares/rate-limiter.js:123:58-123:77:EqualityOperator:fimDaOutra > agora",
+        "src/middlewares/rate-limiter.js:124:39-124:90:CallExpression:;",
+        "src/middlewares/rate-limiter.js:126:5-126:32:CallExpression:;",
+        "src/middlewares/rate-limiter.js:127:12-127:16:BooleanLiteral:false",
+        "src/middlewares/rate-limiter.js:136:9-136:22:ConditionalExpression:false",
+        "src/middlewares/rate-limiter.js:141:20-141:27:StringLiteral:\"\"",
+        "src/middlewares/rate-limiter.js:141:38-141:96:StringLiteral:``",
+        "src/middlewares/rate-limiter.js:155:7-155:60:LogicalOperator:aplicacaoExecutandoLocalmente() && ehAmbienteDeTestes",
+        "src/middlewares/rate-limiter.js:156:5-156:31:OptionalChaining:res.locals.etapas.ignorar"
+      ],
+      "tests": {
+        "n_tests": 22,
+        "n_asserts": 39,
+        "sha256": "f690d5e77a80b202dace3c33941d6a46883cf51ad3ed65d69ae0e55190e00bf0"
+      },
+      "prompt_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k4_a0_response.txt",
+      "best_k_so_far": 4,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 3,
+        "tokens_in": 64079,
+        "tokens_out": 34344,
+        "usd_ref": 0.020146,
+        "wall_s": 242.02,
+        "stryker_s": 141.28
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 61.2903,
+        "ms_feedback": 56.5217,
+        "ms_all": 58.7786,
+        "ms_covered": 59.2308
+      },
+      "coverage": {
+        "line_cov": 98.67,
+        "branch_cov": 91.48
+      },
+      "mutants_eval": {
+        "killed": 38,
+        "survived": 23,
+        "no_coverage": 1,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 39,
+        "survived": 30,
+        "no_coverage": 0,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/rate-limiter.js:13:43-16:2:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:22:44-25:2:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:116:48-128:4:BlockStatement:{}",
+        "src/middlewares/rate-limiter.js:118:17-118:27:ArithmeticOperator:agora - ms",
+        "src/middlewares/rate-limiter.js:120:41-120:69:ArithmeticOperator:marcado - FOLGA_DA_JANELA_MS",
+        "src/middlewares/rate-limiter.js:120:9-120:69:ConditionalExpression:true",
+        "src/middlewares/rate-limiter.js:121:5-121:30:CallExpression:;",
+        "src/middlewares/rate-limiter.js:122:37-125:6:BlockStatement:{}",
+        "src/middlewares/rate-limiter.js:122:9-122:35:EqualityOperator:fimDaJanela.size > maximo",
+        "src/middlewares/rate-limiter.js:123:58-123:77:EqualityOperator:fimDaOutra > agora",
+        "src/middlewares/rate-limiter.js:124:11-124:37:ConditionalExpression:false",
+        "src/middlewares/rate-limiter.js:124:11-124:37:ConditionalExpression:true",
+        "src/middlewares/rate-limiter.js:124:11-124:37:EqualityOperator:fimDaJanela.size > maximo",
+        "src/middlewares/rate-limiter.js:124:39-124:90:CallExpression:;",
+        "src/middlewares/rate-limiter.js:126:5-126:32:CallExpression:;",
+        "src/middlewares/rate-limiter.js:127:12-127:16:BooleanLiteral:false",
+        "src/middlewares/rate-limiter.js:141:11-141:98:ObjectLiteral:{}",
+        "src/middlewares/rate-limiter.js:141:20-141:27:StringLiteral:\"\"",
+        "src/middlewares/rate-limiter.js:141:38-141:96:StringLiteral:``",
+        "src/middlewares/rate-limiter.js:155:7-155:60:LogicalOperator:aplicacaoExecutandoLocalmente() && ehAmbienteDeTestes"
+      ],
+      "tests": {
+        "n_tests": 23,
+        "n_asserts": 40,
+        "sha256": "a3c13889f46799285234dba127087c0660633a9867375f17075593feafcfbd4b"
+      },
+      "prompt_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__rate-limiter__C3__r2/raw/k5_a0_response.txt",
+      "best_k_so_far": 4,
+      "cost_cumulative": {
+        "calls": 9,
+        "repair_calls": 3,
+        "tokens_in": 74318,
+        "tokens_out": 39912,
+        "usd_ref": 0.023397,
+        "wall_s": 290.2,
+        "stryker_s": 171.83
+      }
+    }
+  ],
+  "selected_iteration": 4,
+  "final": {
+    "scores": {
+      "ms_eval": 61.2903,
+      "ms_feedback": 56.5217,
+      "ms_all": 58.7786,
+      "ms_covered": 59.2308
+    },
+    "coverage": {
+      "line_cov": 98.67,
+      "branch_cov": 91.48
+    },
+    "cost": {
+      "calls": 9,
+      "repair_calls": 3,
+      "tokens_in": 74318,
+      "tokens_out": 39912,
+      "usd_ref": 0.023397,
+      "wall_s": 290.2,
+      "stryker_s": 171.83
+    },
+    "tests": {
+      "n_tests": 22,
+      "n_asserts": 39,
+      "sha256": "f690d5e77a80b202dace3c33941d6a46883cf51ad3ed65d69ae0e55190e00bf0"
+    },
+    "gap_cov_ms": 39.8914,
+    "valid_rate": 1,
+    "tokens_per_pp": 5447.9
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [
+      "expect_true",
+      "tautology"
+    ],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest__rate-limiter__C3__r2/raw"
+  }
+}

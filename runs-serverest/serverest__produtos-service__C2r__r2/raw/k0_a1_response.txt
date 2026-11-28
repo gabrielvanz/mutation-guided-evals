@@ -1,0 +1,136 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching the query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found", async () => {
+    const produto = await produtosService.existeProduto({ _id: "inexistente" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("deleteById", () => {
+  it("should remove product by id and return count of removed documents", async () => {
+    const removedCount = await produtosService.deleteById("id-inexistente");
+    expect(removedCount).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should upsert product by id and return updated document", async () => {
+    const result = await produtosService.updateById("teste-id-update", {
+      $set: { nome: "Produto Teste" }
+    });
+    expect(result).toBeDefined();
+    expect(result.nome).toBe("Produto Teste");
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a product with formatted values and alteradoEm", async () => {
+    const novoProduto = await produtosService.criarProduto({
+      nome: "  Mousepad  ",
+      preco: "50",
+      quantidade: "10",
+      imagem: " http://imagem.com/img.png "
+    });
+
+    expect(novoProduto).toBeDefined();
+    expect(novoProduto.nome).toBe("Mousepad");
+    expect(novoProduto.preco).toBe(50);
+    expect(novoProduto.quantidade).toBe(10);
+    expect(novoProduto.imagem).toBe("http://imagem.com/img.png");
+    expect(novoProduto.alteradoEm).toBeDefined();
+  });
+});
+
+describe("createOrUpdateById", () => {
+  it("should update product with formatted values and new alteradoEm", async () => {
+    const result = await produtosService.createOrUpdateById("teste-id-create-or-update", {
+      nome: "Teclado",
+      preco: "150.5",
+      quantidade: "5"
+    });
+
+    expect(result).toBeDefined();
+    expect(result.nome).toBe("Teclado");
+    expect(result.preco).toBe(150.5);
+    expect(result.quantidade).toBe(5);
+    expect(result.alteradoEm).toBeDefined();
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "nao-existe", quantidade: 1 }
+    ]);
+
+    expect(resultado).toEqual({
+      error: {
+        statusCode: 400,
+        message: "Produto não encontrado",
+        item: { idProduto: "nao-existe", quantidade: 1 },
+        index: 0
+      }
+    });
+  });
+
+  it("should return error when product has insufficient stock in batch", async () => {
+    const criado = await produtosService.criarProduto({
+      nome: "Monitor",
+      preco: "1000",
+      quantidade: "2"
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: criado._id, quantidade: 5 }
+    ]);
+
+    expect(resultado).toEqual({
+      error: {
+        statusCode: 400,
+        message: "Produto não possui quantidade suficiente",
+        item: { idProduto: criado._id, quantidade: 5, quantidadeEstoque: 2 },
+        index: 0
+      }
+    });
+  });
+
+  it("should return produtosComPreco when batch is valid", async () => {
+    const criado = await produtosService.criarProduto({
+      nome: "Headset",
+      preco: "200",
+      quantidade: "10"
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: criado._id, quantidade: 2 }
+    ]);
+
+    expect(resultado).toEqual({
+      produtosComPreco: [
+        {
+          idProduto: criado._id,
+          quantidade: 2,
+          precoUnitario: 200
+        }
+      ]
+    });
+  });
+});
+```

@@ -1,0 +1,93 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching the query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found by search criteria", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente XYZ" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a product with formatted values and return it", async () => {
+    const novoProduto = {
+      nome: "  Produto Teste  ",
+      preco: "100.50",
+      quantidade: "10",
+      descricao: "Teste",
+      imagem: " http://imagem.com/img.png "
+    };
+
+    const resultado = await produtosService.criarProduto(novoProduto);
+    expect(resultado).toHaveProperty("_id");
+    expect(resultado.nome).toBe("Produto Teste");
+    expect(resultado.preco).toBe(100.50);
+    expect(resultado.quantidade).toBe(10);
+    expect(resultado.imagem).toBe("http://imagem.com/img.png");
+    expect(resultado).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return an error when a product in batch is not found", async () => {
+    const lote = [
+      { idProduto: "id-inexistente-lote", quantidade: 1 }
+    ];
+    const resultado = await produtosService.getPrecosUnitariosPorLote(lote);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.index).toBe(0);
+  });
+});
+
+describe("deleteById", () => {
+  it("should delete a product by id and return count of removed docs", async () => {
+    const removidos = await produtosService.deleteById("id-inexistente-para-remover");
+    expect(typeof removidos).toBe("number");
+  });
+});
+
+describe("createOrUpdateById", () => {
+  it("should create or update a product by id and return the updated document", async () => {
+    const id = "id-teste-create-or-update";
+    const body = {
+      nome: "  Produto Update  ",
+      preco: "50",
+      quantidade: "5"
+    };
+    const resultado = await produtosService.updateById(id, { ...body, alteradoEm: 1 });
+    expect(resultado).toHaveProperty("_id", id);
+    expect(resultado.nome).toBe("Produto Update");
+    expect(resultado.preco).toBe(50);
+    expect(resultado.quantidade).toBe(5);
+  });
+});
+
+describe("updateById", () => {
+  it("should update a product by id using upsert", async () => {
+    const id = "id-teste-update-by-id";
+    const updateBody = {
+      $set: {
+        nome: "Atualizado Direto"
+      }
+    };
+    const resultado = await produtosService.updateById(id, updateBody);
+    expect(resultado).toHaveProperty("_id", id);
+  });
+});
+```

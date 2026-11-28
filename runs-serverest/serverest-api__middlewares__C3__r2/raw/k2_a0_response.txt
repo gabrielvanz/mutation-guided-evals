@@ -1,0 +1,100 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("middlewares API", () => {
+  describe("authentication-middleware & error-handler", () => {
+    it("should reject request without authorization header with 401", async () => {
+      const res = await request(app)
+        .get("/usuarios");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido, expirado ou usuário não encontrado de outra forma"
+      });
+    });
+
+    it("should reject request with malformed authorization header with 401", async () => {
+      const res = await request(app)
+        .get("/usuarios")
+        .set("authorization", "InvalidFormat");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido, expirado ou usuário não encontrado de outra forma"
+      });
+    });
+
+    it("should reject request with invalid token signature with 401", async () => {
+      const res = await request(app)
+        .get("/usuarios")
+        .set("authorization", "Bearer invalid.jwt.token");
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido, expirado ou usuário não encontrado de outra forma"
+      });
+    });
+
+    it("should return 403 when a non-admin user tries to access an admin-only route", async () => {
+      const email = `normal_${Date.now()}@test.com`;
+      const createRes = await request(app)
+        .post("/usuarios")
+        .send({
+          nome: "Normal User",
+          email,
+          password: "testpassword",
+          administrador: "false"
+        });
+
+      expect(createRes.status).toBe(201);
+
+      const loginRes = await request(app)
+        .post("/login")
+        .send({
+          email,
+          password: "testpassword"
+        });
+
+      expect(loginRes.status).toBe(200);
+      const token = loginRes.body.authorization;
+
+      const res = await request(app)
+        .get("/usuarios")
+        .set("authorization", token);
+
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({
+        message: "Rota exclusiva para administradores"
+      });
+    });
+  });
+
+  describe("error-handler JSON parse errors", () => {
+    it("should handle malformed JSON body with 400", async () => {
+      const res = await request(app)
+        .post("/usuarios")
+        .set("content-type", "application/json")
+        .send("{ invalid json ");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+      });
+    });
+  });
+
+  describe("error-handler URIError", () => {
+    it("should handle URI decode errors with 400", async () => {
+      const res = await request(app)
+        .get("/usuarios/%E0%A4%A");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+      });
+    });
+  });
+});
+```

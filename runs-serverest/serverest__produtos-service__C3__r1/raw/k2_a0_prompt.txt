@@ -1,0 +1,359 @@
+Improve the Vitest test file for the module `src/services/produtos-service.js` (import path: `../../src/services/produtos-service`).
+
+Note about this project: The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports.
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: ServeRest (API REST de estudo em Node/Express, JavaScript CommonJS)
+
+- Este projeto não é UnJS nem TypeScript: os módulos são CommonJS (`exports.nome = ...` ou `module.exports = função`), com mensagens e textos em português. Os testes que você escreve continuam em Vitest.
+- Os testes originais do projeto usam títulos descritivos em português ("Deve retornar ...") e comparam valores concretos, sem depender de ordem de execução entre testes.
+- Respostas de erro e mensagens vêm de constantes do projeto: confira o texto exato no código-fonte antes de usar numa asserção.
+- Cubra: entradas vazias ou só com espaços, tipos inesperados, valores em limites (zero, negativos, muito grandes), campos ausentes, ordem de chaves e os caminhos de erro de cada função exportada.
+- Para middlewares e controllers, use objetos simples no lugar de `req`/`res`/`next` (`status`, `json` e `send` devolvem o próprio `res`) e verifique o status e o corpo enviados.
+</conventions>
+
+Source of `src/services/produtos-service.js`:
+```js
+'use strict'
+
+const constant = require('../utils/constants')
+const Datastore = require('nedb-promises')
+const { join } = require('path')
+
+const alterarValoresParaRegex = require('../utils/alterarValoresParaRegex')
+const { continuarDaMaiorMarca, doMaisNovoAoMaisAntigo, marcarAlteracao, semMarca } = require('../utils/ordemDeAlteracao')
+
+const datastore = Datastore.create({ filename: join(__dirname, '../data/produtos.db'), autoload: true })
+continuarDaMaiorMarca(datastore)
+
+// Index frequently searched fields for better query performance
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'nome', sparse: true })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'preco' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'quantidade' })
+
+exports.getAll = async queryString => {
+  queryString = alterarValoresParaRegex(queryString)
+  return doMaisNovoAoMaisAntigo(await datastore.find(queryString))
+}
+
+exports.getOne = async id => {
+  return semMarca(await datastore.findOne({ _id: id }))
+}
+
+/* istanbul ignore next */
+exports.getDadosDoProduto = queryString => {
+  return datastore.findOne(queryString)
+}
+
+exports.existeProduto = pesquisa => {
+  return datastore.findOne(pesquisa)
+}
+
+/* istanbul ignore next */
+exports.updateQuantidade = async ({ idProduto, quantidade }) => {
+  const { quantidade: quantidadeEmEstoque } = await this.getDadosDoProduto({ _id: idProduto })
+  const novaQuantidade = quantidadeEmEstoque - quantidade
+  await this.updateById(idProduto, { $set: { quantidade: novaQuantidade } })
+}
+
+/* istanbul ignore next */
+exports.updateQuantidadePorLote = async (arrayProdutosComQuantidade) => {
+  // Batch update to reduce round-trips: fetch all, calculate new quantities, update all
+  const idProdutos = arrayProdutosComQuantidade.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Calculate new quantities and perform updates
+  const updates = arrayProdutosComQuantidade.map(produto => {
+    const { idProduto, quantidade } = produto
+    const produtoAtual = produtosMap.get(idProduto)
+    if (produtoAtual) {
+      const novaQuantidade = produtoAtual.quantidade - quantidade
+      return this.updateById(idProduto, { $set: { quantidade: novaQuantidade } })
+    }
+    return Promise.resolve()
+  })
+
+  await Promise.all(updates)
+}
+
+/* istanbul ignore next */
+exports.restoreQuantidadePorLote = async (arrayProdutosComQuantidade) => {
+  // Batch restore to reduce round-trips: fetch all, calculate restored quantities, update all
+  const idProdutos = arrayProdutosComQuantidade.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Calculate restored quantities and perform updates
+  const updates = arrayProdutosComQuantidade.map(produto => {
+    const { idProduto, quantidade } = produto
+    const produtoAtual = produtosMap.get(idProduto)
+    if (produtoAtual) {
+      // O estoque não passa de Number.MAX_SAFE_INTEGER: um PUT pode ter levado o produto ao limite enquanto o
+      // carrinho estava aberto, e a soma gravaria um número já arredondado.
+      const quantidadeRestaurada = Math.min(produtoAtual.quantidade + quantidade, Number.MAX_SAFE_INTEGER)
+      return this.updateById(idProduto, { $set: { quantidade: quantidadeRestaurada } })
+    }
+    return Promise.resolve()
+  })
+
+  await Promise.all(updates)
+}
+
+exports.criarProduto = async body => {
+  body = formatarValores(body)
+  return datastore.insert({ ...body, alteradoEm: marcarAlteracao() })
+}
+
+/* istanbul ignore next */
+exports.getPrecoUnitarioOuErro = async (produto) => {
+  const quantidade = Number(produto.quantidade)
+  const { idProduto } = produto
+  const existePedido = await this.existeProduto({ _id: idProduto })
+  if (!existePedido) {
+    return { error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade } } }
+  }
+
+  const { quantidade: quantidadeEstoque, preco } = await this.getDadosDoProduto({ _id: idProduto })
+  if (quantidade > quantidadeEstoque) {
+    return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque } } }
+  }
+  return { precoUnitario: preco }
+}
+
+exports.getPrecosUnitariosPorLote = async (arrayProdutos) => {
+  // Fetch all products in one query to reduce round-trips
+  const idProdutos = arrayProdutos.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Validate each product and build result
+  for (let i = 0; i < arrayProdutos.length; i++) {
+    const produto = arrayProdutos[i]
+    const quantidade = Number(produto.quantidade)
+    const { idProduto } = produto
+
+    const produtoEmEstoque = produtosMap.get(idProduto)
+    if (!produtoEmEstoque) {
+      return { error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade }, index: i } }
+    }
+
+    if (quantidade > produtoEmEstoque.quantidade) {
+      return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque: produtoEmEstoque.quantidade }, index: i } }
+    }
+  }
+
+  // Build result with prices
+  const produtosComPreco = arrayProdutos.map((produto, index) => ({
+    ...produto,
+    precoUnitario: produtosMap.get(produto.idProduto).preco
+  }))
+
+  return { produtosComPreco }
+}
+
+exports.deleteById = async id => {
+  return datastore.remove({ _id: id }, {})
+}
+
+exports.createOrUpdateById = async (idDoProdutoQueSeraAlterado, body) => {
+  body = formatarValores(body)
+  // Só o PUT marca: a baixa e a reposição de estoque feitas pelos carrinhos não mudam a posição na lista.
+  return this.updateById(idDoProdutoQueSeraAlterado, { ...body, alteradoEm: marcarAlteracao() })
+}
+
+exports.updateById = async (idDoProdutoQueSeraAlterado, body) => {
+  return datastore.update({ _id: idDoProdutoQueSeraAlterado }, body, { upsert: true, returnUpdatedDocs: true })
+}
+
+function formatarValores (body) {
+  body.nome = body.nome.trim()
+  // O express-validation não devolve ao req.body o número que o Joi converteu, então um texto
+  // como "470" chega aqui. Number, e não parseInt: o Joi aceita "4e2" como 400 e o parseInt leria 4.
+  // O + 0 transforma -0 em 0, como o Joi faz com "-0".
+  body.preco = Number(body.preco) + 0
+  body.quantidade = Number(body.quantidade) + 0
+  if (body.imagem) {
+    body.imagem = body.imagem.trim()
+  }
+  return body
+}
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente XYZ" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create and return a new product with formatted values", async () => {
+    const novoProduto = {
+      nome: "  Mouse Gamer  ",
+      preco: "150.5",
+      quantidade: "10",
+      descricao: "Mouse RGB",
+      imagem: " http://img.com/img.png "
+    };
+
+    const resultado = await produtosService.criarProduto(novoProduto);
+    expect(resultado).toHaveProperty("_id");
+    expect(resultado.nome).toBe("Mouse Gamer");
+    expect(resultado.preco).toBe(150.5);
+    expect(resultado.quantidade).toBe(10);
+    expect(resultado.imagem).toBe("http://img.com/img.png");
+    expect(resultado).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const lote = [
+      { idProduto: "id-invalido-lote", quantidade: 1 }
+    ];
+    const resultado = await produtosService.getPrecosUnitariosPorLote(lote);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.index).toBe(0);
+  });
+});
+
+describe("deleteById", () => {
+  it("should return 0 removed count when deleting non-existent product", async () => {
+    const count = await produtosService.deleteById("id-inexistente-del");
+    expect(count).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should update or upsert product by id", async () => {
+    const id = "id-teste-update";
+    const atualizacao = { nome: "Atualizado", preco: 200, quantidade: 5 };
+    const resultado = await produtosService.updateById(id, { $set: atualizacao });
+    expect(resultado).toHaveProperty("_id", id);
+  });
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 20 changes below (42 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. line 10, operator BooleanLiteral
+   line: const datastore = Datastore.create({ filename: join(__dirname, '../data/produtos.db'), autoload: true })
+   original fragment: "true"
+   mutated fragment:  "false"
+2. line 11, operator CallExpression
+   line: continuarDaMaiorMarca(datastore)
+   original fragment: "continuarDaMaiorMarca(datastore)"
+   mutated fragment:  ";"
+3. line 42, operator ArithmeticOperator (no test executes this code)
+   line: const novaQuantidade = quantidadeEmEstoque - quantidade
+   original fragment: "quantidadeEmEstoque - quantidade"
+   mutated fragment:  "quantidadeEmEstoque + quantidade"
+4. line 51, operator ArrayDeclaration (no test executes this code)
+   line: const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+   original fragment: "[p._id, p]"
+   mutated fragment:  "[]"
+5. line 57, operator ConditionalExpression (no test executes this code)
+   line: if (produtoAtual) {
+   original fragment: "produtoAtual"
+   mutated fragment:  "false"
+6. line 70, operator ArrowFunction (no test executes this code)
+   line: const idProdutos = arrayProdutosComQuantidade.map(p => p.idProduto)
+   original fragment: "p => p.idProduto"
+   mutated fragment:  "() => undefined"
+7. line 72, operator ArrayDeclaration (no test executes this code)
+   line: const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+   original fragment: "[p._id, p]"
+   mutated fragment:  "[]"
+8. line 78, operator BlockStatement (no test executes this code)
+   line: if (produtoAtual) {
+   original fragment: "{\r\n      // O estoque não passa de Number.MAX_SAFE_INTEGER: um PUT pode ter levado o produto ao limite enquanto o\r\n      // carrinho estava aberto, e a soma gravaria um número já arredondado.\r\n      c..."
+   mutated fragment:  "{}"
+9. line 78, operator ConditionalExpression (no test executes this code)
+   line: if (produtoAtual) {
+   original fragment: "produtoAtual"
+   mutated fragment:  "false"
+10. line 78, operator ConditionalExpression (no test executes this code)
+   line: if (produtoAtual) {
+   original fragment: "produtoAtual"
+   mutated fragment:  "true"
+11. line 81, operator ArithmeticOperator (no test executes this code)
+   line: const quantidadeRestaurada = Math.min(produtoAtual.quantidade + quantidade, Number.MAX_SAFE_INTEGER)
+   original fragment: "produtoAtual.quantidade + quantidade"
+   mutated fragment:  "produtoAtual.quantidade - quantidade"
+12. line 100, operator BooleanLiteral (no test executes this code)
+   line: if (!existePedido) {
+   original fragment: "!existePedido"
+   mutated fragment:  "existePedido"
+13. line 105, operator BlockStatement (no test executes this code)
+   line: if (quantidade > quantidadeEstoque) {
+   original fragment: "{\r\n    return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque } } }\r\n  }"
+   mutated fragment:  "{}"
+14. line 105, operator EqualityOperator (no test executes this code)
+   line: if (quantidade > quantidadeEstoque) {
+   original fragment: "quantidade > quantidadeEstoque"
+   mutated fragment:  "quantidade >= quantidadeEstoque"
+15. line 106, operator ObjectLiteral (no test executes this code)
+   line: return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque } } }
+   original fragment: "{ idProduto, quantidade, quantidadeEstoque }"
+   mutated fragment:  "{}"
+16. line 115, operator ArrowFunction
+   line: const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+   original fragment: "p => [p._id, p]"
+   mutated fragment:  "() => undefined"
+17. line 118, operator UpdateOperator (no test executes this code)
+   line: for (let i = 0; i < arrayProdutos.length; i++) {
+   original fragment: "i++"
+   mutated fragment:  "i--"
+18. line 128, operator EqualityOperator (no test executes this code)
+   line: if (quantidade > produtoEmEstoque.quantidade) {
+   original fragment: "quantidade > produtoEmEstoque.quantidade"
+   mutated fragment:  "quantidade <= produtoEmEstoque.quantidade"
+19. line 129, operator ObjectLiteral (no test executes this code)
+   line: return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque: produtoEmEstoque.quantidade }, index: i } }
+   original fragment: "{ error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque: produtoEmEstoque.quantidade }, index: i } }"
+   mutated fragment:  "{}"
+20. line 162, operator ArithmeticOperator
+   line: body.quantidade = Number(body.quantidade) + 0
+   original fragment: "Number(body.quantidade) + 0"
+   mutated fragment:  "Number(body.quantidade) - 0"
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.

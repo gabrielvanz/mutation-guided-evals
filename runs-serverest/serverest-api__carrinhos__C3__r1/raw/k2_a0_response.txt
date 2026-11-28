@@ -1,0 +1,288 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("carrinhos API", () => {
+  let counter = 0;
+
+  async function criarUsuarioToken() {
+    counter++;
+    const emailUnico = `user_${counter}@email.com`;
+    await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Test User",
+        email: emailUnico,
+        password: "password123",
+        administrador: "true"
+      });
+
+    const loginRes = await request(app)
+      .post("/login")
+      .send({
+        email: emailUnico,
+        password: "password123"
+      });
+
+    return loginRes.body.authorization;
+  }
+
+  async function criarProduto(preco: number = 50, quantidade: number = 20, token: string) {
+    counter++;
+    const prodRes = await request(app)
+      .post("/produtos")
+      .set("authorization", token)
+      .send({
+        nome: `Produto_${counter}`,
+        preco,
+        descricao: "Produto teste",
+        quantidade
+      });
+    return prodRes.body._id;
+  }
+
+  describe("GET /carrinhos", () => {
+    it("should list all carts successfully", async () => {
+      const res = await request(app).get("/carrinhos");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("quantidade");
+      expect(res.body).toHaveProperty("carrinhos");
+      expect(Array.isArray(res.body.carrinhos)).toBe(0 === 0 || Array.isArray(res.body.carrinhos));
+    });
+
+    it("should filter carts by query parameters", async () => {
+      const res = await request(app).get("/carrinhos?precoTotal=100");
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.carrinhos)).toBe(true);
+    });
+  });
+
+  describe("GET /carrinhos/:id", () => {
+    it("should return cart not found when ID does not exist", async () => {
+      const res = await request(app).get("/carrinhos/1234567890abcdef");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Carrinho não encontrado" });
+    });
+
+    it("should return cart details when ID exists", async () => {
+      const token = await criarUsuarioToken();
+      const prodId = await criarProduto(10, 10, token);
+
+      const postRes = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [{ idProduto: prodId, quantidade: 2 }]
+        });
+
+      const carrinhoId = postRes.body._id;
+
+      const res = await request(app).get(`/carrinhos/${carrinhoId}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("_id", carrinhoId);
+      expect(res.body.quantidadeTotal).toBe(2);
+      expect(res.body.precoTotal).toBe(20);
+    });
+
+    it("should fail with invalid cart ID format", async () => {
+      const res = await request(app).get("/carrinhos/invalid-id");
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("POST /carrinhos", () => {
+    it("should create a cart successfully", async () => {
+      const token = await criarUsuarioToken();
+      const prodId = await criarProduto(10, 5, token);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [
+            { idProduto: prodId, quantidade: 2 }
+          ]
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+      expect(res.body).toHaveProperty("_id");
+    });
+
+    it("should fail when unauthorized", async () => {
+      const res = await request(app)
+        .post("/carrinhos")
+        .send({
+          produtos: [
+            { idProduto: "1234567890abcdef", quantidade: 1 }
+          ]
+        });
+
+      expect(res.status).toBe(401);
+      expect(res.body).toHaveProperty("message", "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais");
+    });
+
+    it("should fail when user already has a cart", async () => {
+      const token = await criarUsuarioToken();
+      const prodId1 = await criarProduto(10, 10, token);
+      const prodId2 = await criarProduto(10, 10, token);
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [{ idProduto: prodId1, quantidade: 1 }]
+        });
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [{ idProduto: prodId2, quantidade: 1 }]
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Não é permitido ter mais de 1 carrinho" });
+    });
+
+    it("should fail when there are duplicate products in the cart", async () => {
+      const token = await criarUsuarioToken();
+      const prodId = await criarProduto(10, 10, token);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [
+            { idProduto: prodId, quantidade: 1 },
+            { idProduto: prodId, quantidade: 2 }
+          ]
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message", "Não é permitido possuir produto duplicado");
+      expect(res.body).toHaveProperty("idProdutosDuplicados");
+    });
+
+    it("should fail when product does not exist", async () => {
+      const token = await criarUsuarioToken();
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [
+            { idProduto: "9999999999999999", quantidade: 1 }
+          ]
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message", "Produto não encontrado");
+    });
+
+    it("should fail when stock is not enough", async () => {
+      const token = await criarUsuarioToken();
+      const prodId = await criarProduto(10, 2, token);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [
+            { idProduto: prodId, quantidade: 5 }
+          ]
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message", "Produto não possui quantidade suficiente");
+    });
+
+    it("should fail when cart totals are not safe integers (too big)", async () => {
+      const token = await criarUsuarioToken();
+      const prodId = await criarProduto(Number.MAX_SAFE_INTEGER, 10, token);
+
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [
+            { idProduto: prodId, quantidade: 2 }
+          ]
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "precoTotal ou quantidadeTotal do carrinho não pode passar de 9007199254740991" });
+    });
+  });
+
+  describe("DELETE /carrinhos/cancelar-compra", () => {
+    it("should cancel purchase and replenish stock when cart exists", async () => {
+      const token = await criarUsuarioToken();
+      const prodId = await criarProduto(10, 10, token);
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [{ idProduto: prodId, quantidade: 3 }]
+        });
+
+      const res = await request(app)
+        .delete("/carrinhos/cancelar-compra")
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro excluído com sucesso. Estoque dos produtos reabastecido" });
+    });
+
+    it("should return no cart message when user has no cart", async () => {
+      const token = await criarUsuarioToken();
+
+      const res = await request(app)
+        .delete("/carrinhos/cancelar-compra")
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Não foi encontrado carrinho para esse usuário" });
+    });
+  });
+
+  describe("DELETE /carrinhos/concluir-compra", () => {
+    it("should conclude purchase successfully when cart exists", async () => {
+      const token = await criarUsuarioToken();
+      const prodId = await criarProduto(10, 10, token);
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [{ idProduto: prodId, quantidade: 2 }]
+        });
+
+      const res = await request(app)
+        .delete("/carrinhos/concluir-compra")
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro excluído com sucesso" });
+    });
+
+    it("should return no cart message when concluding without a cart", async () => {
+      const token = await criarUsuarioToken();
+
+      const res = await request(app)
+        .delete("/carrinhos/concluir-compra")
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Não foi encontrado carrinho para esse usuário" });
+    });
+  });
+});
+```

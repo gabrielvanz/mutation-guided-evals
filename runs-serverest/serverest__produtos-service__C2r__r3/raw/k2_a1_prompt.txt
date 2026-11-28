@@ -1,0 +1,302 @@
+The Vitest test file below for `src/services/produtos-service.js` (import path: `../../src/services/produtos-service`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Note about this project: The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports.
+
+Source of `src/services/produtos-service.js`:
+```js
+'use strict'
+
+const constant = require('../utils/constants')
+const Datastore = require('nedb-promises')
+const { join } = require('path')
+
+const alterarValoresParaRegex = require('../utils/alterarValoresParaRegex')
+const { continuarDaMaiorMarca, doMaisNovoAoMaisAntigo, marcarAlteracao, semMarca } = require('../utils/ordemDeAlteracao')
+
+const datastore = Datastore.create({ filename: join(__dirname, '../data/produtos.db'), autoload: true })
+continuarDaMaiorMarca(datastore)
+
+// Index frequently searched fields for better query performance
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'nome', sparse: true })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'preco' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'quantidade' })
+
+exports.getAll = async queryString => {
+  queryString = alterarValoresParaRegex(queryString)
+  return doMaisNovoAoMaisAntigo(await datastore.find(queryString))
+}
+
+exports.getOne = async id => {
+  return semMarca(await datastore.findOne({ _id: id }))
+}
+
+/* istanbul ignore next */
+exports.getDadosDoProduto = queryString => {
+  return datastore.findOne(queryString)
+}
+
+exports.existeProduto = pesquisa => {
+  return datastore.findOne(pesquisa)
+}
+
+/* istanbul ignore next */
+exports.updateQuantidade = async ({ idProduto, quantidade }) => {
+  const { quantidade: quantidadeEmEstoque } = await this.getDadosDoProduto({ _id: idProduto })
+  const novaQuantidade = quantidadeEmEstoque - quantidade
+  await this.updateById(idProduto, { $set: { quantidade: novaQuantidade } })
+}
+
+/* istanbul ignore next */
+exports.updateQuantidadePorLote = async (arrayProdutosComQuantidade) => {
+  // Batch update to reduce round-trips: fetch all, calculate new quantities, update all
+  const idProdutos = arrayProdutosComQuantidade.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Calculate new quantities and perform updates
+  const updates = arrayProdutosComQuantidade.map(produto => {
+    const { idProduto, quantidade } = produto
+    const produtoAtual = produtosMap.get(idProduto)
+    if (produtoAtual) {
+      const novaQuantidade = produtoAtual.quantidade - quantidade
+      return this.updateById(idProduto, { $set: { quantidade: novaQuantidade } })
+    }
+    return Promise.resolve()
+  })
+
+  await Promise.all(updates)
+}
+
+/* istanbul ignore next */
+exports.restoreQuantidadePorLote = async (arrayProdutosComQuantidade) => {
+  // Batch restore to reduce round-trips: fetch all, calculate restored quantities, update all
+  const idProdutos = arrayProdutosComQuantidade.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Calculate restored quantities and perform updates
+  const updates = arrayProdutosComQuantidade.map(produto => {
+    const { idProduto, quantidade } = produto
+    const produtoAtual = produtosMap.get(idProduto)
+    if (produtoAtual) {
+      // O estoque não passa de Number.MAX_SAFE_INTEGER: um PUT pode ter levado o produto ao limite enquanto o
+      // carrinho estava aberto, e a soma gravaria um número já arredondado.
+      const quantidadeRestaurada = Math.min(produtoAtual.quantidade + quantidade, Number.MAX_SAFE_INTEGER)
+      return this.updateById(idProduto, { $set: { quantidade: quantidadeRestaurada } })
+    }
+    return Promise.resolve()
+  })
+
+  await Promise.all(updates)
+}
+
+exports.criarProduto = async body => {
+  body = formatarValores(body)
+  return datastore.insert({ ...body, alteradoEm: marcarAlteracao() })
+}
+
+/* istanbul ignore next */
+exports.getPrecoUnitarioOuErro = async (produto) => {
+  const quantidade = Number(produto.quantidade)
+  const { idProduto } = produto
+  const existePedido = await this.existeProduto({ _id: idProduto })
+  if (!existePedido) {
+    return { error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade } } }
+  }
+
+  const { quantidade: quantidadeEstoque, preco } = await this.getDadosDoProduto({ _id: idProduto })
+  if (quantidade > quantidadeEstoque) {
+    return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque } } }
+  }
+  return { precoUnitario: preco }
+}
+
+exports.getPrecosUnitariosPorLote = async (arrayProdutos) => {
+  // Fetch all products in one query to reduce round-trips
+  const idProdutos = arrayProdutos.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Validate each product and build result
+  for (let i = 0; i < arrayProdutos.length; i++) {
+    const produto = arrayProdutos[i]
+    const quantidade = Number(produto.quantidade)
+    const { idProduto } = produto
+
+    const produtoEmEstoque = produtosMap.get(idProduto)
+    if (!produtoEmEstoque) {
+      return { error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade }, index: i } }
+    }
+
+    if (quantidade > produtoEmEstoque.quantidade) {
+      return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque: produtoEmEstoque.quantidade }, index: i } }
+    }
+  }
+
+  // Build result with prices
+  const produtosComPreco = arrayProdutos.map((produto, index) => ({
+    ...produto,
+    precoUnitario: produtosMap.get(produto.idProduto).preco
+  }))
+
+  return { produtosComPreco }
+}
+
+exports.deleteById = async id => {
+  return datastore.remove({ _id: id }, {})
+}
+
+exports.createOrUpdateById = async (idDoProdutoQueSeraAlterado, body) => {
+  body = formatarValores(body)
+  // Só o PUT marca: a baixa e a reposição de estoque feitas pelos carrinhos não mudam a posição na lista.
+  return this.updateById(idDoProdutoQueSeraAlterado, { ...body, alteradoEm: marcarAlteracao() })
+}
+
+exports.updateById = async (idDoProdutoQueSeraAlterado, body) => {
+  return datastore.update({ _id: idDoProdutoQueSeraAlterado }, body, { upsert: true, returnUpdatedDocs: true })
+}
+
+function formatarValores (body) {
+  body.nome = body.nome.trim()
+  // O express-validation não devolve ao req.body o número que o Joi converteu, então um texto
+  // como "470" chega aqui. Number, e não parseInt: o Joi aceita "4e2" como 400 e o parseInt leria 4.
+  // O + 0 transforma -0 em 0, como o Joi faz com "-0".
+  body.preco = Number(body.preco) + 0
+  body.quantidade = Number(body.quantidade) + 0
+  if (body.imagem) {
+    body.imagem = body.imagem.trim()
+  }
+  return body
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente XYZ" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("deleteById", () => {
+  it("should return zero removed documents for non-existent id", async () => {
+    const removidos = await produtosService.deleteById("id-inexistente-para-remover");
+    expect(removidos).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should upsert or update product by id", async () => {
+    const resultado = await produtosService.updateById("id-teste-update", {
+      $set: { nome: "Produto Atualizado", preco: 10, quantidade: 5 }
+    });
+    expect(resultado).toBeDefined();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a new product with formatted values", async () => {
+    const novoProduto = await produtosService.criarProduto({
+      nome: "  Produto Teste  ",
+      preco: "470",
+      quantidade: "10",
+      descricao: "Teste",
+      imagem: " imagem.jpg "
+    });
+    expect(novoProduto).toHaveProperty("_id");
+    expect(novoProduto.nome).toBe("Produto Teste");
+    expect(novoProduto.preco).toBe(470);
+    expect(novoProduto.quantidade).toBe(10);
+    expect(novoProduto.imagem).toBe("imagem.jpg");
+  });
+});
+
+describe("createOrUpdateById", () => {
+  it("should update product and set alteradoEm mark", async () => {
+    const resultado = await produtosService.createOrUpdateById("id-teste-put", {
+      nome: "Produto PUT",
+      preco: 100,
+      quantidade: 20
+    });
+    expect(resultado).toBeDefined();
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "id-inexistente-lote", quantidade: 1 }
+    ]);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v3.2.7 /home/administrador/work/w1
+
+ ❯ test/__generated__/produtos-service.gen.test.ts (8 tests | 1 failed) 22ms
+   ✓ getAll > should return all products matching query 7ms
+   ✓ getOne > should return null when product does not exist 1ms
+   ✓ existeProduto > should return null when product is not found 0ms
+   ✓ deleteById > should return zero removed documents for non-existent id 1ms
+   ✓ updateById > should upsert or update product by id 1ms
+   ✓ criarProduto > should create a new product with formatted values 2ms
+   × createOrUpdateById > should update product and set alteradoEm mark 8ms
+     → this.updateById is not a function
+   ✓ getPrecosUnitariosPorLote > should return error when product in batch does not exist 1ms
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 passed (8)
+   Start at  20:10:25
+   Duration  527ms (transform 69ms, setup 0ms, collect 128ms, tests 22ms, environment 0ms, prepare 135ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/produtos-service.gen.test.ts > createOrUpdateById > should update product and set alteradoEm mark
+TypeError: this.updateById is not a function
+ ❯ Object.exports.createOrUpdateById src/services/produtos-service.js:149:15
+    147|   body = formatarValores(body)
+    148|   // Só o PUT marca: a baixa e a reposição de estoque feitas pelos car…
+    149|   return this.updateById(idDoProdutoQueSeraAlterado, { ...body, altera…
+       |               ^
+    150| }
+    151| 
+ ❯ test/__generated__/produtos-service.gen.test.ts:60:45
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

@@ -1,0 +1,395 @@
+The Vitest test file below for `src/services/carrinhos-service.js` (import path: `../../src/services/carrinhos-service`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Note about this project: The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports.
+
+Source of `src/services/carrinhos-service.js`:
+```js
+'use strict'
+
+const Datastore = require('nedb-promises')
+const { join } = require('path')
+
+const alterarValoresParaRegex = require('../utils/alterarValoresParaRegex')
+const { continuarDaMaiorMarca, doMaisNovoAoMaisAntigo, marcarAlteracao, semMarca } = require('../utils/ordemDeAlteracao')
+const authService = require('../services/auth-service')
+const usuariosService = require('../services/usuarios-service')
+const produtosService = require('../services/produtos-service')
+
+const datastore = Datastore.create({ filename: join(__dirname, '../data/carrinhos.db'), autoload: true })
+continuarDaMaiorMarca(datastore)
+
+// Index frequently searched fields for better query performance
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'idUsuario' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'precoTotal' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'quantidadeTotal' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'produtos.idProduto' })
+
+exports.getAll = async queryString => {
+  queryString = alterarValoresParaRegex(queryString)
+  return doMaisNovoAoMaisAntigo(await datastore.find(queryString))
+}
+
+exports.getOne = async id => {
+  return semMarca(await datastore.findOne({ _id: id }))
+}
+
+exports.existeCarrinho = pesquisa => {
+  return datastore.findOne(pesquisa)
+}
+
+exports.existeCarrinhoComProduto = idProduto => {
+  return datastore.findOne({ produtos: { $elemMatch: { idProduto } } })
+}
+
+exports.criarCarrinho = async body => {
+  return datastore.insert({ ...body, alteradoEm: marcarAlteracao() })
+}
+
+exports.extrairProdutosDuplicados = arrayProdutos => {
+  const vistos = new Set()
+  const duplicados = new Set()
+  for (const { idProduto } of arrayProdutos) {
+    if (vistos.has(idProduto)) duplicados.add(idProduto)
+    vistos.add(idProduto)
+  }
+  return [...duplicados]
+}
+
+exports.getProdutosComPrecoUnitarioOuErro = async arrayProdutos => {
+  // Use batch lookup instead of per-item queries to reduce round-trips
+  const { produtosComPreco, error } = await produtosService.getPrecosUnitariosPorLote(arrayProdutos)
+
+  if (error) {
+    const item = { ...error.item, index: error.index }
+    return { error: { ...error, item } }
+  }
+
+  return { produtosComPrecoUnitario: produtosComPreco }
+}
+
+exports.deleteById = async id => {
+  return datastore.remove({ _id: id }, {})
+}
+
+exports.concluiCompra = async carrinho => {
+  await this.deleteById(carrinho._id)
+}
+
+exports.removeCarrinho = async carrinho => {
+  const { produtos, _id } = carrinho
+  await this.reabasteceEstoque(produtos)
+  await this.deleteById(_id)
+}
+
+exports.getCarrinhoDoUsuario = async (authorization) => {
+  const _id = await idUsuario(authorization)
+  return this.getAll({ idUsuario: _id })
+}
+
+exports.usuarioJaPossuiCarrinho = async (authorization) => {
+  const _id = await idUsuario(authorization)
+  return {
+    idUsuario: _id,
+    possuiCarrinho: await this.existeCarrinho({ idUsuario: _id })
+  }
+}
+
+exports.precoTotal = produtos => produtos.reduce((total, produto) => total + produto.precoUnitario * produto.quantidade, 0)
+
+exports.quantidadeTotal = produtos => produtos.reduce((total, produto) => total + produto.quantidade, 0)
+
+// Acima de Number.MAX_SAFE_INTEGER o total seria gravado já arredondado, e o GET /carrinhos passaria a devolver
+// um número que nenhum contrato com Joi.number() aceita, reprovando a lista inteira e não só esse carrinho.
+exports.totaisSaoSeguros = (precoTotal, quantidadeTotal) =>
+  Number.isSafeInteger(precoTotal) && Number.isSafeInteger(quantidadeTotal)
+
+exports.baixarEstoque = async produtos => {
+  // Use batch update to reduce round-trips instead of updating per-item
+  await produtosService.updateQuantidadePorLote(produtos)
+}
+
+exports.reabasteceEstoque = async produtos => {
+  // Use batch restore to reduce round-trips instead of restoring per-item
+  await produtosService.restoreQuantidadePorLote(produtos)
+}
+
+const idUsuario = async (authorization) => {
+  const { email, password } = authService.verifyToken(authorization)
+  const { _id } = await usuariosService.getDadosDoUsuario({ email, password })
+  return _id
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import carrinhosService from "../../src/services/carrinhos-service";
+
+describe("extrairProdutosDuplicados", () => {
+  it("should return an empty array when there are no duplicate products", () => {
+    const produtos = [
+      { idProduto: "1", quantidade: 2 },
+      { idProduto: "2", quantidade: 1 }
+    ];
+    const result = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(result).toEqual([]);
+  });
+
+  it("should extract duplicate product IDs when products appear multiple times", () => {
+    const produtos = [
+      { idProduto: "1", quantidade: 2 },
+      { idProduto: "2", quantidade: 1 },
+      { idProduto: "1", quantidade: 3 }
+    ];
+    const result = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(result).toEqual(["1"]);
+  });
+});
+
+describe("precoTotal", () => {
+  it("should calculate total price correctly for a list of products", () => {
+    const produtos = [
+      { precoUnitario: 10, quantidade: 2 },
+      { precoUnitario: 5, quantidade: 4 }
+    ];
+    const result = carrinhosService.precoTotal(produtos);
+    expect(result).toBe(40);
+  });
+
+  it("should return zero when product list is empty", () => {
+    const result = carrinhosService.precoTotal([]);
+    expect(result).toBe(0);
+  });
+});
+
+describe("quantidadeTotal", () => {
+  it("should calculate total quantity correctly for a list of products", () => {
+    const produtos = [
+      { quantidade: 2 },
+      { quantidade: 5 }
+    ];
+    const result = carrinhosService.quantidadeTotal(produtos);
+    expect(result).toBe(7);
+  });
+
+  it("should return zero when product list is empty", () => {
+    const result = carrinhosService.quantidadeTotal([]);
+    expect(result).toBe(0);
+  });
+});
+
+describe("totaisSaoSeguros", () => {
+  it("should return true when both totals are safe integers", () => {
+    const result = carrinhosService.totaisSaoSeguros(100, 50);
+    expect(result).toBe(true);
+  });
+
+  it("should return false when price total is not a safe integer", () => {
+    const result = carrinhosService.totaisSaoSeguros(Number.MAX_SAFE_INTEGER + 1, 10);
+    expect(result).toBe(false);
+  });
+
+  it("should return false when quantity total is not a safe integer", () => {
+    const result = carrinhosService.totaisSaoSeguros(100, Number.MAX_SAFE_INTEGER + 1);
+    expect(result).toBe(false);
+  });
+});
+
+describe("Database initialization and functions", () => {
+  it("should have functions exported correctly", () => {
+    expect(typeof carrinhosService.getAll).toBe("function");
+    expect(typeof carrinhosService.getOne).toBe("function");
+    expect(typeof carrinhosService.existeCarrinho).toBe("function");
+    expect(typeof carrinhosService.existeCarrinhoComProduto).toBe("function");
+    expect(typeof carrinhosService.criarCarrinho).toBe("function");
+    expect(typeof carrinhosService.getProdutosComPrecoUnitarioOuErro).toBe("function");
+    expect(typeof carrinhosService.deleteById).toBe("function");
+    expect(typeof carrinhosService.concluiCompra).toBe("function");
+    expect(typeof carrinhosService.removeCarrinho).toBe("function");
+    expect(typeof carrinhosService.getCarrinhoDoUsuario).toBe("function");
+    expect(typeof carrinhosService.usuarioJaPossuiCarrinho).toBe("function");
+    expect(typeof carrinhosService.baixarEstoque).toBe("function");
+    expect(typeof carrinhosService.reabasteceEstoque).toBe("function");
+  });
+});
+
+describe("Module logic and database operations", () => {
+  it("should return a promise for getAll", () => {
+    const result = carrinhosService.getAll({ idUsuario: "abc" });
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for getOne", () => {
+    const result = carrinhosService.getOne("123");
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for existeCarrinho", () => {
+    const result = carrinhosService.existeCarrinho({ idUsuario: "abc" });
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for existeCarrinhoComProduto", () => {
+    const result = carrinhosService.existeCarrinhoComProduto("prod1");
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for criarCarrinho", () => {
+    const result = carrinhosService.criarCarrinho({ produtos: [], idUsuario: "abc" });
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for deleteById", () => {
+    const result = carrinhosService.deleteById("123");
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for concluiCompra", () => {
+    const result = carrinhosService.concluiCompra({ _id: "123", produtos: [] });
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for removeCarrinho", () => {
+    const result = carrinhosService.removeCarrinho({ _id: "123", produtos: [] });
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for baixarEstoque", () => {
+    const result = carrinhosService.baixarEstoque([]);
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for reabasteceEstoque", () => {
+    const result = carrinhosService.reabasteceEstoque([]);
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for getProdutosComPrecoUnitarioOuErro", () => {
+    const result = carrinhosService.getProdutosComPrecoUnitarioOuErro([]);
+    expect(result).toBeInstanceOf(Promise);
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v3.2.7 /home/administrador/work/w2
+
+ ❯ test/__generated__/carrinhos-service.gen.test.ts (21 tests | 2 failed) 21ms
+   ✓ extrairProdutosDuplicados > should return an empty array when there are no duplicate products 2ms
+   ✓ extrairProdutosDuplicados > should extract duplicate product IDs when products appear multiple times 1ms
+   ✓ precoTotal > should calculate total price correctly for a list of products 1ms
+   ✓ precoTotal > should return zero when product list is empty 1ms
+   ✓ quantidadeTotal > should calculate total quantity correctly for a list of products 0ms
+   ✓ quantidadeTotal > should return zero when product list is empty 0ms
+   ✓ totaisSaoSeguros > should return true when both totals are safe integers 0ms
+   ✓ totaisSaoSeguros > should return false when price total is not a safe integer 0ms
+   ✓ totaisSaoSeguros > should return false when quantity total is not a safe integer 0ms
+   ✓ Database initialization and functions > should have functions exported correctly 0ms
+   ✓ Module logic and database operations > should return a promise for getAll 0ms
+   ✓ Module logic and database operations > should return a promise for getOne 0ms
+   × Module logic and database operations > should return a promise for existeCarrinho 7ms
+     → expected Cursor{ …(4) } to be an instance of Promise
+   × Module logic and database operations > should return a promise for existeCarrinhoComProduto 1ms
+     → expected Cursor{ …(4) } to be an instance of Promise
+   ✓ Module logic and database operations > should return a promise for criarCarrinho 0ms
+   ✓ Module logic and database operations > should return a promise for deleteById 0ms
+   ✓ Module logic and database operations > should return a promise for concluiCompra 0ms
+   ✓ Module logic and database operations > should return a promise for removeCarrinho 0ms
+   ✓ Module logic and database operations > should return a promise for baixarEstoque 0ms
+   ✓ Module logic and database operations > should return a promise for reabasteceEstoque 0ms
+   ✓ Module logic and database operations > should return a promise for getProdutosComPrecoUnitarioOuErro 0ms
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 19 passed (21)
+     Errors  2 errors
+   Start at  19:49:24
+   Duration  599ms (transform 55ms, setup 0ms, collect 165ms, tests 21ms, environment 0ms, prepare 73ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/carrinhos-service.gen.test.ts > Module logic and database operations > should return a promise for existeCarrinho
+AssertionError: expected Cursor{ …(4) } to be an instance of Promise
+ ❯ test/__generated__/carrinhos-service.gen.test.ts:105:20
+    103|   it("should return a promise for existeCarrinho", () => {
+    104|     const result = carrinhosService.existeCarrinho({ idUsuario: "abc" …
+    105|     expect(result).toBeInstanceOf(Promise);
+       |                    ^
+    106|   });
+    107| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/__generated__/carrinhos-service.gen.test.ts > Module logic and database operations > should return a promise for existeCarrinhoComProduto
+AssertionError: expected Cursor{ …(4) } to be an instance of Promise
+ ❯ test/__generated__/carrinhos-service.gen.test.ts:110:20
+    108|   it("should return a promise for existeCarrinhoComProduto", () => {
+    109|     const result = carrinhosService.existeCarrinhoComProduto("prod1");
+    110|     expect(result).toBeInstanceOf(Promise);
+       |                    ^
+    111|   });
+    112| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 2 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: this.deleteById is not a function
+ ❯ Object.exports.concluiCompra src/services/carrinhos-service.js:73:14
+     71| 
+     72| exports.concluiCompra = async carrinho => {
+     73|   await this.deleteById(carrinho._id)
+       |              ^
+     74| }
+     75| 
+ ❯ test/__generated__/carrinhos-service.gen.test.ts:124:37
+ ❯ node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+ ❯ node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+ ❯ node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+ ❯ runWithTimeout node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10
+ ❯ runTest node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+ ❯ runSuite node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8
+
+This error originated in "test/__generated__/carrinhos-service.gen.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: this.reabasteceEstoque is not a function
+ ❯ Object.exports.removeCarrinho src/services/carrinhos-service.js:78:14
+     76| exports.removeCarrinho = async carrinho => {
+     77|   const { produtos, _id } = carrinho
+     78|   await this.reabasteceEstoque(produtos)
+       |              ^
+     79|   await this.deleteById(_id)
+     80| }
+ ❯ test/__generated__/carrinhos-service.gen.test.ts:129:37
+ ❯ node_modules/@vitest/runner/dist/chunk-hooks.js:155:11
+ ❯ node_modules/@vitest/runner/dist/chunk-hooks.js:752:26
+ ❯ node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20
+ ❯ runWithTimeout node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10
+ ❯ runTest node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12
+ ❯ processTicksAndRejections node:internal/process/task_queues:103:5
+ ❯ runSuite node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8
+
+This error originated in "test/__generated__/carrinhos-service.gen.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

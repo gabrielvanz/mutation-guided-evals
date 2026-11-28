@@ -1,0 +1,379 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest-api__produtos__C2r__r1",
+  "started_at": "2026-11-27T15:15:54.180Z",
+  "finished_at": "2026-11-27T15:24:46.170Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest-api",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "api/produtos",
+    "mutate_paths": [
+      "src/controllers/produtos-controller.js",
+      "src/services/produtos-service.js",
+      "src/models/produtos-model.js"
+    ],
+    "module_loc": 273,
+    "mutants_total": 176,
+    "human_test_files": [
+      "test/integration/produtos/contrato.test.js",
+      "test/integration/produtos/delete.test.js",
+      "test/integration/produtos/get.test.js",
+      "test/integration/produtos/getOne.test.js",
+      "test/integration/produtos/ordem.test.js",
+      "test/integration/produtos/post.test.js",
+      "test/integration/produtos/put.test.js"
+    ]
+  },
+  "condition": "C2r",
+  "repetition": 1,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "882ec145097635fde6e2544a9cb134aa979a134d6c25b7b5259d10ca8ef596b4"
+  },
+  "memorization": {
+    "probe_similarity": 0.2198,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 46.3415,
+        "ms_feedback": 49.4382,
+        "ms_all": 47.9532,
+        "ms_covered": 98.7952
+      },
+      "coverage": {
+        "line_cov": 71.43,
+        "branch_cov": 88.46
+      },
+      "mutants_eval": {
+        "killed": 37,
+        "survived": 0,
+        "no_coverage": 44,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 44,
+        "survived": 1,
+        "no_coverage": 44,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 12,
+        "n_asserts": 28,
+        "sha256": "3b036184add5ad450a4b212deaf88ef9e3fc9191a1921942a64288afb9175c24"
+      },
+      "prompt_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 18083,
+        "tokens_out": 6651,
+        "usd_ref": 0.004469,
+        "wall_s": 118.12,
+        "stryker_s": 86.47
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 68.2927,
+        "ms_feedback": 71.9101,
+        "ms_all": 70.1754,
+        "ms_covered": 100
+      },
+      "coverage": {
+        "line_cov": 86.51,
+        "branch_cov": 86.49
+      },
+      "mutants_eval": {
+        "killed": 55,
+        "survived": 0,
+        "no_coverage": 26,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 64,
+        "survived": 0,
+        "no_coverage": 25,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 14,
+        "n_asserts": 35,
+        "sha256": "20c909c4c7f524bea80837e022453e26e9bd3664cbbe496d389bcbfb845e3220"
+      },
+      "prompt_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 5,
+        "repair_calls": 3,
+        "tokens_in": 29724,
+        "tokens_out": 12121,
+        "usd_ref": 0.007821,
+        "wall_s": 239.22,
+        "stryker_s": 183.78
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 69.5122,
+        "ms_feedback": 70.7865,
+        "ms_all": 70.1754,
+        "ms_covered": 100
+      },
+      "coverage": {
+        "line_cov": 86.9,
+        "branch_cov": 86.84
+      },
+      "mutants_eval": {
+        "killed": 57,
+        "survived": 0,
+        "no_coverage": 25,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 63,
+        "survived": 0,
+        "no_coverage": 26,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 17,
+        "n_asserts": 38,
+        "sha256": "1ab8dff002b2482626a35029ca47c0d52eb361e04a00cdf3a4b6d86260c3e215"
+      },
+      "prompt_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k2_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 7,
+        "repair_calls": 4,
+        "tokens_in": 41756,
+        "tokens_out": 18287,
+        "usd_ref": 0.01149,
+        "wall_s": 356.04,
+        "stryker_s": 276.37
+      }
+    },
+    {
+      "k": 3,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k3_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 10,
+        "repair_calls": 6,
+        "tokens_in": 61105,
+        "tokens_out": 27608,
+        "usd_ref": 0.017154,
+        "wall_s": 381.97,
+        "stryker_s": 276.37
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 70.7317,
+        "ms_feedback": 71.9101,
+        "ms_all": 71.345,
+        "ms_covered": 100
+      },
+      "coverage": {
+        "line_cov": 86.9,
+        "branch_cov": 89.47
+      },
+      "mutants_eval": {
+        "killed": 57,
+        "survived": 0,
+        "no_coverage": 24,
+        "timeout": 1,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 64,
+        "survived": 0,
+        "no_coverage": 25,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 13,
+        "n_asserts": 31,
+        "sha256": "ea478fc50027e906bfdf92211f865346ab642b02e6b451b102c151b8db78805d"
+      },
+      "prompt_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k4_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 13,
+        "repair_calls": 8,
+        "tokens_in": 80411,
+        "tokens_out": 35297,
+        "usd_ref": 0.02216,
+        "wall_s": 509.07,
+        "stryker_s": 370.32
+      }
+    },
+    {
+      "k": 5,
+      "valid": false,
+      "discard_reason": "guardrail_violation",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest-api__produtos__C2r__r1/raw/k5_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 16,
+        "repair_calls": 10,
+        "tokens_in": 98031,
+        "tokens_out": 42091,
+        "usd_ref": 0.02664,
+        "wall_s": 531.99,
+        "stryker_s": 370.32
+      }
+    }
+  ],
+  "selected_iteration": 1,
+  "final": {
+    "scores": {
+      "ms_eval": 68.2927,
+      "ms_feedback": 71.9101,
+      "ms_all": 70.1754,
+      "ms_covered": 100
+    },
+    "coverage": {
+      "line_cov": 86.51,
+      "branch_cov": 86.49
+    },
+    "cost": {
+      "calls": 16,
+      "repair_calls": 10,
+      "tokens_in": 98031,
+      "tokens_out": 42091,
+      "usd_ref": 0.02664,
+      "wall_s": 531.99,
+      "stryker_s": 370.32
+    },
+    "tests": {
+      "n_tests": 14,
+      "n_asserts": 35,
+      "sha256": "20c909c4c7f524bea80837e022453e26e9bd3664cbbe496d389bcbfb845e3220"
+    },
+    "gap_cov_ms": 16.3346,
+    "valid_rate": 0.6667,
+    "tokens_per_pp": 6383.34
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [
+      "clock",
+      "random"
+    ],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest-api__produtos__C2r__r1/raw"
+  }
+}

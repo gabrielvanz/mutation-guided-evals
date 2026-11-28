@@ -1,0 +1,241 @@
+```ts
+import { describe, it, expect, vi } from "vitest";
+import carrinhosService from "../../src/services/carrinhos-service";
+import produtosService from "../../src/services/produtos-service";
+
+describe("extrairProdutosDuplicados", () => {
+  it("should return an empty array when there are no duplicate products", () => {
+    const produtos = [
+      { idProduto: "1" },
+      { idProduto: "2" },
+      { idProduto: "3" }
+    ];
+    const result = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(result).toEqual([]);
+  });
+
+  it("should return duplicate product IDs when products are repeated", () => {
+    const produtos = [
+      { idProduto: "1" },
+      { idProduto: "2" },
+      { idProduto: "1" },
+      { idProduto: "3" },
+      { idProduto: "2" }
+    ];
+    const result = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(result).toEqual(["1", "2"]);
+  });
+
+  it("should handle empty product array", () => {
+    const result = carrinhosService.extrairProdutosDuplicados([]);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("precoTotal", () => {
+  it("should calculate total price correctly for multiple products", () => {
+    const produtos = [
+      { precoUnitario: 10, quantidade: 2 },
+      { precoUnitario: 5, quantidade: 4 }
+    ];
+    const result = carrinhosService.precoTotal(produtos);
+    expect(result).toBe(40);
+  });
+
+  it("should return zero for empty product array", () => {
+    const result = carrinhosService.precoTotal([]);
+    expect(result).toBe(0);
+  });
+
+  it("should handle decimal prices correctly", () => {
+    const produtos = [
+      { precoUnitario: 10.5, quantidade: 2 },
+      { precoUnitario: 3.25, quantidade: 4 }
+    ];
+    const result = carrinhosService.precoTotal(produtos);
+    expect(result).toBe(34);
+  });
+});
+
+describe("quantidadeTotal", () => {
+  it("should calculate total quantity correctly", () => {
+    const produtos = [
+      { quantidade: 2 },
+      { quantidade: 5 },
+      { quantidade: 3 }
+    ];
+    const result = carrinhosService.quantidadeTotal(produtos);
+    expect(result).toBe(10);
+  });
+
+  it("should return zero for empty product array", () => {
+    const result = carrinhosService.quantidadeTotal([]);
+    expect(result).toBe(0);
+  });
+});
+
+describe("totaisSaoSeguros", () => {
+  it("should return true when both totals are safe integers", () => {
+    const result = carrinhosService.totaisSaoSeguros(100, 10);
+    expect(result).toBe(true);
+  });
+
+  it("should return false when price total is not a safe integer", () => {
+    const result = carrinhosService.totaisSaoSeguros(Number.MAX_SAFE_INTEGER + 1, 10);
+    expect(result).toBe(false);
+  });
+
+  it("should return false when quantity total is not a safe integer", () => {
+    const result = carrinhosService.totaisSaoSeguros(100, Number.MAX_SAFE_INTEGER + 1);
+    expect(result).toBe(false);
+  });
+
+  it("should return false when totals are floats or NaN", () => {
+    expect(carrinhosService.totaisSaoSeguros(10.5, 5)).toBe(false);
+    expect(carrinhosService.totaisSaoSeguros(NaN, 5)).toBe(false);
+  });
+});
+
+describe("getAll", () => {
+  it("should be a function and call find on datastore", async () => {
+    expect(typeof carrinhosService.getAll).toBe("function");
+    const result = await carrinhosService.getAll({});
+    expect(Array.isArray(result)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null or a cart when fetching by id", async () => {
+    expect(typeof carrinhosService.getOne).toBe("function");
+    const result = await carrinhosService.getOne("inexistent-id");
+    expect(result).toBeNull();
+  });
+});
+
+describe("existeCarrinho", () => {
+  it("should return null when cart does not exist for criteria", async () => {
+    expect(typeof carrinhosService.existeCarrinho).toBe("function");
+    const result = await carrinhosService.existeCarrinho({ idUsuario: "inexistent" });
+    expect(result).toBeNull();
+  });
+});
+
+describe("existeCarrinhoComProduto", () => {
+  it("should return null when no cart contains the product", async () => {
+    expect(typeof carrinhosService.existeCarrinhoComProduto).toBe("function");
+    const result = await carrinhosService.existeCarrinhoComProduto("inexistent-prod");
+    expect(result).toBeNull();
+  });
+});
+
+describe("criarCarrinho", () => {
+  it("should be a function", () => {
+    expect(typeof carrinhosService.criarCarrinho).toBe("function");
+  });
+});
+
+describe("getProdutosComPrecoUnitarioOuErro", () => {
+  it("should return produtosComPrecoUnitario when there is no error from batch lookup", async () => {
+    const produtos = [{ idProduto: "prod-1", quantidade: 2 }];
+    const produtosComPreco = [{ idProduto: "prod-1", precoUnitario: 50, quantidade: 2 }];
+    
+    vi.spyOn(produtosService, "getPrecosUnitariosPorLote").mockResolvedValueOnce({
+      produtosComPreco
+    });
+
+    const result = await carrinhosService.getProdutosComPrecoUnitarioOuErro(produtos);
+    expect(result).toEqual({ produtosComPrecoUnitario: produtosComPreco });
+    vi.restoreAllMocks();
+  });
+
+  it("should return formatted error when batch lookup fails with an error", async () => {
+    const produtos = [{ idProduto: "prod-1", quantidade: 2 }];
+    const batchError = {
+      error: {
+        message: "Produto não encontrado",
+        item: { idProduto: "prod-1" },
+        index: 0
+      }
+    };
+
+    vi.spyOn(produtosService, "getPrecosUnitariosPorLote").mockResolvedValueOnce(batchError);
+
+    const result = await carrinhosService.getProdutosComPrecoUnitarioOuErro(produtos);
+    expect(result).toEqual({
+      error: {
+        message: "Produto não encontrado",
+        item: { idProduto: "prod-1", index: 0 },
+        index: 0
+      }
+    });
+    vi.restoreAllMocks();
+  });
+});
+
+describe("deleteById", () => {
+  it("should be a function", () => {
+    expect(typeof carrinhosService.deleteById).toBe("function");
+  });
+});
+
+describe("concluiCompra", () => {
+  it("should be a function", () => {
+    expect(typeof carrinhosService.concluiCompra).toBe("function");
+  });
+});
+
+describe("removeCarrinho", () => {
+  it("should be a function and call reabasteceEstoque and deleteById", async () => {
+    expect(typeof carrinhosService.removeCarrinho).toBe("function");
+    const carrinho = { _id: "cart-123", produtos: [{ idProduto: "p1", quantidade: 1 }] };
+    
+    const reabasteceSpy = vi.spyOn(carrinhosService, "reabasteceEstoque").mockResolvedValueOnce(undefined);
+    const deleteSpy = vi.spyOn(carrinhosService, "deleteById").mockResolvedValueOnce(undefined);
+
+    await carrinhosService.removeCarrinho(carrinho);
+
+    expect(reabasteceSpy).toHaveBeenCalledWith(carrinho.produtos);
+    expect(deleteSpy).toHaveBeenCalledWith(carrinho._id);
+
+    vi.restoreAllMocks();
+  });
+});
+
+describe("getCarrinhoDoUsuario", () => {
+  it("should be a function", () => {
+    expect(typeof carrinhosService.getCarrinhoDoUsuario).toBe("function");
+  });
+});
+
+describe("usuarioJaPossuiCarrinho", () => {
+  it("should be a function", () => {
+    expect(typeof carrinhosService.usuarioJaPossuiCarrinho).toBe("function");
+  });
+});
+
+describe("baixarEstoque", () => {
+  it("should be a function and call updateQuantidadePorLote", async () => {
+    expect(typeof carrinhosService.baixarEstoque).toBe("function");
+    const produtos = [{ idProduto: "p1", quantidade: 2 }];
+    const updateSpy = vi.spyOn(produtosService, "updateQuantidadePorLote").mockResolvedValueOnce(undefined);
+
+    await carrinhosService.baixarEstoque(produtos);
+    expect(updateSpy).toHaveBeenCalledWith(produtos);
+
+    vi.restoreAllMocks();
+  });
+});
+
+describe("reabasteceEstoque", () => {
+  it("should be a function and call restoreQuantidadePorLote", async () => {
+    expect(typeof carrinhosService.reabasteceEstoque).toBe("function");
+    const produtos = [{ idProduto: "p1", quantidade: 2 }];
+    const restoreSpy = vi.spyOn(produtosService, "restoreQuantidadePorLote").mockResolvedValueOnce(undefined);
+
+    await carrinhosService.reabasteceEstoque(produtos);
+    expect(restoreSpy).toHaveBeenCalledWith(produtos);
+
+    vi.restoreAllMocks();
+  });
+});
+```

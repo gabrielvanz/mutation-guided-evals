@@ -1,0 +1,284 @@
+```ts
+import { describe, it, expect } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+
+describe("errorHandler", () => {
+  it("should handle headers already sent with timedout request", () => {
+    const error = new Error("Test error");
+    error.stack = "Error stack";
+    const req = {
+      timedout: true,
+      method: "GET",
+      originalUrl: "/test"
+    };
+    const socket = { destroy: () => {} };
+    const res = {
+      headersSent: true,
+      writableEnded: false,
+      socket
+    };
+    const next = () => {};
+
+    errorHandler(error, req, res, next);
+    expect(res.headersSent).toBe(true);
+  });
+
+  it("should handle schema validation error", () => {
+    const error = new Error("Validation error");
+    error.name = "ValidationError";
+    error.details = [{ message: "Field required" }];
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCode = code;
+        return {
+          json: (body) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({ message: "Field required" });
+  });
+
+  it("should handle URIError", () => {
+    const error = new URIError("Malformed URI");
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCode = code;
+        return {
+          json: (body) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should handle entity.parse.failed error", () => {
+    const error = new Error("Parse failed");
+    error.type = "entity.parse.failed";
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCode = code;
+        return {
+          json: (body) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should handle entity.too.large error", () => {
+    const error = new Error("Too large");
+    error.type = "entity.too.large";
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCode = code;
+        return {
+          json: (body) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCode).toBe(413);
+    expect(jsonBody).toEqual({ message: "Payload too large" });
+  });
+
+  it("should handle charset.unsupported error", () => {
+    const error = new Error("Unsupported charset");
+    error.type = "charset.unsupported";
+    error.charset = "utf-16";
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCode = code;
+        return {
+          json: (body) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCode).toBe(415);
+    expect(jsonBody).toEqual({ message: "Unsupported charset", charset: "utf-16" });
+  });
+
+  it("should handle encoding.unsupported error", () => {
+    const error = new Error("Unsupported encoding");
+    error.type = "encoding.unsupported";
+    error.encoding = "deflate";
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCode = code;
+        return {
+          json: (body) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCode).toBe(415);
+    expect(jsonBody).toEqual({ message: "Unsupported content encoding", encoding: "deflate" });
+  });
+
+  it("should handle client error with Z_ prefix code", () => {
+    const error = new Error("Zlib error");
+    error.expose = true;
+    error.statusCode = 400;
+    error.code = "Z_DATA_ERROR";
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCode = code;
+        return {
+          json: (body) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({
+      message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+    });
+  });
+
+  it("should handle ETIMEDOUT error", () => {
+    const error = new Error("Timed out");
+    error.code = "ETIMEDOUT";
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCode = code;
+        return {
+          json: (body) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCode).toBe(408);
+    expect(jsonBody).toEqual({ message: "Requisição demorou muito para responder. Tente novamente mais tarde." });
+  });
+
+  it("should handle generic client error", () => {
+    const error = new Error("Client error");
+    error.expose = true;
+    error.statusCode = 400;
+    error.type = "request.aborted";
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCode = code;
+        return {
+          json: (body) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCode).toBe(400);
+    expect(jsonBody).toEqual({
+      message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+      error: "request.aborted"
+    });
+  });
+
+  it("should handle internal error with error type", () => {
+    const error = new Error("Internal server error");
+    error.type = "database.error";
+    error.stack = "stack trace";
+    const req = { body: {} };
+    let statusCode = 0;
+    let jsonBody = null;
+    const res = {
+      headersSent: false,
+      status: (code) => {
+        statusCode = code;
+        return {
+          json: (body) => {
+            jsonBody = body;
+            return res;
+          }
+        };
+      }
+    };
+
+    errorHandler(error, req, res, () => {});
+    expect(statusCode).toBe(500);
+    expect(jsonBody).toHaveProperty("message");
+    expect(jsonBody).toHaveProperty("error", "database.error");
+    expect(jsonBody).toHaveProperty("version");
+  });
+});
+```

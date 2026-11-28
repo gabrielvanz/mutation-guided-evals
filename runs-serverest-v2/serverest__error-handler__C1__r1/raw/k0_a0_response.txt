@@ -1,0 +1,226 @@
+```ts
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+import logger from "../../src/utils/logger";
+
+describe("errorHandler middleware", () => {
+  let req: any;
+  let res: any;
+  let next: any;
+
+  beforeEach(() => {
+    req = {
+      method: "GET",
+      originalUrl: "/test",
+      body: {},
+      timedout: false,
+      socket: {
+        destroy: vi.fn()
+      }
+    };
+    res = {
+      headersSent: false,
+      writableEnded: false,
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis()
+    };
+    next = vi.fn();
+    vi.clearAllMocks();
+  });
+
+  it("should handle headersSent true when response is not writableEnded", () => {
+    res.headersSent = true;
+    res.writableEnded = false;
+    const spyLog = vi.spyOn(logger, "log");
+
+    const error = {
+      code: "ERR_CODE",
+      name: "Error",
+      message: "Some error",
+      stack: "fake-stack"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(req.socket.destroy).toHaveBeenCalled();
+  });
+
+  it("should handle headersSent true when response is writableEnded", () => {
+    res.headersSent = true;
+    res.writableEnded = true;
+    const spyLog = vi.spyOn(logger, "log");
+
+    const error = {
+      code: "ERR_CODE",
+      name: "Error",
+      message: "Some error",
+      stack: "fake-stack"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(req.socket.destroy).not.toHaveBeenCalled();
+  });
+
+  it("should handle ValidationError", () => {
+    const error = {
+      name: "ValidationError",
+      details: {
+        body: [
+          {
+            context: { label: "email" },
+            type: "string.email",
+            message: "email must be a valid email"
+          }
+        ]
+      }
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      email: "email deve ser um email válido"
+    });
+  });
+
+  it("should handle URIError", () => {
+    const spyLog = vi.spyOn(logger, "log");
+    const error = {
+      name: "URIError",
+      message: "malformed URI"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should handle entity.parse.failed", () => {
+    const spyLog = vi.spyOn(logger, "log");
+    const error = {
+      type: "entity.parse.failed"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should handle entity.too.large", () => {
+    const spyLog = vi.spyOn(logger, "log");
+    const error = {
+      type: "entity.too.large"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(413);
+    expect(res.json).toHaveBeenCalledWith({ message: "Payload too large" });
+  });
+
+  it("should handle charset.unsupported", () => {
+    const error = {
+      type: "charset.unsupported",
+      charset: "utf-16"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(res.json).toHaveBeenCalledWith({ message: "Unsupported charset", charset: "utf-16" });
+  });
+
+  it("should handle encoding.unsupported", () => {
+    const spyLog = vi.spyOn(logger, "log");
+    const error = {
+      type: "encoding.unsupported",
+      encoding: "compress"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(res.json).toHaveBeenCalledWith({ message: "Unsupported content encoding", encoding: "compress" });
+  });
+
+  it("should handle client error with Z_ prefix code", () => {
+    const spyLog = vi.spyOn(logger, "log");
+    const error = {
+      expose: true,
+      statusCode: 400,
+      code: "Z_DATA_ERROR",
+      message: "compression error"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+    });
+  });
+
+  it("should handle ETIMEDOUT code", () => {
+    const error = {
+      code: "ETIMEDOUT"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(408);
+    expect(res.json).toHaveBeenCalledWith({ message: "Timeout da requisição atingido" });
+  });
+
+  it("should handle general client error", () => {
+    const spyLog = vi.spyOn(logger, "log");
+    const error = {
+      expose: true,
+      statusCode: 422,
+      type: "some.type",
+      message: "some message"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(422);
+    expect(res.json).toHaveBeenCalledWith({
+      message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+      error: "some.type"
+    });
+  });
+
+  it("should handle internal error with error type", () => {
+    const spyLog = vi.spyOn(logger, "log");
+    const error = {
+      type: "some.internal.type",
+      stack: "stacktrace"
+    };
+
+    errorHandler(error, req, res, next);
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Abra uma issue informando essa resposta. https://github.com/ServeRest/ServeRest/issues",
+        error: "some.internal.type"
+      })
+    );
+  });
+});
+```

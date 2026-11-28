@@ -1,0 +1,99 @@
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API tests", () => {
+  it("should return 401 when accessing a protected route without authorization header", async () => {
+    const response = await request(app).post("/carrinhos").send({
+      produtos: []
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when accessing a protected route with a malformed authorization header", async () => {
+    const response = await request(app)
+      .post("/carrinhos")
+      .set("authorization", "InvalidFormat token")
+      .send({
+        produtos: []
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when accessing a protected route with an invalid token", async () => {
+    const response = await request(app)
+      .post("/carrinhos")
+      .set("authorization", "Bearer invalid.jwt.token")
+      .send({
+        produtos: []
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 403 when a non-admin user tries to access an admin-only route", async () => {
+    const userEmail = "user_non_admin_mw@email.com";
+    const userName = "User Non Admin";
+
+    await request(app).post("/usuarios").send({
+      nome: userName,
+      email: userEmail,
+      password: "teste",
+      administrador: "false"
+    });
+
+    const loginResponse = await request(app).post("/login").send({
+      email: userEmail,
+      password: "teste"
+    });
+
+    const token = loginResponse.body.authorization;
+
+    const response = await request(app)
+      .post("/produtos")
+      .set("authorization", token)
+      .send({
+        nome: "Produto Teste MW",
+        preco: 100,
+        descricao: "Desc",
+        quantidade: 10
+      });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      message: "Rota exclusiva para administradores"
+    });
+  });
+
+  it("should return 400 when malformed JSON entity parse error occurs (bad quotation marks)", async () => {
+    const response = await request(app)
+      .post("/usuarios")
+      .set("content-type", "application/json")
+      .send("{nome: unquoted}");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should return 400 when an invalid URI decode parameter is passed", async () => {
+    const response = await request(app).get("/usuarios/%C0%C0");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+});

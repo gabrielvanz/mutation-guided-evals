@@ -1,0 +1,105 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API", () => {
+  describe("authentication-middleware", () => {
+    it("should reject request without authorization header", async () => {
+      const res = await request(app).get("/usuarios");
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should reject request with malformed authorization header", async () => {
+      const res = await request(app)
+        .get("/usuarios")
+        .set("authorization", "InvalidFormat token123");
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should reject request with invalid token", async () => {
+      const res = await request(app)
+        .get("/usuarios")
+        .set("authorization", "Bearer invalid.token.string");
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should forbid non-admin user on admin-only routes", async () => {
+      const regularUser = {
+        nome: "Regular User",
+        email: "regular_user_auth_test@email.com",
+        password: "teste",
+        administrador: "false"
+      };
+
+      await request(app).post("/usuarios").send(regularUser);
+
+      const loginRes = await request(app).post("/login").send({
+        email: regularUser.email,
+        password: regularUser.password
+      });
+      expect(loginRes.status).toBe(200);
+      const token = loginRes.body.authorization;
+
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: "Produto Teste",
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({
+        message: "Rota exclusiva para administradores"
+      });
+    });
+  });
+
+  describe("error-handler", () => {
+    it("should handle malformed JSON / entity parse failed", async () => {
+      const res = await request(app)
+        .post("/usuarios")
+        .set("content-type", "application/json")
+        .send("{ invalid json ");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message");
+      expect(res.body.message).toContain("Adicione aspas em todos os valores");
+    });
+
+    it("should handle unsupported charset", async () => {
+      const res = await request(app)
+        .post("/usuarios")
+        .set("content-type", "application/json; charset=utf-7")
+        .send({ nome: "teste" });
+
+      expect(res.status).toBe(415);
+      expect(res.body).toEqual({
+        message: "Unsupported charset",
+        charset: "utf-7"
+      });
+    });
+
+    it("should handle URIError for invalid URL parameters", async () => {
+      const res = await request(app).get("/usuarios?_id=%E0%A4%A");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+      });
+    });
+  });
+});
+```

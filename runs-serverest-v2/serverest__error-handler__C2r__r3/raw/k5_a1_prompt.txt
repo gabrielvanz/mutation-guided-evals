@@ -1,0 +1,591 @@
+The Vitest test file below for `src/middlewares/error-handler.js` (import path: `../../src/middlewares/error-handler`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Note about this project: The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports. IMPORTANT (v2 instruction): do NOT use vi.mock or vi.doMock on project modules: Vitest cannot intercept the require() calls made by CommonJS code under test, so the real module would run and your spies would never be called. If you need to stub or observe a dependency, import it (a default import is its module.exports object) and use vi.spyOn(thatObject, 'method'); the module under test reaches it through the same object. The direct dependencies of the unit are provided below as read-only context: read them to learn the exact input and error shapes, and assert only behaviour you can derive from the source and that context, never guesses.
+
+Read-only context file `src/utils/montarMensagemDeErroDeSchema.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+module.exports = error => {
+  const detalhesDoErro = error.details.body || error.details.query || error.details.params
+  const mensagemDeErro = {}
+
+  detalhesDoErro.forEach(erro => {
+    const propriedade = erro.context.label
+    const mapeamentoDoErro = {
+      'any.only': `${propriedade} deve ser 'true' ou 'false'`,
+      'any.required': `${propriedade} é obrigatório`,
+      'array.base': `${propriedade} deve ser um array`,
+      'array.min': `${propriedade} deve ter pelo menos 1 item`,
+      'number.base': `${propriedade} deve ser um número`,
+      'number.integer': `${propriedade} deve ser um inteiro`,
+      'number.min': `${propriedade} deve ser maior ou igual a 0`,
+      'number.positive': `${propriedade} deve ser um número positivo`,
+      'number.unsafe': `${propriedade} não pode ser maior que ${Number.MAX_SAFE_INTEGER}`,
+      'object.base': `${propriedade} deve ser um objeto`,
+      'object.unknown': `${propriedade} não é permitido`,
+      'string.base': `${propriedade} deve ser uma string`,
+      'string.email': `${propriedade} deve ser um email válido`,
+      'string.empty': `${propriedade} não pode ficar em branco`,
+      'string.pattern.base': `${propriedade} deve ter exatamente 16 caracteres alfanuméricos`,
+      default: `${erro.message} - Erro ${erro.type} - Abra uma issue informando essa resposta. https://github.com/ServeRest/ServeRest/issues`
+    }
+    /* istanbul ignore next */
+    mensagemDeErro[propriedade] = mapeamentoDoErro[erro.type] || mapeamentoDoErro.default
+  })
+
+  return mensagemDeErro
+}
+
+```
+
+Read-only context file `src/utils/constants.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+module.exports = {
+  INTERNAL_ERROR: 'Abra uma issue informando essa resposta. https://github.com/ServeRest/ServeRest/issues',
+  TIMEOUT: 'Timeout da requisição atingido',
+  POST_SUCCESS: 'Cadastro realizado com sucesso',
+  DELETE_SUCCESS: 'Registro excluído com sucesso',
+  DELETE_NONE: 'Nenhum registro excluído',
+  PUT_SUCCESS: 'Registro alterado com sucesso',
+  LOGIN_SUCCESS: 'Login realizado com sucesso',
+  LOGIN_FAIL: 'Email e/ou senha inválidos',
+  EMAIL_ALREADY_USED: 'Este email já está sendo usado',
+  NAME_ALREADY_USED: 'Já existe produto com esse nome',
+  REQUIRED_ADMIN: 'Rota exclusiva para administradores',
+  INVALID_TOKEN: 'Token de acesso ausente, inválido, expirado ou usuário do token não existe mais',
+  LIMIT_JUST_ONE_CART: 'Não é permitido ter mais de 1 carrinho',
+  INSUFFICIENT_STOCK: 'Produto não possui quantidade suficiente',
+  DELETE_USER_WITH_CART: 'Não é permitido excluir usuário com carrinho cadastrado',
+  DELETE_PRODUCT_WITH_CART: 'Não é permitido excluir produto que faz parte de carrinho',
+  CART_WITH_DUPLICATE_PRODUCT: 'Não é permitido possuir produto duplicado',
+  CART_TOTALS_TOO_BIG: 'precoTotal ou quantidadeTotal do carrinho não pode passar de 9007199254740991',
+  NO_CART: 'Não foi encontrado carrinho para esse usuário',
+  REPLENISHED_STOCK: 'Estoque dos produtos reabastecido',
+  USER_NOT_FOUND: 'Usuário não encontrado',
+  CART_NOT_FOUND: 'Carrinho não encontrado',
+  PRODUCT_NOT_FOUND: 'Produto não encontrado',
+  LOAD_TEST_DETECTED: 'Foi detectado comportamento equivalente a teste de carga, não execute teste de carga nesse ambiente. Leia a documentação: https://github.com/ServeRest/ServeRest#teste-de-carga',
+  DOWNLOAD_LIMIT_EXCEEDED: 'Limite de dados baixados da API atingido: cada cliente pode baixar até 250 MiB por hora no ServeRest online. Aguarde o tempo indicado no header Retry-After e tente de novo. Leia a documentação: https://github.com/ServeRest/ServeRest#limites-do-serverest-online',
+  SERVER_BUSY: 'O ServeRest online está recebendo requisições demais, somando todos os clientes. Aguarde o tempo indicado no header Retry-After e tente de novo. Leia a documentação: https://github.com/ServeRest/ServeRest#limites-do-serverest-online'
+}
+
+```
+
+Read-only context file `src/utils/logger.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+const tracer = require('dd-trace')
+const formats = require('dd-trace/ext/formats')
+const { aplicacaoExecutandoLocalmente } = require('./ambiente')
+
+function log ({ level = 'alert', message }) {
+  const time = new Date().toISOString()
+  const record = { time, level, message }
+  console.log(record)
+  /* istanbul ignore next */
+  if (!aplicacaoExecutandoLocalmente()) {
+    const span = tracer.scope().active()
+    if (span) {
+      tracer.inject(span.context(), formats.LOG, record)
+    }
+  }
+}
+
+module.exports = { log }
+
+```
+
+Source of `src/middlewares/error-handler.js`:
+```js
+const { INTERNAL_ERROR, TIMEOUT } = require('../utils/constants')
+const montarMensagemDeErroDeSchema = require('../utils/montarMensagemDeErroDeSchema')
+const { log } = require('../utils/logger')
+const { version } = require('../../package.json')
+const { IpDeniedError } = require('express-ipfilter')
+
+// O body-parser marca com expose e um status 4xx o erro que é culpa de quem enviou (header Content-Encoding sem
+// suporte, corpo comprimido que não descomprime, parâmetros demais). Sem esta regra, cada tipo novo caía no 500
+// que pede para abrir issue, e o aluno procurava um bug no servidor em vez de corrigir o envio.
+function ehErroDoCliente (error) {
+  return error.expose === true && error.statusCode >= 400 && error.statusCode < 500
+}
+
+// Os headers já saíram, então não há como responder de novo. Chega aqui o erro de um passo que termina depois do 408
+// do timeout, que é esperado, e o de uma resposta que falha no meio ou que é enviada duas vezes, que é bug. Como o
+// Express fazia, a conexão da resposta incompleta é fechada, para o cliente não ficar esperando o resto; a da
+// resposta que já terminou, como o 408, continua aberta.
+function registrarErroDepoisDaResposta (error, req, res) {
+  log({
+    level: req.timedout ? 'warn' : 'error',
+    message: `Erro depois da resposta enviada: ${req.method} ${req.originalUrl}, timedout: ${Boolean(req.timedout)}, ` +
+      `${error.code || error.name}: ${error.message}, Stack: ${error.stack}`
+  })
+  if (!res.writableEnded) req.socket.destroy()
+}
+
+function errorHandler (error, req, res, _next) {
+  if (res.headersSent) return registrarErroDepoisDaResposta(error, req, res)
+  const erroDeSchema = error.name === 'ValidationError'
+  if (erroDeSchema) {
+    return res.status(400).json(montarMensagemDeErroDeSchema(error))
+  }
+  if (error.name === 'URIError') {
+    log({ message: `URI decode error: ${error.message}` })
+    return res.status(400).json({
+      message: 'Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente.'
+    })
+  }
+  // https://github.com/expressjs/body-parser#errors
+  if (error.type === 'entity.parse.failed') {
+    log({ message: 'Entity parse error, user sending request without proper quotation marks.' })
+    return res.status(400).json({
+      message: 'Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225'
+    })
+  }
+  if (error.type === 'entity.too.large' || error.type === 'parameters.too.many') {
+    log({ message: `Payload too large: ${error.type}` })
+    return res.status(413).json({ message: 'Payload too large' })
+  }
+  if (error.type === 'charset.unsupported') {
+    return res.status(415).json({ message: 'Unsupported charset', charset: error.charset })
+  }
+  if (error.type === 'encoding.unsupported') {
+    log({ message: `Unsupported content encoding: ${error.encoding}` })
+    return res.status(415).json({ message: 'Unsupported content encoding', encoding: error.encoding })
+  }
+  // O zlib não dá tipo ao erro: o corpo dito comprimido pelo Content-Encoding não descomprime (Z_DATA_ERROR) ou
+  // chegou cortado (Z_BUF_ERROR).
+  if (ehErroDoCliente(error) && /^Z_/.test(error.code)) {
+    log({ message: `Invalid compressed body: ${error.message}` })
+    return res.status(400).json({
+      message: 'Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header.'
+    })
+  }
+  if (error.code === 'ETIMEDOUT') {
+    return res.status(408).json({ message: TIMEOUT })
+  }
+  /* istanbul ignore if */
+  if (error instanceof IpDeniedError) {
+    return res.status(429).json({ message: 'IP bloqueado por excesso de requisições. Alternativas: Envie mensagem para o autor do projeto para desbloqueio (https://linkedin.com/in/paulo-goncalves) ou faça doação financeira ao projeto (https://github.com/ServeRest/ServeRest?tab=readme-ov-file#doadores).' })
+  }
+  if (ehErroDoCliente(error)) {
+    log({ message: `Client error ${error.statusCode}: ${error.type || error.message}` })
+    return res.status(error.statusCode).json({
+      message: 'Não foi possível ler a requisição. Confira o corpo e os headers enviados.',
+      error: error.type
+    })
+  }
+  log({
+    level: 'error',
+    message: `Error: ${error?.type || JSON.stringify(error)}, Stack: ${error.stack || 'No stack available'}, Request body: ${JSON.stringify(req.body)}`
+  })
+
+  if (error?.type) {
+    return res.status(500).json({ message: INTERNAL_ERROR, error: error.type, version })
+  }
+  /* istanbul ignore next */
+  return res.status(500).json({ message: INTERNAL_ERROR, version, error: { message: error.message || 'No message available', stack: error.stack || 'No stack available' } })
+}
+
+module.exports = errorHandler
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect, vi } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+import logger from "../../src/utils/logger";
+
+describe("errorHandler", () => {
+  it("should handle headersSent when request timed out", () => {
+    const error = new Error("Timeout occurred");
+    const req = {
+      timedout: true,
+      method: "GET",
+      originalUrl: "/test",
+      socket: { destroy: vi.fn() }
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: false
+    };
+
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: "warn"
+      })
+    );
+    expect(req.socket.destroy).toHaveBeenCalled();
+  });
+
+  it("should handle headersSent when request did not time out and response not ended", () => {
+    const error = new Error("Some error");
+    const req = {
+      timedout: false,
+      method: "POST",
+      originalUrl: "/test",
+      socket: { destroy: vi.fn() }
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: false
+    };
+
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: "error"
+      })
+    );
+    expect(req.socket.destroy).toHaveBeenCalled();
+  });
+
+  it("should handle headersSent when response is already writableEnded", () => {
+    const error = new Error("Some error");
+    const req = {
+      timedout: false,
+      method: "POST",
+      originalUrl: "/test",
+      socket: { destroy: vi.fn() }
+    };
+    const res = {
+      headersSent: true,
+      writableEnded: true
+    };
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(req.socket.destroy).not.toHaveBeenCalled();
+  });
+
+  it("should handle ValidationError", () => {
+    const error = {
+      name: "ValidationError",
+      details: {
+        body: [
+          {
+            context: { label: "nome" },
+            type: "any.required",
+            message: "nome is required"
+          }
+        ]
+      }
+    };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      nome: "nome é obrigatório"
+    });
+  });
+
+  it("should handle URIError", () => {
+    const error = new URIError("Malformed URI");
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should handle entity.parse.failed", () => {
+    const error = { type: "entity.parse.failed" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should handle entity.too.large", () => {
+    const error = { type: "entity.too.large" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(413);
+    expect(jsonMock).toHaveBeenCalledWith({ message: "Payload too large" });
+  });
+
+  it("should handle parameters.too.many", () => {
+    const error = { type: "parameters.too.many" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(413);
+    expect(jsonMock).toHaveBeenCalledWith({ message: "Payload too large" });
+  });
+
+  it("should handle charset.unsupported", () => {
+    const error = { type: "charset.unsupported", charset: "utf-16" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(415);
+    expect(jsonMock).toHaveBeenCalledWith({ message: "Unsupported charset", charset: "utf-16" });
+  });
+
+  it("should handle encoding.unsupported", () => {
+    const error = { type: "encoding.unsupported", encoding: "compress" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(415);
+    expect(jsonMock).toHaveBeenCalledWith({ message: "Unsupported content encoding", encoding: "compress" });
+  });
+
+  it("should handle client error with Z_ prefix code", () => {
+    const error = {
+      expose: true,
+      statusCode: 400,
+      code: "Z_DATA_ERROR",
+      message: "Invalid data"
+    };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+    });
+  });
+
+  it("should handle ETIMEDOUT code", () => {
+    const error = { code: "ETIMEDOUT" };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(408);
+    expect(jsonMock).toHaveBeenCalledWith({ message: "Timeout da requisição atingido" });
+  });
+
+  it("should handle generic client error", () => {
+    const error = {
+      expose: true,
+      statusCode: 422,
+      type: "some.type",
+      message: "Bad request"
+    };
+    const req = {};
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(422);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+      error: "some.type"
+    });
+  });
+
+  it("should handle internal error with type", () => {
+    const error = {
+      type: "internal.error.type",
+      stack: "Error stack"
+    };
+    const req = { body: {} };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res = { headersSent: false, status: statusMock };
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(500);
+    expect(jsonMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Abra uma issue informando essa resposta. https://github.com/ServeRest/ServeRest/issues",
+        error: "internal.error.type"
+      })
+    );
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v3.2.7 /home/administrador/work/w2
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle headersSent when request timed out
+{
+  time: '2026-11-28T11:42:52.122Z',
+  level: 'warn',
+  message: 'Erro depois da resposta enviada: GET /test, timedout: true, Error: Timeout occurred, Stack: Error: Timeout occurred\n' +
+    '    at /home/administrador/work/w2/test/__generated__/error-handler.gen.test.ts:7:19\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at runWithTimeout (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n' +
+    '    at runTest (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n' +
+    '    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at runSuite (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n' +
+    '    at runSuite (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle headersSent when request did not time out and response not ended
+{
+  time: '2026-11-28T11:42:52.129Z',
+  level: 'error',
+  message: 'Erro depois da resposta enviada: POST /test, timedout: false, Error: Some error, Stack: Error: Some error\n' +
+    '    at /home/administrador/work/w2/test/__generated__/error-handler.gen.test.ts:32:19\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at runWithTimeout (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1863:10)\n' +
+    '    at runTest (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1574:12)\n' +
+    '    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n' +
+    '    at runSuite (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)\n' +
+    '    at runSuite (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1729:8)'
+}
+
+stdout | test/__generated__/error-handler.gen.test.ts > errorHandler > should handle headersSent when response is already writableEnded
+{
+  time: '2026-11-28T11:42:52.131Z',
+  level: 'error',
+  message: 'Erro depois da resposta enviada: POST /test, timedout: false, Error: Some error, Stack: Error: Some error\n' +
+    '    at /home/administrador/work/w2/test/__generated__/error-handler.gen.test.ts:57:19\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:155:11\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:752:26\n' +
+    '    at file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/chunk-hooks.js:1897:20\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at runWithTimeout (file:///home/administrador/work/w2/node_modules/@vitest/runner/dist/c
+...[truncado 2033 caracteres]...
+t 12ms
+     → expected "log" to be called with arguments: [ ObjectContaining {"level": "warn"} ]
+
+Number of calls: 0
+
+   × errorHandler > should handle headersSent when request did not time out and response not ended 2ms
+     → expected "log" to be called with arguments: [ ObjectContaining {"level": "error"} ]
+
+Number of calls: 0
+
+   ✓ errorHandler > should handle headersSent when response is already writableEnded 1ms
+   ✓ errorHandler > should handle ValidationError 2ms
+   ✓ errorHandler > should handle URIError 1ms
+   ✓ errorHandler > should handle entity.parse.failed 1ms
+   ✓ errorHandler > should handle entity.too.large 1ms
+   ✓ errorHandler > should handle parameters.too.many 1ms
+   ✓ errorHandler > should handle charset.unsupported 1ms
+   ✓ errorHandler > should handle encoding.unsupported 1ms
+   ✓ errorHandler > should handle client error with Z_ prefix code 1ms
+   ✓ errorHandler > should handle ETIMEDOUT code 0ms
+   ✓ errorHandler > should handle generic client error 1ms
+   ✓ errorHandler > should handle internal error with type 1ms
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 12 passed (14)
+   Start at  08:42:51
+   Duration  553ms (transform 72ms, setup 0ms, collect 142ms, tests 28ms, environment 0ms, prepare 126ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/error-handler.gen.test.ts > errorHandler > should handle headersSent when request timed out
+AssertionError: expected "log" to be called with arguments: [ ObjectContaining {"level": "warn"} ]
+
+Number of calls: 0
+
+ ❯ test/__generated__/error-handler.gen.test.ts:23:20
+     21|     errorHandler(error, req, res, () => {});
+     22| 
+     23|     expect(spyLog).toHaveBeenCalledWith(
+       |                    ^
+     24|       expect.objectContaining({
+     25|         level: "warn"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/__generated__/error-handler.gen.test.ts > errorHandler > should handle headersSent when request did not time out and response not ended
+AssertionError: expected "log" to be called with arguments: [ ObjectContaining {"level": "error"} ]
+
+Number of calls: 0
+
+ ❯ test/__generated__/error-handler.gen.test.ts:48:20
+     46|     errorHandler(error, req, res, () => {});
+     47| 
+     48|     expect(spyLog).toHaveBeenCalledWith(
+       |                    ^
+     49|       expect.objectContaining({
+     50|         level: "error"
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

@@ -1,0 +1,83 @@
+import { describe, it, expect, vi } from "vitest";
+import rateLimiterModule from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter exportado por padrão", () => {
+  it("deve ignorar o rate limiter quando for ambiente de testes", async () => {
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { locals: { etapas: { ignorar: vi.fn() } } };
+    const next = vi.fn();
+
+    await rateLimiterModule(req, res, next);
+
+    expect(res.locals.etapas.ignorar).toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+  });
+});
+
+describe("criarLimitador", () => {
+  it("deve permitir a requisição se nenhum limite for atingido", async () => {
+    const globalMock = { consume: vi.fn().mockResolvedValue(true), duration: 30 };
+    const porIpMock = { consume: vi.fn().mockResolvedValue(true), duration: 30 };
+    const orcamentoMock = {
+      msAteLiberar: vi.fn().mockResolvedValue(0),
+      duracaoMs: 3600000
+    };
+
+    const verificar = rateLimiterModule.criarLimitador({
+      global: globalMock,
+      porIp: porIpMock,
+      orcamento: orcamentoMock
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = { on: vi.fn(), getHeader: vi.fn() };
+
+    const resultado = await verificar(req, res);
+
+    expect(resultado).toBeNull();
+  });
+});
+
+describe("criarOrcamentoDeBytes", () => {
+  it("deve retornar 0 ms para liberar quando não houver consumo excedido", async () => {
+    const orcamento = rateLimiterModule.criarOrcamentoDeBytes({ bytes: 1000, segundos: 60 });
+    const ms = await orcamento.msAteLiberar("127.0.0.1");
+
+    expect(ms).toBe(0);
+  });
+});
+
+describe("criarRateLimiter", () => {
+  it("deve retornar status 429 e mensagem de limite excedido quando houver bloqueio", async () => {
+    const limitadorMock = vi.fn().mockResolvedValue({
+      tipo: "requisicoes-por-ip",
+      ms: 5000
+    });
+
+    const rateLimiterMiddleware = rateLimiterModule.criarRateLimiter({
+      limitador: limitadorMock
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {
+      set: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn()
+    };
+    const next = vi.fn();
+
+    await rateLimiterMiddleware(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.send).toHaveBeenCalledWith({
+      message: "Foi detectado comportamento equivalente a teste de carga, não execute teste de carga nesse ambiente. Leia a documentação: https://github.com/ServeRest/ServeRest#teste-de-carga"
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+});
+
+describe("BYTES_POR_HORA", () => {
+  it("deve exportar a constante BYTES_POR_HORA corretamente", () => {
+    expect(rateLimiterModule.BYTES_POR_HORA).toBe(250 * 1024 * 1024);
+  });
+});

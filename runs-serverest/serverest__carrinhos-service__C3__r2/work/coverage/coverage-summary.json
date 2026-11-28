@@ -1,0 +1,3 @@
+{"total": {"lines":{"total":118,"covered":79,"skipped":0,"pct":66.94},"statements":{"total":118,"covered":79,"skipped":0,"pct":66.94},"functions":{"total":18,"covered":8,"skipped":0,"pct":44.44},"branches":{"total":13,"covered":13,"skipped":0,"pct":100},"branchesTrue":{"total":0,"covered":0,"skipped":0,"pct":"Unknown"}}
+,"/home/administrador/work/w2/src/services/carrinhos-service.js": {"lines":{"total":118,"covered":79,"skipped":0,"pct":66.94},"functions":{"total":18,"covered":8,"skipped":0,"pct":44.44},"statements":{"total":118,"covered":79,"skipped":0,"pct":66.94},"branches":{"total":13,"covered":13,"skipped":0,"pct":100}}
+}

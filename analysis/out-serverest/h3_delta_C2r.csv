@@ -1,0 +1,7 @@
+module,1,2,3,4,5
+serverest-api/carrinhos,37.74485,0.0,0.0,0.0,0.0
+serverest-api/produtos,9.75609999999999,0.0,0.0,1.2195000000000107,0.0
+serverest-api/usuarios,0.0,0.0,0.0,2.8571999999999917,11.428600000000003
+serverest/carrinhos-service,0.0,0.0,0.0,0.0,0.0
+serverest/produtos-service,0.0,0.0,0.0,0.0,0.0
+serverest/rate-limiter,0.0,0.0,0.0,6.451599999999999,0.0

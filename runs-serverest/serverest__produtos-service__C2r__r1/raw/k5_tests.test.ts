@@ -1,0 +1,72 @@
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching the query string", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found", async () => {
+    const resultado = await produtosService.existeProduto({ _id: "inexistente" });
+    expect(resultado).toBeNull();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create and return a new product with formatted values and alteration mark", async () => {
+    const body = {
+      nome: "  Produto Teste  ",
+      preco: "100.50",
+      quantidade: "10",
+      descricao: "Teste",
+      imagem: " imagem.jpg "
+    };
+
+    const produtoCriado = await produtosService.criarProduto(body);
+    expect(produtoCriado).toHaveProperty("_id");
+    expect(produtoCriado.nome).toBe("Produto Teste");
+    expect(produtoCriado.preco).toBe(100.5);
+    expect(produtoCriado.quantidade).toBe(10);
+    expect(produtoCriado.imagem).toBe("imagem.jpg");
+    expect(produtoCriado).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "id-invalido-lote", quantidade: 2 }
+    ]);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.item.idProduto).toBe("id-invalido-lote");
+  });
+});
+
+describe("deleteById", () => {
+  it("should return 0 when deleting a non-existent product", async () => {
+    const removidos = await produtosService.deleteById("id-que-nao-existe");
+    expect(removidos).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should update product by id using upsert", async () => {
+    const body = {
+      $set: { nome: "Novo Nome" }
+    };
+
+    const resultado = await produtosService.updateById("id-upsert", body);
+    expect(resultado).toHaveProperty("_id", "id-upsert");
+  });
+});

@@ -1,0 +1,73 @@
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("produtos-service", () => {
+  describe("getAll", () => {
+    it("should return all products matching query string", async () => {
+      const produtos = await produtosService.getAll({});
+      expect(Array.isArray(produtos)).toBe(true);
+    });
+  });
+
+  describe("getOne", () => {
+    it("should return null when product does not exist", async () => {
+      const produto = await produtosService.getOne("id-inexistente");
+      expect(produto).toBeNull();
+    });
+  });
+
+  describe("existeProduto", () => {
+    it("should return null when product is not found by criteria", async () => {
+      const produto = await produtosService.existeProduto({ nome: "Produto Inexistente XYZ" });
+      expect(produto).toBeNull();
+    });
+  });
+
+  describe("criarProduto", () => {
+    it("should create a product and return it with id", async () => {
+      const novoProduto = {
+        nome: "  Produto Teste  ",
+        preco: "100.50",
+        quantidade: "10",
+        descricao: "Teste",
+        imagem: " imagem.jpg "
+      };
+      const resultado = await produtosService.criarProduto(novoProduto);
+      expect(resultado).toHaveProperty("_id");
+      expect(resultado.nome).toBe("Produto Teste");
+      expect(resultado.preco).toBe(100.50);
+      expect(resultado.quantidade).toBe(10);
+      expect(resultado.imagem).toBe("imagem.jpg");
+      expect(resultado).toHaveProperty("alteradoEm");
+    });
+  });
+
+  describe("getPrecosUnitariosPorLote", () => {
+    it("should return error when product in batch does not exist", async () => {
+      const lote = [
+        { idProduto: "id-que-nao-existe-999", quantidade: 1 }
+      ];
+      const resultado = await produtosService.getPrecosUnitariosPorLote(lote);
+      expect(resultado).toHaveProperty("error");
+      expect(resultado.error.statusCode).toBe(400);
+      expect(resultado.error.item.idProduto).toBe("id-que-nao-existe-999");
+    });
+  });
+
+  describe("deleteById", () => {
+    it("should delete product by id and return count of removed docs", async () => {
+      const removidos = await produtosService.deleteById("id-inexistente-para-remover");
+      expect(removidos).toBe(0);
+    });
+  });
+
+  describe("updateById", () => {
+    it("should update product by id using upsert", async () => {
+      const resultado = await produtosService.updateById("id-upsert-teste", {
+        $set: { nome: "Atualizado" }
+      });
+      expect(resultado).toHaveProperty("_id");
+      expect(resultado.nome).toBe("Atualizado");
+    });
+  });
+});

@@ -1,0 +1,42 @@
+{
+  "model": "gemini-3.5-flash-lite",
+  "median": 0.086,
+  "modules": {
+    "serverest/error-handler": {
+      "similarity": 0.0674,
+      "stratum": "low"
+    },
+    "serverest/carrinhos-controller": {
+      "similarity": 0.086,
+      "stratum": "low"
+    },
+    "serverest/produtos-service": {
+      "similarity": 0.2198,
+      "stratum": "high"
+    },
+    "serverest/carrinhos-service": {
+      "similarity": 0.0552,
+      "stratum": "low"
+    },
+    "serverest/rate-limiter": {
+      "similarity": 0.1289,
+      "stratum": "high"
+    },
+    "serverest-api/usuarios": {
+      "similarity": 0.7164,
+      "stratum": "high"
+    },
+    "serverest-api/produtos": {
+      "similarity": 0.2198,
+      "stratum": "high"
+    },
+    "serverest-api/carrinhos": {
+      "similarity": 0.086,
+      "stratum": "low"
+    },
+    "serverest-api/middlewares": {
+      "similarity": 0.0674,
+      "stratum": "low"
+    }
+  }
+}

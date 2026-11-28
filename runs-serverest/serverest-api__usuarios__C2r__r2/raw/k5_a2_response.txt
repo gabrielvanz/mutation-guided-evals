@@ -1,0 +1,230 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Usuarios API", () => {
+  it("should get all usuarios", async () => {
+    const res = await request(app).get("/usuarios");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("quantidade");
+    expect(res.body).toHaveProperty("usuarios");
+    expect(Array.isArray(res.body.usuarios)).toBe(true);
+  });
+
+  it("should filter usuarios by query parameters", async () => {
+    const uniqueEmail = "filter_user@test.com";
+    await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Filtro Teste",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "true"
+      });
+
+    const res = await request(app).get(`/usuarios?email=${uniqueEmail}`);
+    expect(res.status).toBe(200);
+    expect(res.body.quantidade).toBe(1);
+    expect(res.body.usuarios[0].email).toBe(uniqueEmail);
+  });
+
+  it("should return 400 for invalid query parameter in get", async () => {
+    const res = await request(app).get("/usuarios?email=invalid-email-format");
+    expect(res.status).toBe(400);
+  });
+
+  it("should return 400 when getting non-existent usuario by invalid id format", async () => {
+    const res = await request(app).get("/usuarios/invalidid");
+    expect(res.status).toBe(400);
+  });
+
+  it("should return 400 when usuario is not found by valid id format", async () => {
+    const res = await request(app).get("/usuarios/1234567890abcdef");
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Usuário não encontrado" });
+  });
+
+  it("should get a single usuario by id", async () => {
+    const uniqueEmail = "getone_user@test.com";
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Get One Test",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "false"
+      });
+
+    const userId = createRes.body._id;
+    const res = await request(app).get(`/usuarios/${userId}`);
+    expect(res.status).toBe(200);
+    expect(res.body._id).toBe(userId);
+    expect(res.body.email).toBe(uniqueEmail);
+  });
+
+  it("should create a new usuario successfully", async () => {
+    const uniqueEmail = "create_user@test.com";
+    const res = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Novo Usuário",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "true"
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+    expect(res.body).toHaveProperty("_id");
+  });
+
+  it("should return 400 when creating usuario with already used email", async () => {
+    const uniqueEmail = "duplicate_user@test.com";
+    const payload = {
+      nome: "Primeiro Usuário",
+      email: uniqueEmail,
+      password: "password123",
+      administrador: "true"
+    };
+
+    await request(app).post("/usuarios").send(payload);
+
+    const res = await request(app).post("/usuarios").send({
+      nome: "Segundo Usuário",
+      email: uniqueEmail,
+      password: "password456",
+      administrador: "false"
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Este email já está sendo usado" });
+  });
+
+  it("should return 400 when required fields are missing on post", async () => {
+    const res = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Incompleto"
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("should delete an existing usuario", async () => {
+    const uniqueEmail = "delete_user@test.com";
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Deletar Usuário",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "false"
+      });
+
+    const userId = createRes.body._id;
+    const res = await request(app).delete(`/usuarios/${userId}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Registro excluído com sucesso" });
+  });
+
+  it("should return delete none message when deleting non-existent usuario", async () => {
+    const res = await request(app).delete("/usuarios/nonexistentid123");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Nenhum registro excluído" });
+  });
+
+  it("should prevent deleting a usuario that has a cart", async () => {
+    const uniqueEmail = "cartuser@test.com";
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Usuário com carrinho",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "false"
+      });
+
+    const userId = createRes.body._id;
+
+    const adminEmail = "admin_cart@test.com";
+    await request(app).post("/usuarios").send({
+      nome: "Admin Cart",
+      email: adminEmail,
+      password: "password123",
+      administrador: "true"
+    });
+    const loginRes = await request(app).post("/login").send({ email: adminEmail, password: "password123" });
+    const adminToken = loginRes.body.authorization;
+
+    const prodRes = await request(app)
+      .post("/produtos")
+      .set("authorization", adminToken)
+      .send({
+        nome: "Produto Carrinho",
+        preco: 100,
+        descricao: "Teste",
+        quantidade: 10
+      });
+
+    const produtoId = prodRes.body._id;
+
+    const userLoginRes = await request(app).post("/login").send({ email: uniqueEmail, password: "password123" });
+    const userToken = userLoginRes.body.authorization;
+
+    await request(app)
+      .post("/carrinhos")
+      .set("authorization", userToken)
+      .send({
+        produtos: [{ idProduto: produtoId, quantidade: 1 }]
+      });
+
+    const res = await request(app).delete(`/usuarios/${userId}`);
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("message", "Não é permitido excluir usuário com carrinho cadastrado");
+    expect(res.body).toHaveProperty("idCarrinho");
+  });
+
+  it("should update an existing usuario via put", async () => {
+    const uniqueEmail = "put_user@test.com";
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Put Usuário",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "false"
+      });
+
+    const userId = createRes.body._id;
+    const res = await request(app)
+      .put(`/usuarios/${userId}`)
+      .send({
+        nome: "Put Usuário Atualizado",
+        email: uniqueEmail,
+        password: "password456",
+        administrador: "true"
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Registro alterado com sucesso" });
+  });
+
+  it("should create a new usuario via put if id does not exist (upsert)", async () => {
+    const uniqueEmail = "putcreate_user@test.com";
+    const nonExistentId = "abcdef1234567890";
+    const res = await request(app)
+      .put(`/usuarios/${nonExistentId}`)
+      .send({
+        nome: "Upsert Usuário",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "true"
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+    expect(res.body).toHaveProperty("_id");
+  });
+});
+```

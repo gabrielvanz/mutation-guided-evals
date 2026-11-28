@@ -1,0 +1,85 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching the query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found by search criteria", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente XYZ" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a product with formatted values", async () => {
+    const novoProduto = {
+      nome: "  Produto Teste  ",
+      preco: "100",
+      quantidade: "10",
+      descricao: "Teste",
+      imagem: " imagem.jpg "
+    };
+    const resultado = await produtosService.criarProduto(novoProduto);
+    expect(resultado).toHaveProperty("_id");
+    expect(resultado.nome).toBe("Produto Teste");
+    expect(resultado.preco).toBe(100);
+    expect(resultado.quantidade).toBe(10);
+    expect(resultado.imagem).toBe("imagem.jpg");
+    expect(resultado).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "id-invalido-lote", quantidade: 1 }
+    ]);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+  });
+});
+
+describe("deleteById", () => {
+  it("should remove product by id and return count of removed documents", async () => {
+    const removidos = await produtosService.deleteById("id-inexistente-remover");
+    expect(removidos).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should upsert product when id does not exist", async () => {
+    const resultado = await produtosService.updateById("id-upsert-novo", {
+      $set: { nome: "Atualizado", preco: 50, quantidade: 5 }
+    });
+    expect(resultado).toHaveProperty("_id", "id-upsert-novo");
+  });
+});
+
+describe("createOrUpdateById", () => {
+  it("should create or update product by id with formatting", async () => {
+    const resultado = await produtosService.createOrUpdateById("id-create-or-update", {
+      nome: "  Update Test  ",
+      preco: "200",
+      quantidade: "2"
+    });
+    expect(resultado).toHaveProperty("_id", "id-create-or-update");
+    expect(resultado.nome).toBe("Update Test");
+    expect(resultado.preco).toBe(200);
+    expect(resultado.quantidade).toBe(2);
+    expect(resultado).toHaveProperty("alteradoEm");
+  });
+});
+```

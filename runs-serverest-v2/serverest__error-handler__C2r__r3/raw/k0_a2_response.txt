@@ -1,0 +1,264 @@
+```ts
+import { describe, it, expect, vi } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+import logger from "../../src/utils/logger";
+
+describe("errorHandler", () => {
+  it("should handle headersSent when timedout is true", () => {
+    const error: any = new Error("Test error");
+    error.stack = "stack trace";
+    const req: any = {
+      timedout: true,
+      method: "GET",
+      originalUrl: "/test",
+      socket: { destroy: vi.fn() }
+    };
+    const res: any = {
+      headersSent: true,
+      writableEnded: false
+    };
+
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith({
+      level: "warn",
+      message: "Erro depois da resposta enviada: GET /test, timedout: true, Error: Test error, Stack: stack trace"
+    });
+    expect(req.socket.destroy).toHaveBeenCalled();
+    spyLog.mockRestore();
+  });
+
+  it("should handle headersSent when timedout is false", () => {
+    const error: any = new Error("Test error");
+    error.stack = "stack trace";
+    const req: any = {
+      timedout: false,
+      method: "POST",
+      originalUrl: "/test",
+      socket: { destroy: vi.fn() }
+    };
+    const res: any = {
+      headersSent: true,
+      writableEnded: true
+    };
+
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith({
+      level: "error",
+      message: "Erro depois da resposta enviada: POST /test, timedout: false, Error: Test error, Stack: stack trace"
+    });
+    expect(req.socket.destroy).not.toHaveBeenCalled();
+    spyLog.mockRestore();
+  });
+
+  it("should handle ValidationError", () => {
+    const error: any = {
+      name: "ValidationError",
+      details: {
+        body: [
+          {
+            context: { label: "nome" },
+            type: "string.base",
+            message: "nome must be a string"
+          }
+        ]
+      }
+    };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res: any = { headersSent: false, status: statusMock };
+
+    errorHandler(error, {} as any, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      nome: "nome deve ser uma string"
+    });
+  });
+
+  it("should handle URIError", () => {
+    const error = new URIError("Malformed URI");
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res: any = { headersSent: false, status: statusMock };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, {} as any, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith({
+      message: "URI decode error: Malformed URI"
+    });
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+    spyLog.mockRestore();
+  });
+
+  it("should handle entity.parse.failed", () => {
+    const error: any = { type: "entity.parse.failed" };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res: any = { headersSent: false, status: statusMock };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, {} as any, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith({
+      message: "Entity parse error, user sending request without proper quotation marks."
+    });
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+    spyLog.mockRestore();
+  });
+
+  it.each([
+    ["entity.too.large"],
+    ["parameters.too.many"]
+  ])("should handle payload too large for type %s", (errorType) => {
+    const error: any = { type: errorType };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res: any = { headersSent: false, status: statusMock };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, {} as any, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith({
+      message: `Payload too large: ${errorType}`
+    });
+    expect(statusMock).toHaveBeenCalledWith(413);
+    expect(jsonMock).toHaveBeenCalledWith({ message: "Payload too large" });
+    spyLog.mockRestore();
+  });
+
+  it("should handle charset.unsupported", () => {
+    const error: any = { type: "charset.unsupported", charset: "utf-16" };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res: any = { headersSent: false, status: statusMock };
+
+    errorHandler(error, {} as any, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(415);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Unsupported charset",
+      charset: "utf-16"
+    });
+  });
+
+  it("should handle encoding.unsupported", () => {
+    const error: any = { type: "encoding.unsupported", encoding: "deflate" };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res: any = { headersSent: false, status: statusMock };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, {} as any, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith({
+      message: "Unsupported content encoding: deflate"
+    });
+    expect(statusMock).toHaveBeenCalledWith(415);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Unsupported content encoding",
+      encoding: "deflate"
+    });
+    spyLog.mockRestore();
+  });
+
+  it("should handle Zlib client error", () => {
+    const error: any = {
+      expose: true,
+      statusCode: 400,
+      code: "Z_DATA_ERROR",
+      message: "invalid block type"
+    };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res: any = { headersSent: false, status: statusMock };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, {} as any, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith({
+      message: "Invalid compressed body: invalid block type"
+    });
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+    });
+    spyLog.mockRestore();
+  });
+
+  it("should handle ETIMEDOUT error", () => {
+    const error: any = { code: "ETIMEDOUT" };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res: any = { headersSent: false, status: statusMock };
+
+    errorHandler(error, {} as any, res, () => {});
+
+    expect(statusMock).toHaveBeenCalledWith(408);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Timeout da requisição atingido"
+    });
+  });
+
+  it("should handle generic client error (ehErroDoCliente)", () => {
+    const error: any = {
+      expose: true,
+      statusCode: 400,
+      type: "entity.parse.failed.custom",
+      message: "some message"
+    };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res: any = { headersSent: false, status: statusMock };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, {} as any, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith({
+      message: "Client error 400: entity.parse.failed.custom"
+    });
+    expect(statusMock).toHaveBeenCalledWith(400);
+    expect(jsonMock).toHaveBeenCalledWith({
+      message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+      error: "entity.parse.failed.custom"
+    });
+    spyLog.mockRestore();
+  });
+
+  it("should handle internal server error with error type", () => {
+    const error: any = {
+      type: "database.error",
+      stack: "err stack"
+    };
+    const req: any = { body: { foo: "bar" } };
+    const jsonMock = vi.fn();
+    const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+    const res: any = { headersSent: false, status: statusMock };
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalled();
+    expect(statusMock).toHaveBeenCalledWith(500);
+    expect(jsonMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Abra uma issue informando essa resposta. https://github.com/ServeRest/ServeRest/issues",
+        error: "database.error"
+      })
+    );
+    spyLog.mockRestore();
+  });
+});
+```

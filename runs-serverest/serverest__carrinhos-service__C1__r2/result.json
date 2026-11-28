@@ -1,0 +1,143 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest__carrinhos-service__C1__r2",
+  "started_at": "2026-11-27T16:19:49.826Z",
+  "finished_at": "2026-11-27T16:20:14.534Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "src/services/carrinhos-service.js",
+    "module_loc": 118,
+    "mutants_total": 61,
+    "human_test_files": [
+      "test/unit/carrinhos-service.test.js",
+      "test/integration/carrinhos/cancelarCompra.test.js",
+      "test/integration/carrinhos/concluirCompra.test.js",
+      "test/integration/carrinhos/contrato.test.js",
+      "test/integration/carrinhos/get.test.js",
+      "test/integration/carrinhos/getOne.test.js",
+      "test/integration/carrinhos/ordem.test.js",
+      "test/integration/carrinhos/post.test.js"
+    ]
+  },
+  "condition": "C1",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": null
+  },
+  "memorization": {
+    "probe_similarity": 0.0552,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 28.5714,
+        "ms_feedback": 37.5,
+        "ms_all": 33.9623,
+        "ms_covered": 81.8182
+      },
+      "coverage": {
+        "line_cov": 59.32,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 6,
+        "survived": 1,
+        "no_coverage": 14,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 5,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 12,
+        "survived": 3,
+        "no_coverage": 17,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 3,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 7,
+        "n_asserts": 10,
+        "sha256": "16179ecf6a8a66168380c97600afaec1d3849bf4b982e411054d45483065c6e7"
+      },
+      "prompt_file": "runs-serverest/serverest__carrinhos-service__C1__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__carrinhos-service__C1__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 1,
+        "repair_calls": 0,
+        "tokens_in": 1641,
+        "tokens_out": 659,
+        "usd_ref": 0.000428,
+        "wall_s": 24.71,
+        "stryker_s": 17.55
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 28.5714,
+      "ms_feedback": 37.5,
+      "ms_all": 33.9623,
+      "ms_covered": 81.8182
+    },
+    "coverage": {
+      "line_cov": 59.32,
+      "branch_cov": 100
+    },
+    "cost": {
+      "calls": 1,
+      "repair_calls": 0,
+      "tokens_in": 1641,
+      "tokens_out": 659,
+      "usd_ref": 0.000428,
+      "wall_s": 24.71,
+      "stryker_s": 17.55
+    },
+    "tests": {
+      "n_tests": 7,
+      "n_asserts": 10,
+      "sha256": "16179ecf6a8a66168380c97600afaec1d3849bf4b982e411054d45483065c6e7"
+    },
+    "gap_cov_ms": 25.3577,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest__carrinhos-service__C1__r2/raw"
+  }
+}

@@ -1,0 +1,362 @@
+The Vitest test file below for `the usuarios API (files under test: src/controllers/usuarios-controller.js, src/services/usuarios-service.js, src/models/usuarios-model.js)` (import path: `../../src/app`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Note about this project: This is an Express REST API (CommonJS JavaScript). The application object is exported by src/app.js (`module.exports = app`); import it with a default import. The routes are mounted on the paths listed in the context files. Use supertest (`import request from "supertest"`) and never start a real server.
+
+Read-only context file `src/routes/usuarios-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const controller = require('../controllers/usuarios-controller')
+const model = require('../models/usuarios-model')
+const validateSchema = require('../services/validateSchema-service')
+const { filtrosDaLista } = require('../utils/filtrosDaQuery')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.get('/', plano('schema', 'read'), filtrosDaLista(model.schemaGet), etapa('read', controller.get))
+router.get('/:id', plano('schema', 'read'), validateSchema(model.schemaGetOne), etapa('read', controller.getOne))
+router.post('/', plano('schema', 'rules'), validateSchema(model.schemaPost), etapa('rules', controller.post))
+router.delete('/:id', plano('schema', 'rules'), validateSchema(model.schemaDelete), etapa('rules', controller.delete))
+router.put('/:id', plano('schema', 'rules'), validateSchema(model.schemaPut), etapa('rules', controller.put))
+
+module.exports = router
+
+```
+
+Read-only context file `src/utils/rotas-da-api.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+// As rotas da API, numa lista só: o painel de etapas mede só elas, o orçamento de bytes do rate limiter conta só
+// elas e os buscadores não as indexam.
+module.exports = {
+  ROTAS_DA_API: ['/login', '/usuarios', '/produtos', '/carrinhos']
+}
+
+```
+
+Source of `the usuarios API (files under test: src/controllers/usuarios-controller.js, src/services/usuarios-service.js, src/models/usuarios-model.js)`:
+```js
+// ===== file: src/controllers/usuarios-controller.js =====
+'use strict'
+
+const carrinhosService = require('../services/carrinhos-service')
+const constant = require('../utils/constants')
+const service = require('../services/usuarios-service')
+
+exports.get = async (req, res) => {
+  const usuarios = await service.getAll(req.query)
+  res.status(200).send({ quantidade: usuarios.length, usuarios })
+}
+
+exports.getOne = async (req, res) => {
+  const { id } = req.params
+  const usuario = await service.getOne(id)
+  if (!usuario) {
+    return res.status(400).json({ message: constant.USER_NOT_FOUND })
+  }
+  return res.status(200).send(usuario)
+}
+
+exports.post = async (req, res) => {
+  if (await service.existeUsuario({ email: req.body.email })) {
+    return res.status(400).send({ message: constant.EMAIL_ALREADY_USED })
+  }
+  const dadosCadastrados = await service.createUser(req.body)
+  res.status(201).send({ message: constant.POST_SUCCESS, _id: dadosCadastrados._id })
+}
+
+exports.delete = async (req, res) => {
+  const carrinhoDoUsuario = await carrinhosService.existeCarrinho({ idUsuario: req.params.id })
+  if (carrinhoDoUsuario) {
+    return res.status(400).send({ message: constant.DELETE_USER_WITH_CART, idCarrinho: carrinhoDoUsuario._id })
+  }
+  const quantidadeRegistrosExcluidos = await service.deleteById(req.params.id)
+  const message = quantidadeRegistrosExcluidos === 0 ? constant.DELETE_NONE : constant.DELETE_SUCCESS
+  res.status(200).send({ message })
+}
+
+exports.put = async (req, res) => {
+  const idInexistenteEEmailRepetido = await service.existeUsuario({ email: req.body.email, $not: { _id: req.params.id } })
+  if (idInexistenteEEmailRepetido) {
+    return res.status(400).send({ message: constant.EMAIL_ALREADY_USED })
+  }
+  const registroCriado = await service.createOrUpdateById(req.params.id, req.body)
+  if (registroCriado._id !== req.params.id) { return res.status(201).send({ message: constant.POST_SUCCESS, _id: registroCriado._id }) }
+  res.status(200).send({ message: constant.PUT_SUCCESS })
+}
+
+// ===== file: src/services/usuarios-service.js =====
+'use strict'
+
+const Datastore = require('nedb-promises')
+const { join } = require('path')
+
+const alterarValoresParaRegex = require('../utils/alterarValoresParaRegex')
+const { continuarDaMaiorMarca, doMaisNovoAoMaisAntigo, marcarAlteracao, semMarca } = require('../utils/ordemDeAlteracao')
+
+const datastore = Datastore.create({ filename: join(__dirname, '../data/usuarios.db'), autoload: true })
+continuarDaMaiorMarca(datastore)
+
+// Index frequently searched fields for better query performance
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'email', sparse: true })
+
+exports.getAll = async queryString => {
+  queryString = alterarValoresParaRegex(queryString)
+  return doMaisNovoAoMaisAntigo(await datastore.find(queryString))
+}
+
+exports.getOne = async id => {
+  return semMarca(await datastore.findOne({ _id: id }))
+}
+
+exports.getDadosDoUsuario = queryString => {
+  return datastore.findOne(queryString)
+}
+
+exports.existeUsuario = async pesquisa => {
+  return datastore.findOne(pesquisa)
+}
+
+exports.usuarioEhAdministrador = async ({ email, password }) => {
+  const resultado = await datastore.findOne({ email, password })
+  return JSON.parse(resultado.administrador)
+}
+
+exports.createUser = async body => {
+  return datastore.insert({ ...body, alteradoEm: marcarAlteracao() })
+}
+
+exports.deleteById = async id => {
+  return datastore.remove({ _id: id }, {})
+}
+
+exports.createOrUpdateById = async (idDoUsuarioQueSeraAlterado, body) => {
+  return datastore.update({ _id: idDoUsuarioQueSeraAlterado }, { ...body, alteradoEm: marcarAlteracao() }, { upsert: true, returnUpdatedDocs: true })
+}
+
+// ===== file: src/models/usuarios-model.js =====
+'use strict'
+
+const { Joi } = require('express-validation')
+
+const filtroDeTexto = require('../utils/filtroDeTexto')
+
+exports.schemaGet = {
+  query: Joi.object({
+    _id: filtroDeTexto,
+    nome: filtroDeTexto,
+    email: Joi.string().email(),
+    password: filtroDeTexto,
+    administrador: Joi.any().valid('true', 'false')
+  })
+}
+
+exports.schemaGetOne = {
+  params: Joi.object({
+    id: Joi.string().regex(/^[a-zA-Z0-9]{16}$/).required()
+  })
+}
+
+exports.schemaPost = {
+  body: Joi.object({
+    nome: Joi.string().required(),
+    email: Joi.string().email().required(),
+    password: Joi.string().required(),
+    administrador: Joi.any().valid('true', 'false').required()
+  })
+}
+
+exports.schemaDelete = {
+  params: Joi.object({
+    id: Joi.string().required()
+  })
+}
+
+exports.schemaPut = {
+  params: this.schemaDelete.params,
+  body: this.schemaPost.body
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Usuarios API", () => {
+  it("should get all usuarios", async () => {
+    const res = await request(app).get("/usuarios");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("quantidade");
+    expect(res.body).toHaveProperty("usuarios");
+    expect(Array.isArray(res.body.usuarios)).toBe(true);
+  });
+
+  it("should create a new usuario successfully", async () => {
+    const uniqueEmail = `test_${Date.now()}_${Math.random()}@example.com`;
+    const res = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Test User",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "true"
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+    expect(res.body).toHaveProperty("_id");
+  });
+
+  it("should return an error when creating a usuario with an existing email", async () => {
+    const uniqueEmail = `duplicate_${Date.now()}@example.com`;
+    const userData = {
+      nome: "User One",
+      email: uniqueEmail,
+      password: "password123",
+      administrador: "false"
+    };
+
+    const firstRes = await request(app).post("/usuarios").send(userData);
+    expect(firstRes.status).toBe(201);
+
+    const secondRes = await request(app).post("/usuarios").send({
+      ...userData,
+      nome: "User Two"
+    });
+
+    expect(secondRes.status).toBe(400);
+    expect(secondRes.body).toEqual({ message: "Este email já está sendo usado" });
+  });
+
+  it("should return validation error when missing required fields on post", async () => {
+    const res = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Incomplete User"
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("should get a single usuario by id", async () => {
+    const uniqueEmail = `getone_${Date.now()}@example.com`;
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Get One User",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "true"
+      });
+
+    expect(createRes.status).toBe(201);
+    const userId = createRes.body._id;
+
+    const getRes = await request(app).get(`/usuarios/${userId}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body).toHaveProperty("_id", userId);
+    expect(getRes.body).toHaveProperty("email", uniqueEmail);
+  });
+
+  it("should return 400 when getting a non-existent usuario with valid id format", async () => {
+    const fakeId = "1234567890abcdef";
+    const res = await request(app).get(`/usuarios/${fakeId}`);
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Usuário não encontrado" });
+  });
+
+  it("should delete an existing usuario", async () => {
+    const uniqueEmail = `delete_${Date.now()}@example.com`;
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Delete User",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "false"
+      });
+
+    expect(createRes.status).toBe(201);
+    const userId = createRes.body._id;
+
+    const deleteRes = await request(app).delete(`/usuarios/${userId}`);
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body).toEqual({ message: "Registro excluído com sucesso" });
+  });
+
+  it("should handle delete when usuario does not exist", async () => {
+    const fakeId = "nonexistentid123";
+    const deleteRes = await request(app).delete(`/usuarios/${fakeId}`);
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body).toEqual({ message: "Nenhum registro excluído" });
+  });
+
+  it("should update an existing usuario via put", async () => {
+    const uniqueEmail = `put_${Date.now()}@example.com`;
+    const createRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Original Name",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "false"
+      });
+
+    expect(createRes.status).toBe(201);
+    const userId = createRes.body._id;
+
+    const putRes = await request(app)
+      .put(`/usuarios/${userId}`)
+      .send({
+        nome: "Updated Name",
+        email: uniqueEmail,
+        password: "newpassword123",
+        administrador: "true"
+      });
+
+    expect(putRes.status).toBe(200);
+    expect(putRes.body).toEqual({ message: "Registro alterado com sucesso" });
+  });
+
+  it("should create via put if usuario does not exist", async () => {
+    const uniqueEmail = `putcreate_${Date.now()}@example.com`;
+    const fakeId = "abcdef1234567890";
+
+    const putRes = await request(app)
+      .put(`/usuarios/${fakeId}`)
+      .send({
+        nome: "Upserted User",
+        email: uniqueEmail,
+        password: "password123",
+        administrador: "false"
+      });
+
+    expect(putRes.status).toBe(201);
+    expect(putRes.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+    expect(putRes.body).toHaveProperty("_id");
+  });
+});
+
+```
+
+Problems:
+```
+uso de Date.now sem relógio falso
+uso de Math.random sem controle
+uso de Date.now sem relógio falso
+uso de Date.now sem relógio falso
+uso de Date.now sem relógio falso
+uso de Date.now sem relógio falso
+uso de Date.now sem relógio falso
+```
+
+Return the COMPLETE corrected test file.

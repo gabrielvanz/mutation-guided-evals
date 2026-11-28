@@ -1,0 +1,111 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API", () => {
+  describe("Authentication Middleware", () => {
+    it("should return 401 when token is missing on protected routes", async () => {
+      const response = await request(app)
+        .delete("/usuarios/inexistente");
+
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should return 401 when token format is bad", async () => {
+      const response = await request(app)
+        .delete("/usuarios/inexistente")
+        .set("authorization", "InvalidFormat token123");
+
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should return 401 when token is invalid or malformed", async () => {
+      const response = await request(app)
+        .delete("/usuarios/inexistente")
+        .set("authorization", "Bearer invalid.jwt.token");
+
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({
+        message: "Token de acesso ausente, inválido ou expirado"
+      });
+    });
+
+    it("should return 403 when a non-admin user tries to access admin-only routes", async () => {
+      const uniqueEmail = `user_${Date.now()}_${Math.random()}@qa.com`;
+      const createRes = await request(app)
+        .post("/usuarios")
+        .send({
+          nome: "Comum User",
+          email: uniqueEmail,
+          password: "teste",
+          administrador: "false"
+        });
+
+      expect(createRes.status).toBe(201);
+
+      const loginRes = await request(app)
+        .post("/login")
+        .send({
+          email: uniqueEmail,
+          password: "teste"
+        });
+
+      expect(loginRes.status).toBe(200);
+      const token = loginRes.body.authorization;
+
+      const deleteRes = await request(app)
+        .delete("/usuarios/abc123xyz")
+        .set("authorization", token);
+
+      expect(deleteRes.status).toBe(403);
+      expect(deleteRes.body).toEqual({
+        message: "Rota exclusiva para administradores"
+      });
+    });
+  });
+
+  describe("Error Handler Middleware", () => {
+    it("should return 400 when sending invalid JSON syntax (entity.parse.failed)", async () => {
+      const response = await request(app)
+        .post("/usuarios")
+        .set("Content-Type", "application/json")
+        .send("{ invalid json ");
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("message");
+      expect(response.body.message).toContain("Adicione aspas em todos os valores");
+    });
+
+    it("should return 400 when URI decode error happens on query parameters", async () => {
+      const response = await request(app)
+        .get("/usuarios?nome=%E0%A4%A");
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+      });
+    });
+
+    it("should return 400 when Mongoose / Schema validation error occurs", async () => {
+      const response = await request(app)
+        .post("/usuarios")
+        .send({
+          nome: "",
+          email: "email-invalido",
+          password: "",
+          administrador: "true"
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("message");
+    });
+  });
+});
+```

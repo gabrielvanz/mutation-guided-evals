@@ -1,0 +1,107 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Carrinhos API", () => {
+  it("should get an empty list of carrinhos initially", async () => {
+    const res = await request(app).get("/carrinhos");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("quantidade");
+    expect(res.body).toHaveProperty("carrinhos");
+    expect(Array.isArray(res.body.carrinhos)).toBe(true);
+  });
+
+  it("should return cart not found for an invalid or non-existent cart id format", async () => {
+    const res = await request(app).get("/carrinhos/1234567890abcdef");
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Carrinho não encontrado" });
+  });
+
+  it("should fail to create a cart without authentication token", async () => {
+    const res = await request(app)
+      .post("/carrinhos")
+      .send({
+        produtos: [{ idProduto: "123456", quantidade: 1 }]
+      });
+    expect(res.status).toBe(401);
+    expect(res.body).toHaveProperty("message");
+  });
+
+  it("should fail to cancel a purchase without authentication token", async () => {
+    const res = await request(app).delete("/carrinhos/cancelar-compra");
+    expect(res.status).toBe(401);
+  });
+
+  it("should fail to conclude a purchase without authentication token", async () => {
+    const res = await request(app).delete("/carrinhos/concluir-compra");
+    expect(res.status).toBe(401);
+  });
+
+  it("should return NO_CART when cancelling purchase without a cart", async () => {
+    const email = "user_cancel_test@email.com";
+    const password = "password123";
+
+    await request(app)
+      .post("/usuarios")
+      .send({ nome: "Test User", email, password, adm: "false" });
+
+    const loginRes = await request(app)
+      .post("/login")
+      .send({ email, password });
+
+    const token = loginRes.body.token || loginRes.body.authorization || loginRes.text;
+
+    const res = await request(app)
+      .delete("/carrinhos/cancelar-compra")
+      .set("authorization", token);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Não foi encontrado nenhum carrinho" });
+  });
+
+  it("should return NO_CART when concluding purchase without a cart", async () => {
+    const email = "user_conclude_test@email.com";
+    const password = "password123";
+
+    await request(app)
+      .post("/usuarios")
+      .send({ nome: "Test User", email, password, adm: "false" });
+
+    const loginRes = await request(app)
+      .post("/login")
+      .send({ email, password });
+
+    const token = loginRes.body.token || loginRes.body.authorization || loginRes.text;
+
+    const res = await request(app)
+      .delete("/carrinhos/concluir-compra")
+      .set("authorization", token);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Não foi encontrado nenhum carrinho" });
+  });
+
+  it("should fail to create a cart with empty products array", async () => {
+    const email = "user_empty_cart@email.com";
+    const password = "password123";
+
+    await request(app)
+      .post("/usuarios")
+      .send({ nome: "Test User", email, password, adm: "false" });
+
+    const loginRes = await request(app)
+      .post("/login")
+      .send({ email, password });
+
+    const token = loginRes.body.token || loginRes.body.authorization || loginRes.text;
+
+    const res = await request(app)
+      .post("/carrinhos")
+      .set("authorization", token)
+      .send({ produtos: [] });
+
+    expect(res.status).toBe(400);
+  });
+});
+```

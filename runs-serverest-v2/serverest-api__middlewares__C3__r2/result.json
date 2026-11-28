@@ -1,0 +1,535 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest-api__middlewares__C3__r2",
+  "started_at": "2026-11-28T11:18:16.860Z",
+  "finished_at": "2026-11-28T11:25:58.903Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest-api",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "api/middlewares",
+    "mutate_paths": [
+      "src/middlewares/error-handler.js",
+      "src/middlewares/authentication-middleware.js"
+    ],
+    "module_loc": 136,
+    "mutants_total": 191,
+    "human_test_files": [
+      "test/integration/outros/error-handler.test.js",
+      "test/integration/usuarios/contrato.test.js",
+      "test/integration/usuarios/delete.test.js",
+      "test/integration/usuarios/get.test.js",
+      "test/integration/usuarios/getOne.test.js",
+      "test/integration/usuarios/ordem.test.js",
+      "test/integration/usuarios/post.test.js",
+      "test/integration/usuarios/put.test.js",
+      "test/integration/produtos/contrato.test.js",
+      "test/integration/produtos/delete.test.js",
+      "test/integration/produtos/get.test.js",
+      "test/integration/produtos/getOne.test.js",
+      "test/integration/produtos/ordem.test.js",
+      "test/integration/produtos/post.test.js",
+      "test/integration/produtos/put.test.js",
+      "test/integration/carrinhos/cancelarCompra.test.js",
+      "test/integration/carrinhos/concluirCompra.test.js",
+      "test/integration/carrinhos/contrato.test.js",
+      "test/integration/carrinhos/get.test.js",
+      "test/integration/carrinhos/getOne.test.js",
+      "test/integration/carrinhos/ordem.test.js",
+      "test/integration/carrinhos/post.test.js",
+      "test/integration/login/post.test.js"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "882ec145097635fde6e2544a9cb134aa979a134d6c25b7b5259d10ca8ef596b4"
+  },
+  "memorization": {
+    "probe_similarity": 0.0674,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 23.913,
+        "ms_feedback": 25.2525,
+        "ms_all": 24.6073,
+        "ms_covered": 68.1159
+      },
+      "coverage": {
+        "line_cov": 63.36,
+        "branch_cov": 48.28
+      },
+      "mutants_eval": {
+        "killed": 22,
+        "survived": 12,
+        "no_coverage": 58,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 25,
+        "survived": 10,
+        "no_coverage": 64,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 6,
+        "n_asserts": 12,
+        "sha256": "b270ad91f253f305b394e151999aec175172566c757e7da1887bcc2679f5c14d"
+      },
+      "prompt_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 15562,
+        "tokens_out": 2677,
+        "usd_ref": 0.002627,
+        "wall_s": 77.65,
+        "stryker_s": 48.57
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 32.6087,
+        "ms_feedback": 31.3131,
+        "ms_all": 31.9372,
+        "ms_covered": 85.9155
+      },
+      "coverage": {
+        "line_cov": 64.12,
+        "branch_cov": 58.06
+      },
+      "mutants_eval": {
+        "killed": 30,
+        "survived": 6,
+        "no_coverage": 56,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 31,
+        "survived": 4,
+        "no_coverage": 64,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/error-handler.js:11:10-11:31:EqualityOperator:error.expose !== true",
+        "src/middlewares/error-handler.js:11:62-11:84:EqualityOperator:error.statusCode <= 500",
+        "src/middlewares/authentication-middleware.js:17:7-17:71:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:24:27-24:47:CallExpression:;",
+        "src/middlewares/error-handler.js:24:7-24:25:BooleanLiteral:res.writableEnded",
+        "src/middlewares/error-handler.js:29:24-29:56:ConditionalExpression:false",
+        "src/middlewares/authentication-middleware.js:30:3-30:9:CallExpression:;",
+        "src/middlewares/error-handler.js:50:45-52:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:59:33-59:38:Regex:/Z_/",
+        "src/middlewares/error-handler.js:59:57-64:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:59:7-59:55:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:59:7-59:55:LogicalOperator:ehErroDoCliente(error) || /^Z_/.test(error.code)",
+        "src/middlewares/error-handler.js:60:20-60:63:StringLiteral:``",
+        "src/middlewares/error-handler.js:72:31-78:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:73:20-73:86:StringLiteral:``",
+        "src/middlewares/error-handler.js:81:72-81:107:LogicalOperator:error.stack && 'No stack available'",
+        "src/middlewares/error-handler.js:84:7-84:18:OptionalChaining:error.type",
+        "src/middlewares/error-handler.js:85:33-85:88:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:88:31-88:172:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:88:85-88:124:LogicalOperator:error.message && 'No message available'"
+      ],
+      "tests": {
+        "n_tests": 8,
+        "n_asserts": 16,
+        "sha256": "172af1f0d949cec9b6190505652c4ebb555597890856e217bc06ad20e13c16dc"
+      },
+      "prompt_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k1_a0_response.txt",
+      "best_k_so_far": 1,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 2,
+        "tokens_in": 22870,
+        "tokens_out": 3907,
+        "usd_ref": 0.00385,
+        "wall_s": 141.85,
+        "stryker_s": 100.86
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 40.2174,
+        "ms_feedback": 42.4242,
+        "ms_all": 41.3613,
+        "ms_covered": 82.2917
+      },
+      "coverage": {
+        "line_cov": 71.76,
+        "branch_cov": 63.89
+      },
+      "mutants_eval": {
+        "killed": 37,
+        "survived": 13,
+        "no_coverage": 42,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 42,
+        "survived": 4,
+        "no_coverage": 53,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/error-handler.js:10:34-12:2:BlockStatement:{}",
+        "src/middlewares/error-handler.js:11:10-11:58:LogicalOperator:error.expose === true || error.statusCode >= 400",
+        "src/middlewares/error-handler.js:11:62-11:84:EqualityOperator:error.statusCode <= 500",
+        "src/middlewares/error-handler.js:19:7-23:4:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:20:27-20:33:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:24:27-24:47:CallExpression:;",
+        "src/middlewares/error-handler.js:24:7-24:25:BooleanLiteral:res.writableEnded",
+        "src/middlewares/authentication-middleware.js:30:3-30:9:CallExpression:;",
+        "src/middlewares/error-handler.js:46:7-46:40:EqualityOperator:error.type !== 'entity.too.large'",
+        "src/middlewares/error-handler.js:46:7-46:80:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:48:33-48:65:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:48:44-48:63:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:50:45-52:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:50:7-50:43:EqualityOperator:error.type !== 'charset.unsupported'",
+        "src/middlewares/error-handler.js:59:33-59:38:Regex:/Z_/",
+        "src/middlewares/error-handler.js:59:57-64:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:81:24-81:60:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:81:24-81:60:LogicalOperator:error?.type && JSON.stringify(error)",
+        "src/middlewares/error-handler.js:84:7-84:18:OptionalChaining:error.type",
+        "src/middlewares/error-handler.js:88:85-88:124:LogicalOperator:error.message && 'No message available'"
+      ],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 20,
+        "sha256": "ac31c502a62dfb0efba37bb9c523a52770b56dbed491b461b610d6ce676bd942"
+      },
+      "prompt_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 3,
+        "tokens_in": 37453,
+        "tokens_out": 7152,
+        "usd_ref": 0.006606,
+        "wall_s": 233.82,
+        "stryker_s": 165.51
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 40.2174,
+        "ms_feedback": 41.4141,
+        "ms_all": 40.8377,
+        "ms_covered": 81.25
+      },
+      "coverage": {
+        "line_cov": 71.76,
+        "branch_cov": 63.89
+      },
+      "mutants_eval": {
+        "killed": 37,
+        "survived": 13,
+        "no_coverage": 42,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 41,
+        "survived": 5,
+        "no_coverage": 53,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/error-handler.js:11:10-11:84:LogicalOperator:error.expose === true && error.statusCode >= 400 || error.statusCode < 500",
+        "src/middlewares/error-handler.js:11:35-11:58:EqualityOperator:error.statusCode > 400",
+        "src/middlewares/error-handler.js:11:62-11:84:EqualityOperator:error.statusCode <= 500",
+        "src/middlewares/authentication-middleware.js:12:15-15:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:20:27-20:33:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:20:36-20:43:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:22:10-22:34:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:24:27-24:47:CallExpression:;",
+        "src/middlewares/error-handler.js:24:7-24:25:BooleanLiteral:res.writableEnded",
+        "src/middlewares/authentication-middleware.js:30:3-30:9:CallExpression:;",
+        "src/middlewares/error-handler.js:48:33-48:65:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:59:33-59:38:Regex:/Z_/",
+        "src/middlewares/error-handler.js:59:57-64:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:59:7-59:55:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:72:31-78:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:73:57-73:84:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:74:46-77:6:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:81:72-81:107:LogicalOperator:error.stack && 'No stack available'",
+        "src/middlewares/error-handler.js:84:7-84:18:OptionalChaining:error.type",
+        "src/middlewares/error-handler.js:88:102-88:124:StringLiteral:\"\""
+      ],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 20,
+        "sha256": "ac31c502a62dfb0efba37bb9c523a52770b56dbed491b461b610d6ce676bd942"
+      },
+      "prompt_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k3_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 7,
+        "repair_calls": 3,
+        "tokens_in": 45345,
+        "tokens_out": 8656,
+        "usd_ref": 0.007997,
+        "wall_s": 309.48,
+        "stryker_s": 229.14
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 40.2174,
+        "ms_feedback": 42.4242,
+        "ms_all": 41.3613,
+        "ms_covered": 82.2917
+      },
+      "coverage": {
+        "line_cov": 71.76,
+        "branch_cov": 63.89
+      },
+      "mutants_eval": {
+        "killed": 37,
+        "survived": 13,
+        "no_coverage": 42,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 42,
+        "survived": 4,
+        "no_coverage": 53,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/error-handler.js:11:10-11:31:EqualityOperator:error.expose !== true",
+        "src/middlewares/error-handler.js:11:10-11:58:LogicalOperator:error.expose === true || error.statusCode >= 400",
+        "src/middlewares/error-handler.js:11:10-11:84:LogicalOperator:error.expose === true && error.statusCode >= 400 || error.statusCode < 500",
+        "src/middlewares/error-handler.js:11:35-11:58:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:11:62-11:84:EqualityOperator:error.statusCode <= 500",
+        "src/middlewares/authentication-middleware.js:12:15-15:4:BlockStatement:{}",
+        "src/middlewares/authentication-middleware.js:18:32-18:55:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:19:7-23:4:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:21:14-21:119:StringLiteral:``",
+        "src/middlewares/error-handler.js:24:27-24:47:CallExpression:;",
+        "src/middlewares/error-handler.js:24:7-24:25:BooleanLiteral:res.writableEnded",
+        "src/middlewares/authentication-middleware.js:30:3-30:9:CallExpression:;",
+        "src/middlewares/authentication-middleware.js:40:62-40:77:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:59:33-59:38:Regex:/Z_/",
+        "src/middlewares/error-handler.js:59:7-59:55:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:72:31-78:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:73:20-73:86:StringLiteral:``",
+        "src/middlewares/error-handler.js:81:72-81:107:LogicalOperator:error.stack && 'No stack available'",
+        "src/middlewares/error-handler.js:84:7-84:18:OptionalChaining:error.type",
+        "src/middlewares/error-handler.js:85:33-85:88:ObjectLiteral:{}"
+      ],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 20,
+        "sha256": "ac31c502a62dfb0efba37bb9c523a52770b56dbed491b461b610d6ce676bd942"
+      },
+      "prompt_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k4_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 3,
+        "tokens_in": 53271,
+        "tokens_out": 10160,
+        "usd_ref": 0.009391,
+        "wall_s": 386.23,
+        "stryker_s": 293.53
+      }
+    },
+    {
+      "k": 5,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 40.2174,
+        "ms_feedback": 41.4141,
+        "ms_all": 40.8377,
+        "ms_covered": 81.25
+      },
+      "coverage": {
+        "line_cov": 71.76,
+        "branch_cov": 63.89
+      },
+      "mutants_eval": {
+        "killed": 37,
+        "survived": 13,
+        "no_coverage": 42,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 41,
+        "survived": 5,
+        "no_coverage": 53,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/error-handler.js:11:10-11:84:LogicalOperator:error.expose === true && error.statusCode >= 400 || error.statusCode < 500",
+        "src/middlewares/error-handler.js:11:35-11:58:EqualityOperator:error.statusCode > 400",
+        "src/middlewares/error-handler.js:11:62-11:84:EqualityOperator:error.statusCode <= 500",
+        "src/middlewares/error-handler.js:19:7-23:4:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:20:36-20:43:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:22:10-22:34:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:24:27-24:47:CallExpression:;",
+        "src/middlewares/error-handler.js:24:7-24:25:BooleanLiteral:res.writableEnded",
+        "src/middlewares/authentication-middleware.js:30:3-30:9:CallExpression:;",
+        "src/middlewares/authentication-middleware.js:40:62-40:77:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:48:44-48:63:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:59:33-59:38:Regex:/Z_/",
+        "src/middlewares/error-handler.js:59:57-64:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:72:31-78:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:74:46-77:6:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:81:24-81:60:LogicalOperator:error?.type && JSON.stringify(error)",
+        "src/middlewares/error-handler.js:81:72-81:107:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:84:7-84:18:OptionalChaining:error.type",
+        "src/middlewares/error-handler.js:88:31-88:172:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:88:85-88:124:LogicalOperator:error.message && 'No message available'"
+      ],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 20,
+        "sha256": "ac31c502a62dfb0efba37bb9c523a52770b56dbed491b461b610d6ce676bd942"
+      },
+      "prompt_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw/k5_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 9,
+        "repair_calls": 3,
+        "tokens_in": 61250,
+        "tokens_out": 11664,
+        "usd_ref": 0.010791,
+        "wall_s": 462.04,
+        "stryker_s": 357.2
+      }
+    }
+  ],
+  "selected_iteration": 2,
+  "final": {
+    "scores": {
+      "ms_eval": 40.2174,
+      "ms_feedback": 42.4242,
+      "ms_all": 41.3613,
+      "ms_covered": 82.2917
+    },
+    "coverage": {
+      "line_cov": 71.76,
+      "branch_cov": 63.89
+    },
+    "cost": {
+      "calls": 9,
+      "repair_calls": 3,
+      "tokens_in": 61250,
+      "tokens_out": 11664,
+      "usd_ref": 0.010791,
+      "wall_s": 462.04,
+      "stryker_s": 357.2
+    },
+    "tests": {
+      "n_tests": 10,
+      "n_asserts": 20,
+      "sha256": "ac31c502a62dfb0efba37bb9c523a52770b56dbed491b461b610d6ce676bd942"
+    },
+    "gap_cov_ms": 30.3987,
+    "valid_rate": 1,
+    "tokens_per_pp": 4472.04
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [
+      "clock",
+      "random"
+    ],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest-v2/serverest-api__middlewares__C3__r2/raw"
+  }
+}

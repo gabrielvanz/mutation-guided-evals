@@ -1,0 +1,210 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found", async () => {
+    const produto = await produtosService.existeProduto({ nome: "Produto Inexistente Xpto" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should create a new product and format values correctly", async () => {
+    const novoProduto = {
+      nome: "  Logitech MX Master 3  ",
+      preco: "250",
+      descricao: "Mouse ergônomico",
+      quantidade: "15",
+      imagem: "  imagem.jpg  "
+    };
+
+    const criado = await produtosService.criarProduto(novoProduto);
+    expect(criado).toHaveProperty("_id");
+    expect(criado.nome).toBe("Logitech MX Master 3");
+    expect(criado.preco).toBe(250);
+    expect(criado.quantidade).toBe(15);
+    expect(criado.imagem).toBe("imagem.jpg");
+    expect(criado).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return product not found error for missing product in batch", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "id-inexistente-lote", quantidade: 1 }
+    ]);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.message).toBe("Produto não encontrado");
+    expect(resultado.error.item.idProduto).toBe("id-inexistente-lote");
+  });
+
+  it("should return error when quantity exceeds stock in batch", async () => {
+    const criado = await produtosService.criarProduto({
+      nome: "Teclado Mecânico",
+      preco: "300",
+      quantidade: "5"
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: criado._id, quantidade: 10 }
+    ]);
+
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.message).toBe("Produto não possui quantidade suficiente");
+    expect(resultado.error.item.quantidadeEstoque).toBe(5);
+  });
+
+  it("should return unit prices when all products in batch are valid", async () => {
+    const criado = await produtosService.criarProduto({
+      nome: "Monitor 144Hz",
+      preco: "1200",
+      quantidade: "10"
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: criado._id, quantidade: 2 }
+    ]);
+
+    expect(resultado).toHaveProperty("produtosComPreco");
+    expect(resultado.produtosComPreco[0].precoUnitario).toBe(1200);
+  });
+});
+
+describe("deleteById", () => {
+  it("should delete product by id", async () => {
+    const removidos = await produtosService.deleteById("id-inexistente-remover");
+    expect(removidos).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should update product by id and return updated document", async () => {
+    const criado = await produtosService.criarProduto({
+      nome: "Produto Para Atualizar",
+      preco: "100",
+      quantidade: "10"
+    });
+
+    const atualizado = await produtosService.updateById(criado._id, {
+      $set: { nome: "Produto Atualizado" }
+    });
+    expect(atualizado).toBeDefined();
+    expect(atualizado.nome).toBe("Produto Atualizado");
+  });
+});
+
+describe("createOrUpdateById", () => {
+  it("should create or update product by id including alteradoEm and formatting", async () => {
+    const resultado = await produtosService.createOrUpdateById("id-put-1", {
+      nome: "  Produto PUT  ",
+      preco: "50",
+      quantidade: "5"
+    });
+    expect(resultado).toBeDefined();
+    expect(resultado.nome).toBe("Produto PUT");
+    expect(resultado.preco).toBe(50);
+    expect(resultado.quantidade).toBe(5);
+    expect(resultado).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("updateQuantidade", () => {
+  it("should decrease product quantity correctly", async () => {
+    const produto = await produtosService.criarProduto({
+      nome: "Produto Estoque",
+      preco: "10",
+      quantidade: "20"
+    });
+
+    await produtosService.updateQuantidade({ idProduto: produto._id, quantidade: 5 });
+    const atualizado = await produtosService.getOne(produto._id);
+    expect(atualizado.quantidade).toBe(15);
+  });
+});
+
+describe("updateQuantidadePorLote", () => {
+  it("should decrease quantities for multiple products in batch", async () => {
+    const p1 = await produtosService.criarProduto({
+      nome: "Lote A",
+      preco: "10",
+      quantidade: "30"
+    });
+    const p2 = await produtosService.criarProduto({
+      nome: "Lote B",
+      preco: "20",
+      quantidade: "40"
+    });
+
+    await produtosService.updateQuantidadePorLote([
+      { idProduto: p1._id, quantidade: 10 },
+      { idProduto: p2._id, quantidade: 15 }
+    ]);
+
+    const res1 = await produtosService.getOne(p1._id);
+    const res2 = await produtosService.getOne(p2._id);
+
+    expect(res1.quantidade).toBe(20);
+    expect(res2.quantidade).toBe(25);
+  });
+});
+
+describe("restoreQuantidadePorLote", () => {
+  it("should restore quantities for multiple products in batch", async () => {
+    const p1 = await produtosService.criarProduto({
+      nome: "Restore A",
+      preco: "10",
+      quantidade: "20"
+    });
+
+    await produtosService.restoreQuantidadePorLote([
+      { idProduto: p1._id, quantidade: 5 }
+    ]);
+
+    const res1 = await produtosService.getOne(p1._id);
+    expect(res1.quantidade).toBe(25);
+  });
+});
+
+describe("getPrecoUnitarioOuErro", () => {
+  it("should return product not found error when product does not exist", async () => {
+    const resultado = await produtosService.getPrecoUnitarioOuErro({
+      idProduto: "inexistente-unitario",
+      quantidade: 1
+    });
+    expect(resultado.error.statusCode).toBe(400);
+    expect(resultado.error.message).toBe("Produto não encontrado");
+    expect(resultado.error.item.quantidade).toBe(1);
+  });
+
+  it("should return unit price when requested quantity equals stock", async () => {
+    const criado = await produtosService.criarProduto({
+      nome: "Exato Estoque",
+      preco: "100",
+      quantidade: "5"
+    });
+
+    const resultado = await produtosService.getPrecoUnitarioOuErro({
+      idProduto: criado._id,
+      quantidade: 5
+    });
+    expect(resultado).toHaveProperty("precoUnitario", 100);
+  });
+});
+```

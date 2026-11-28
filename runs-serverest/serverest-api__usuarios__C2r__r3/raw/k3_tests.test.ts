@@ -1,0 +1,103 @@
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Usuarios API", () => {
+  it("should get all users", async () => {
+    const res = await request(app).get("/usuarios");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("quantidade");
+    expect(res.body).toHaveProperty("usuarios");
+    expect(Array.isArray(res.body.usuarios)).toBe(true);
+  });
+
+  it("should create a new user and then get it by id", async () => {
+    const postRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Test User",
+        email: "unique_user_1@test.com",
+        password: "password123",
+        administrador: "true"
+      });
+
+    expect(postRes.status).toBe(201);
+    expect(postRes.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+    expect(postRes.body).toHaveProperty("_id");
+
+    const userId = postRes.body._id;
+
+    const getRes = await request(app).get(`/usuarios/${userId}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body).toHaveProperty("_id", userId);
+    expect(getRes.body).toHaveProperty("email", "unique_user_1@test.com");
+  });
+
+  it("should return 400 when user is not found", async () => {
+    const fakeId = "1234567890abcdef";
+    const res = await request(app).get(`/usuarios/${fakeId}`);
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("message", "Usuário não encontrado");
+  });
+
+  it("should prevent creating a user with an already used email", async () => {
+    const userData = {
+      nome: "User One",
+      email: "duplicate_user_1@test.com",
+      password: "password123",
+      administrador: "false"
+    };
+
+    const firstRes = await request(app).post("/usuarios").send(userData);
+    expect(firstRes.status).toBe(201);
+
+    const secondRes = await request(app).post("/usuarios").send({
+      ...userData,
+      nome: "User Two"
+    });
+
+    expect(secondRes.status).toBe(400);
+    expect(secondRes.body).toHaveProperty("message", "Este email já está sendo usado");
+  });
+
+  it("should validate required fields when creating a user", async () => {
+    const res = await request(app).post("/usuarios").send({
+      nome: "Incomplete User"
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("should delete an existing user", async () => {
+    const postRes = await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "User To Delete",
+        email: "delete_user_1@test.com",
+        password: "password123",
+        administrador: "false"
+      });
+
+    const userId = postRes.body._id;
+
+    const deleteRes = await request(app).delete(`/usuarios/${userId}`);
+    expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body).toHaveProperty("message", "Registro excluído com sucesso");
+  });
+
+  it("should update an existing user or create if not exists", async () => {
+    const fakeId = "abcdef1234567890";
+
+    const putRes = await request(app)
+      .put(`/usuarios/${fakeId}`)
+      .send({
+        nome: "Updated User",
+        email: "update_user_1@test.com",
+        password: "password123",
+        administrador: "true"
+      });
+
+    expect([200, 201]).toContain(putRes.status);
+    expect(putRes.body).toHaveProperty("_id");
+  });
+});

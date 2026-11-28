@@ -1,0 +1,440 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest__produtos-service__C3__r3",
+  "started_at": "2026-11-27T22:55:15.124Z",
+  "finished_at": "2026-11-27T22:58:07.409Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "src/services/produtos-service.js",
+    "module_loc": 167,
+    "mutants_total": 115,
+    "human_test_files": [
+      "test/integration/produtos/contrato.test.js",
+      "test/integration/produtos/delete.test.js",
+      "test/integration/produtos/get.test.js",
+      "test/integration/produtos/getOne.test.js",
+      "test/integration/produtos/ordem.test.js",
+      "test/integration/produtos/post.test.js",
+      "test/integration/produtos/put.test.js"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 3,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "3207ea1273280d442b5ac2a36ea16851d195944ffcfe06a480b6320e7f5c957e"
+  },
+  "memorization": {
+    "probe_similarity": 0.2198,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 23.0769,
+        "ms_feedback": 26.3158,
+        "ms_all": 24.7706,
+        "ms_covered": 64.2857
+      },
+      "coverage": {
+        "line_cov": 55.68,
+        "branch_cov": 81.81
+      },
+      "mutants_eval": {
+        "killed": 12,
+        "survived": 7,
+        "no_coverage": 33,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 15,
+        "survived": 8,
+        "no_coverage": 34,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 7,
+        "n_asserts": 14,
+        "sha256": "44fad9c81eb016c79c8a70ecbaa65724d278a4a34ddc270efac02f69958404a3"
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 1,
+        "repair_calls": 0,
+        "tokens_in": 2978,
+        "tokens_out": 652,
+        "usd_ref": 0.000559,
+        "wall_s": 32.33,
+        "stryker_s": 24.57
+      }
+    },
+    {
+      "k": 1,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/services/produtos-service.js:10:98-10:102:BooleanLiteral:false",
+        "src/services/produtos-service.js:11:1-11:33:CallExpression:;",
+        "src/services/produtos-service.js:40:65-44:2:BlockStatement:{}",
+        "src/services/produtos-service.js:47:73-65:2:BlockStatement:{}",
+        "src/services/produtos-service.js:51:58-51:68:ArrayDeclaration:[]",
+        "src/services/produtos-service.js:57:9-57:21:ConditionalExpression:false",
+        "src/services/produtos-service.js:72:53-72:68:ArrowFunction:() => undefined",
+        "src/services/produtos-service.js:72:58-72:68:ArrayDeclaration:[]",
+        "src/services/produtos-service.js:78:9-78:21:ConditionalExpression:true",
+        "src/services/produtos-service.js:81:45-81:81:ArithmeticOperator:produtoAtual.quantidade - quantidade",
+        "src/services/produtos-service.js:100:7-100:20:BooleanLiteral:existePedido",
+        "src/services/produtos-service.js:100:7-100:20:ConditionalExpression:false",
+        "src/services/produtos-service.js:105:7-105:37:EqualityOperator:quantidade >= quantidadeEstoque",
+        "src/services/produtos-service.js:106:84-106:128:ObjectLiteral:{}",
+        "src/services/produtos-service.js:115:53-115:68:ArrowFunction:() => undefined",
+        "src/services/produtos-service.js:118:45-118:48:UpdateOperator:i--",
+        "src/services/produtos-service.js:125:85-125:110:ObjectLiteral:{}",
+        "src/services/produtos-service.js:128:9-128:49:EqualityOperator:quantidade <= produtoEmEstoque.quantidade",
+        "src/services/produtos-service.js:146:74-150:2:BlockStatement:{}",
+        "src/services/produtos-service.js:162:21-162:48:ArithmeticOperator:Number(body.quantidade) - 0"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k1_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 2,
+        "tokens_in": 18601,
+        "tokens_out": 5392,
+        "usd_ref": 0.004017,
+        "wall_s": 55.13,
+        "stryker_s": 24.57
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 38.4615,
+        "ms_feedback": 45.614,
+        "ms_all": 42.2018,
+        "ms_covered": 83.6364
+      },
+      "coverage": {
+        "line_cov": 63.47,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 20,
+        "survived": 5,
+        "no_coverage": 27,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 26,
+        "survived": 4,
+        "no_coverage": 27,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/services/produtos-service.js:10:98-10:102:BooleanLiteral:false",
+        "src/services/produtos-service.js:11:1-11:33:CallExpression:;",
+        "src/services/produtos-service.js:40:65-44:2:BlockStatement:{}",
+        "src/services/produtos-service.js:42:26-42:58:ArithmeticOperator:quantidadeEmEstoque + quantidade",
+        "src/services/produtos-service.js:51:58-51:68:ArrayDeclaration:[]",
+        "src/services/produtos-service.js:72:53-72:68:ArrowFunction:() => undefined",
+        "src/services/produtos-service.js:72:58-72:68:ArrayDeclaration:[]",
+        "src/services/produtos-service.js:81:45-81:81:ArithmeticOperator:produtoAtual.quantidade - quantidade",
+        "src/services/produtos-service.js:82:49-82:85:ObjectLiteral:{}",
+        "src/services/produtos-service.js:100:22-102:4:BlockStatement:{}",
+        "src/services/produtos-service.js:100:7-100:20:BooleanLiteral:existePedido",
+        "src/services/produtos-service.js:100:7-100:20:ConditionalExpression:false",
+        "src/services/produtos-service.js:105:7-105:37:EqualityOperator:quantidade >= quantidadeEstoque",
+        "src/services/produtos-service.js:113:40-113:56:ArrowFunction:() => undefined",
+        "src/services/produtos-service.js:118:45-118:48:UpdateOperator:i--",
+        "src/services/produtos-service.js:124:9-124:26:ConditionalExpression:true",
+        "src/services/produtos-service.js:125:85-125:110:ObjectLiteral:{}",
+        "src/services/produtos-service.js:128:9-128:49:EqualityOperator:quantidade <= produtoEmEstoque.quantidade",
+        "src/services/produtos-service.js:134:67-137:4:ObjectLiteral:{}",
+        "src/services/produtos-service.js:162:21-162:48:ArithmeticOperator:Number(body.quantidade) - 0"
+      ],
+      "tests": {
+        "n_tests": 10,
+        "n_asserts": 23,
+        "sha256": "2f17ee68e4d6a0d09fc3d784c63e1b6f5cb1fc2af13a7dd0fa79b83ae56c33cc"
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 5,
+        "repair_calls": 2,
+        "tokens_in": 23666,
+        "tokens_out": 6514,
+        "usd_ref": 0.004972,
+        "wall_s": 94.21,
+        "stryker_s": 51.47
+      }
+    },
+    {
+      "k": 3,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/services/produtos-service.js:10:98-10:102:BooleanLiteral:false",
+        "src/services/produtos-service.js:11:1-11:33:CallExpression:;",
+        "src/services/produtos-service.js:40:65-44:2:BlockStatement:{}",
+        "src/services/produtos-service.js:42:26-42:58:ArithmeticOperator:quantidadeEmEstoque + quantidade",
+        "src/services/produtos-service.js:51:58-51:68:ArrayDeclaration:[]",
+        "src/services/produtos-service.js:57:9-57:21:ConditionalExpression:false",
+        "src/services/produtos-service.js:59:49-59:79:ObjectLiteral:{}",
+        "src/services/produtos-service.js:70:53-70:69:ArrowFunction:() => undefined",
+        "src/services/produtos-service.js:72:53-72:68:ArrowFunction:() => undefined",
+        "src/services/produtos-service.js:72:58-72:68:ArrayDeclaration:[]",
+        "src/services/produtos-service.js:78:23-83:6:BlockStatement:{}",
+        "src/services/produtos-service.js:78:9-78:21:ConditionalExpression:false",
+        "src/services/produtos-service.js:78:9-78:21:ConditionalExpression:true",
+        "src/services/produtos-service.js:81:45-81:81:ArithmeticOperator:produtoAtual.quantidade - quantidade",
+        "src/services/produtos-service.js:100:7-100:20:BooleanLiteral:existePedido",
+        "src/services/produtos-service.js:105:7-105:37:EqualityOperator:quantidade >= quantidadeEstoque",
+        "src/services/produtos-service.js:106:21-106:130:ObjectLiteral:{}",
+        "src/services/produtos-service.js:106:84-106:128:ObjectLiteral:{}",
+        "src/services/produtos-service.js:146:74-150:2:BlockStatement:{}",
+        "src/services/produtos-service.js:162:21-162:48:ArithmeticOperator:Number(body.quantidade) - 0"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k3_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 4,
+        "tokens_in": 42231,
+        "tokens_out": 12964,
+        "usd_ref": 0.009409,
+        "wall_s": 117.7,
+        "stryker_s": 51.47
+      }
+    },
+    {
+      "k": 4,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/services/produtos-service.js:10:98-10:102:BooleanLiteral:false",
+        "src/services/produtos-service.js:11:1-11:33:CallExpression:;",
+        "src/services/produtos-service.js:40:65-44:2:BlockStatement:{}",
+        "src/services/produtos-service.js:42:26-42:58:ArithmeticOperator:quantidadeEmEstoque + quantidade",
+        "src/services/produtos-service.js:47:73-65:2:BlockStatement:{}",
+        "src/services/produtos-service.js:51:58-51:68:ArrayDeclaration:[]",
+        "src/services/produtos-service.js:57:9-57:21:ConditionalExpression:false",
+        "src/services/produtos-service.js:70:53-70:69:ArrowFunction:() => undefined",
+        "src/services/produtos-service.js:72:53-72:68:ArrowFunction:() => undefined",
+        "src/services/produtos-service.js:72:58-72:68:ArrayDeclaration:[]",
+        "src/services/produtos-service.js:78:9-78:21:ConditionalExpression:true",
+        "src/services/produtos-service.js:81:45-81:81:ArithmeticOperator:produtoAtual.quantidade - quantidade",
+        "src/services/produtos-service.js:82:41-82:87:ObjectLiteral:{}",
+        "src/services/produtos-service.js:100:7-100:20:BooleanLiteral:existePedido",
+        "src/services/produtos-service.js:100:7-100:20:ConditionalExpression:false",
+        "src/services/produtos-service.js:105:39-107:4:BlockStatement:{}",
+        "src/services/produtos-service.js:105:7-105:37:EqualityOperator:quantidade >= quantidadeEstoque",
+        "src/services/produtos-service.js:106:84-106:128:ObjectLiteral:{}",
+        "src/services/produtos-service.js:149:54-149:96:ObjectLiteral:{}",
+        "src/services/produtos-service.js:162:21-162:48:ArithmeticOperator:Number(body.quantidade) - 0"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k4_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 11,
+        "repair_calls": 6,
+        "tokens_in": 62029,
+        "tokens_out": 21448,
+        "usd_ref": 0.014782,
+        "wall_s": 145.6,
+        "stryker_s": 51.47
+      }
+    },
+    {
+      "k": 5,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/services/produtos-service.js:10:98-10:102:BooleanLiteral:false",
+        "src/services/produtos-service.js:11:1-11:33:CallExpression:;",
+        "src/services/produtos-service.js:40:65-44:2:BlockStatement:{}",
+        "src/services/produtos-service.js:41:76-41:94:ObjectLiteral:{}",
+        "src/services/produtos-service.js:42:26-42:58:ArithmeticOperator:quantidadeEmEstoque + quantidade",
+        "src/services/produtos-service.js:51:58-51:68:ArrayDeclaration:[]",
+        "src/services/produtos-service.js:57:9-57:21:ConditionalExpression:false",
+        "src/services/produtos-service.js:59:49-59:79:ObjectLiteral:{}",
+        "src/services/produtos-service.js:70:53-70:69:ArrowFunction:() => undefined",
+        "src/services/produtos-service.js:72:53-72:68:ArrowFunction:() => undefined",
+        "src/services/produtos-service.js:72:58-72:68:ArrayDeclaration:[]",
+        "src/services/produtos-service.js:78:9-78:21:ConditionalExpression:true",
+        "src/services/produtos-service.js:81:45-81:81:ArithmeticOperator:produtoAtual.quantidade - quantidade",
+        "src/services/produtos-service.js:100:22-102:4:BlockStatement:{}",
+        "src/services/produtos-service.js:100:7-100:20:BooleanLiteral:existePedido",
+        "src/services/produtos-service.js:100:7-100:20:ConditionalExpression:false",
+        "src/services/produtos-service.js:105:39-107:4:BlockStatement:{}",
+        "src/services/produtos-service.js:105:7-105:37:EqualityOperator:quantidade >= quantidadeEstoque",
+        "src/services/produtos-service.js:149:54-149:96:ObjectLiteral:{}",
+        "src/services/produtos-service.js:162:21-162:48:ArithmeticOperator:Number(body.quantidade) - 0"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C3__r3/raw/k5_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 14,
+        "repair_calls": 8,
+        "tokens_in": 81353,
+        "tokens_out": 29304,
+        "usd_ref": 0.019857,
+        "wall_s": 172.28,
+        "stryker_s": 51.47
+      }
+    }
+  ],
+  "selected_iteration": 2,
+  "final": {
+    "scores": {
+      "ms_eval": 38.4615,
+      "ms_feedback": 45.614,
+      "ms_all": 42.2018,
+      "ms_covered": 83.6364
+    },
+    "coverage": {
+      "line_cov": 63.47,
+      "branch_cov": 100
+    },
+    "cost": {
+      "calls": 14,
+      "repair_calls": 8,
+      "tokens_in": 81353,
+      "tokens_out": 29304,
+      "usd_ref": 0.019857,
+      "wall_s": 172.29,
+      "stryker_s": 51.47
+    },
+    "tests": {
+      "n_tests": 10,
+      "n_asserts": 23,
+      "sha256": "2f17ee68e4d6a0d09fc3d784c63e1b6f5cb1fc2af13a7dd0fa79b83ae56c33cc"
+    },
+    "gap_cov_ms": 21.2682,
+    "valid_rate": 0.3333,
+    "tokens_per_pp": 7192.71
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest__produtos-service__C3__r3/raw"
+  }
+}

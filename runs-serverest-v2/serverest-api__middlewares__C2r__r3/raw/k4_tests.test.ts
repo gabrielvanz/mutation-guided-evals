@@ -1,0 +1,112 @@
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API", () => {
+  describe("Authentication Middleware", () => {
+    it("should return 401 when token is missing on protected route", async () => {
+      const res = await request(app).post("/carrinhos").send({
+        produtos: []
+      });
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+      });
+    });
+
+    it("should return 401 when token has bad format", async () => {
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", "InvalidFormat 12345")
+        .send({ produtos: [] });
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+      });
+    });
+
+    it("should return 401 when token is invalid (expired or malformed signature)", async () => {
+      const res = await request(app)
+        .post("/carrinhos")
+        .set("authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature")
+        .send({ produtos: [] });
+
+      expect(res.status).toBe(401);
+      expect(res.body).toEqual({
+        message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+      });
+    });
+
+    it("should return 403 when non-admin user tries to access admin-only route", async () => {
+      const email = "user_comum_auth_test@qa.com";
+      const password = "teste";
+      
+      await request(app).post("/usuarios").send({
+        nome: "Comum User",
+        email,
+        password,
+        administrador: "false"
+      });
+
+      const loginRes = await request(app).post("/login").send({
+        email,
+        password
+      });
+
+      const token = loginRes.body.authorization;
+
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: "Produto Teste",
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({
+        message: "Rota exclusiva para administradores"
+      });
+    });
+  });
+
+  describe("Error Handler Middleware", () => {
+    it("should handle URIError with 400 status and custom message", async () => {
+      const res = await request(app).get("/usuarios/%E0%A4%A");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+      });
+    });
+
+    it("should handle entity parse failed (invalid JSON / missing quotation marks) with 400", async () => {
+      const res = await request(app)
+        .post("/usuarios")
+        .set("content-type", "application/json")
+        .send("nome: Teste sem aspas");
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+      });
+    });
+
+    it("should handle entity too large with 413", async () => {
+      const largeString = "a".repeat(100 * 1024 * 1024);
+      const res = await request(app)
+        .post("/usuarios")
+        .set("content-type", "application/json")
+        .send({ nome: largeString });
+
+      expect(res.status).toBe(413);
+      expect(res.body).toEqual({
+        message: "Payload too large"
+      });
+    });
+  });
+});

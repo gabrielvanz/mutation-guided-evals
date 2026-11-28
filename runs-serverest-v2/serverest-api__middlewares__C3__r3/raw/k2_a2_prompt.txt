@@ -1,0 +1,455 @@
+The Vitest test file below for `the middlewares API (files under test: src/middlewares/error-handler.js, src/middlewares/authentication-middleware.js)` (import path: `../../src/app`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Note about this project: This is an Express REST API (CommonJS JavaScript). The application object is exported by src/app.js (`module.exports = app`); import it with a default import. The routes are mounted on the paths listed in the context files. Use supertest (`import request from "supertest"`) and never start a real server. IMPORTANT (v2 instruction): do NOT use vi.mock or vi.doMock on project modules: Vitest cannot intercept the require() calls made by CommonJS code under test, so the real module would run and your spies would never be called. If you need to stub or observe a dependency, import it (a default import is its module.exports object) and use vi.spyOn(thatObject, 'method'); the module under test reaches it through the same object. The direct dependencies of the unit are provided below as read-only context: read them to learn the exact input and error shapes, and assert only behaviour you can derive from the source and that context, never guesses. Which routes require a token or an administrator is defined in the route files provided as context (checkToken / checkAdm): assert 401 or 403 only on routes whose route file applies them, and obtain real tokens through POST /login instead of assuming them. Do not assume that a URL produces an error unless the source shows it.
+
+Read-only context file `src/utils/rotas-da-api.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+// As rotas da API, numa lista só: o painel de etapas mede só elas, o orçamento de bytes do rate limiter conta só
+// elas e os buscadores não as indexam.
+module.exports = {
+  ROTAS_DA_API: ['/login', '/usuarios', '/produtos', '/carrinhos']
+}
+
+```
+
+Read-only context file `src/routes/usuarios-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const controller = require('../controllers/usuarios-controller')
+const model = require('../models/usuarios-model')
+const validateSchema = require('../services/validateSchema-service')
+const { filtrosDaLista } = require('../utils/filtrosDaQuery')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.get('/', plano('schema', 'read'), filtrosDaLista(model.schemaGet), etapa('read', controller.get))
+router.get('/:id', plano('schema', 'read'), validateSchema(model.schemaGetOne), etapa('read', controller.getOne))
+router.post('/', plano('schema', 'rules'), validateSchema(model.schemaPost), etapa('rules', controller.post))
+router.delete('/:id', plano('schema', 'rules'), validateSchema(model.schemaDelete), etapa('rules', controller.delete))
+router.put('/:id', plano('schema', 'rules'), validateSchema(model.schemaPut), etapa('rules', controller.put))
+
+module.exports = router
+
+```
+
+Read-only context file `src/routes/produtos-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const authentication = require('../middlewares/authentication-middleware')
+const controller = require('../controllers/produtos-controller')
+const model = require('../models/produtos-model')
+const validateSchema = require('../services/validateSchema-service')
+const { filtrosDaLista } = require('../utils/filtrosDaQuery')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.get('/', plano('schema', 'read'), filtrosDaLista(model.schemaGet), etapa('read', controller.get))
+router.get('/:id', plano('schema', 'read'), validateSchema(model.schemaGetOne), etapa('read', controller.getOne))
+router.post('/', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaPost), etapa('rules', controller.post))
+router.delete('/:id', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaDelete), etapa('rules', controller.delete))
+router.put('/:id', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaPut), etapa('rules', controller.put))
+
+module.exports = router
+
+```
+
+Read-only context file `src/routes/carrinhos-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const authentication = require('../middlewares/authentication-middleware')
+const controller = require('../controllers/carrinhos-controller')
+const model = require('../models/carrinhos-model')
+const validateSchema = require('../services/validateSchema-service')
+const { filtrosDaLista } = require('../utils/filtrosDaQuery')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.get('/', plano('schema', 'read'), filtrosDaLista(model.schemaGet), etapa('read', controller.get))
+router.get('/:id', plano('schema', 'read'), validateSchema(model.schemaGetOne), etapa('read', controller.getOne))
+router.post('/', plano('auth', 'schema', 'rules', 'write'), authentication.checkToken, validateSchema(model.schemaPost), etapa('rules', controller.post))
+router.delete('/concluir-compra', plano('auth', 'rules'), authentication.checkToken, etapa('rules', controller.concluirCompra))
+router.delete('/cancelar-compra', plano('auth', 'rules'), authentication.checkToken, etapa('rules', controller.cancelarCompra))
+
+module.exports = router
+
+```
+
+Read-only context file `src/routes/login-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const controller = require('../controllers/login-controller')
+const model = require('../models/login-model')
+const validateSchema = require('../services/validateSchema-service')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.post('/', plano('schema', 'rules'), validateSchema(model.schemaPost), etapa('rules', controller.post))
+
+module.exports = router
+
+```
+
+Source of `the middlewares API (files under test: src/middlewares/error-handler.js, src/middlewares/authentication-middleware.js)`:
+```js
+// ===== file: src/middlewares/error-handler.js =====
+const { INTERNAL_ERROR, TIMEOUT } = require('../utils/constants')
+const montarMensagemDeErroDeSchema = require('../utils/montarMensagemDeErroDeSchema')
+const { log } = require('../utils/logger')
+const { version } = require('../../package.json')
+const { IpDeniedError } = require('express-ipfilter')
+
+// O body-parser marca com expose e um status 4xx o erro que é culpa de quem enviou (header Content-Encoding sem
+// suporte, corpo comprimido que não descomprime, parâmetros demais). Sem esta regra, cada tipo novo caía no 500
+// que pede para abrir issue, e o aluno procurava um bug no servidor em vez de corrigir o envio.
+function ehErroDoCliente (error) {
+  return error.expose === true && error.statusCode >= 400 && error.statusCode < 500
+}
+
+// Os headers já saíram, então não há como responder de novo. Chega aqui o erro de um passo que termina depois do 408
+// do timeout, que é esperado, e o de uma resposta que falha no meio ou que é enviada duas vezes, que é bug. Como o
+// Express fazia, a conexão da resposta incompleta é fechada, para o cliente não ficar esperando o resto; a da
+// resposta que já terminou, como o 408, continua aberta.
+function registrarErroDepoisDaResposta (error, req, res) {
+  log({
+    level: req.timedout ? 'warn' : 'error',
+    message: `Erro depois da resposta enviada: ${req.method} ${req.originalUrl}, timedout: ${Boolean(req.timedout)}, ` +
+      `${error.code || error.name}: ${error.message}, Stack: ${error.stack}`
+  })
+  if (!res.writableEnded) req.socket.destroy()
+}
+
+function errorHandler (error, req, res, _next) {
+  if (res.headersSent) return registrarErroDepoisDaResposta(error, req, res)
+  const erroDeSchema = error.name === 'ValidationError'
+  if (erroDeSchema) {
+    return res.status(400).json(montarMensagemDeErroDeSchema(error))
+  }
+  if (error.name === 'URIError') {
+    log({ message: `URI decode error: ${error.message}` })
+    return res.status(400).json({
+      message: 'Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente.'
+    })
+  }
+  // https://github.com/expressjs/body-parser#errors
+  if (error.type === 'entity.parse.failed') {
+    log({ message: 'Entity parse error, user sending request without proper quotation marks.' })
+    return res.status(400).json({
+      message: 'Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225'
+    })
+  }
+  if (error.type === 'entity.too.large' || error.type === 'parameters.too.many') {
+    log({ message: `Payload too large: ${error.type}` })
+    return res.status(413).json({ message: 'Payload too large' })
+  }
+  if (error.type === 'charset.unsupported') {
+    return res.status(415).json({ message: 'Unsupported charset', charset: error.charset })
+  }
+  if (error.type === 'encoding.unsupported') {
+    log({ message: `Unsupported content encoding: ${error.encoding}` })
+    return res.status(415).json({ message: 'Unsupported content encoding', encoding: error.encoding })
+  }
+  // O zlib não dá tipo ao erro: o corpo dito comprimido pelo Content-Encoding não descomprime (Z_DATA_ERROR) ou
+  // chegou cortado (Z_BUF_ERROR).
+  if (ehErroDoCliente(error) && /^Z_/.test(error.code)) {
+    log({ message: `Invalid compressed body: ${error.message}` })
+    return res.status(400).json({
+      message: 'Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header.'
+    })
+  }
+  if (error.code === 'ETIMEDOUT') {
+    return res.status(408).json({ message: TIMEOUT })
+  }
+  /* istanbul ignore if */
+  if (error instanceof IpDeniedError) {
+    return res.status(429).json({ message: 'IP bloqueado por excesso de requisições. Alternativas: Envie mensagem para o autor do projeto para desbloqueio (https://linkedin.com/in/paulo-goncalves) ou faça doação financeira ao projeto (https://github.com/ServeRest/ServeRest?tab=readme-ov-file#doadores).' })
+  }
+  if (ehErroDoCliente(error)) {
+    log({ message: `Client error ${error.statusCode}: ${error.type || error.message}` })
+    return res.status(error.statusCode).json({
+      message: 'Não foi possível ler a requisição. Confira o corpo e os headers enviados.',
+      error: error.type
+    })
+  }
+  log({
+    level: 'error',
+    message: `Error: ${error?.type || JSON.stringify(error)}, Stack: ${error.stack || 'No stack available'}, Request body: ${JSON.stringify(req.body)}`
+  })
+
+  if (error?.type) {
+    return res.status(500).json({ message: INTERNAL_ERROR, error: error.type, version })
+  }
+  /* istanbul ignore next */
+  return res.status(500).json({ message: INTERNAL_ERROR, version, error: { message: error.message || 'No message available', stack: error.stack || 'No stack available' } })
+}
+
+module.exports = errorHandler
+
+// ===== file: src/middlewares/authentication-middleware.js =====
+'use strict'
+
+const { TokenExpiredError } = require('jsonwebtoken')
+
+const authService = require('../services/auth-service')
+const constant = require('../utils/constants')
+const usuariosService = require('../services/usuarios-service')
+const { etapa } = require('../utils/etapas')
+
+exports.checkAdm = etapa('auth', async (req, res, next) => {
+  const motivo = await motivoDoTokenInvalido(req.headers)
+  if (motivo) {
+    res.locals.etapas.detalhar({ reason: motivo })
+    return res.status(401).send({ message: constant.INVALID_TOKEN })
+  }
+  const tokenDecodificado = authService.verifyToken(req.headers.authorization)
+  if (!await usuariosService.usuarioEhAdministrador(tokenDecodificado)) {
+    res.locals.etapas.detalhar({ reason: 'not_admin' })
+    return res.status(403).send({ message: constant.REQUIRED_ADMIN })
+  }
+  next()
+})
+
+exports.checkToken = etapa('auth', async (req, res, next) => {
+  const motivo = await motivoDoTokenInvalido(req.headers)
+  if (motivo) {
+    res.locals.etapas.detalhar({ reason: motivo })
+    return res.status(401).send({ message: constant.INVALID_TOKEN })
+  }
+  next()
+})
+
+async function motivoDoTokenInvalido ({ authorization }) {
+  if (authorization === undefined) return 'token_missing'
+
+  const [tipo, token] = authorization.split(' ')
+  if (tipo !== 'Bearer' || !token) return 'bad_format'
+
+  const tokenDecodificado = authService.verifyToken(authorization)
+  if (tokenDecodificado instanceof TokenExpiredError) return 'token_expired'
+  if (tokenDecodificado.email === undefined) return 'token_invalid'
+
+  const usuario = await usuariosService.existeUsuario({ email: tokenDecodificado.email, password: tokenDecodificado.password })
+  if (!usuario) return 'user_not_found'
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API tests", () => {
+  it("should return 401 when token is missing on a protected route", async () => {
+    const response = await request(app).post("/carrinhos").send({
+      produtos: []
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when token format is bad (missing Bearer prefix or token part)", async () => {
+    const response = await request(app)
+      .post("/carrinhos")
+      .set("authorization", "InvalidFormat")
+      .send({
+        produtos: []
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when token prefix is not Bearer", async () => {
+    const response = await request(app)
+      .post("/carrinhos")
+      .set("authorization", "Basic token123")
+      .send({
+        produtos: []
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 401 when token is invalid or user does not exist", async () => {
+    const response = await request(app)
+      .post("/carrinhos")
+      .set("authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im5vbmVzdGlhbkBlbWFpbC5jb20iLCJwYXNzd29yZCI6InNlbmluaGEiLCJpYXQiOjE2MDAwMDAwMDB9.invalid")
+      .send({
+        produtos: []
+      });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais"
+    });
+  });
+
+  it("should return 403 when user is not an administrator on an admin-only route", async () => {
+    const uniqueEmail = `comum_user_test@email.com`;
+    const userPayload = {
+      nome: "Comum User",
+      email: uniqueEmail,
+      password: "teste",
+      administrador: "false"
+    };
+
+    await request(app).post("/usuarios").send(userPayload);
+    const loginResponse = await request(app).post("/login").send({
+      email: uniqueEmail,
+      password: "teste"
+    });
+
+    const token = loginResponse.body.authorization;
+
+    const response = await request(app)
+      .post("/produtos")
+      .set("authorization", token)
+      .send({
+        nome: "Produto Teste",
+        preco: 100,
+        descricao: "Desc",
+        quantidade: 10
+      });
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({
+      message: "Rota exclusiva para administradores"
+    });
+  });
+
+  it("should return 400 with schema validation error message when posting invalid user schema", async () => {
+    const response = await request(app).post("/usuarios").send({
+      nome: "",
+      email: "email-invalido",
+      password: "",
+      administrador: "true"
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("email");
+  });
+
+  it("should handle malformed JSON / entity parse failed error in error-handler middleware", async () => {
+    const response = await request(app)
+      .post("/usuarios")
+      .set("content-type", "application/json")
+      .send('{"nome": unquoted}');
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it("should handle URIError for invalid URL parameter encoding", async () => {
+    const response = await request(app).get("/usuarios/%E0%A1%A2%invalid");
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should handle client errors with status 4xx correctly via ehErroDoCliente and general client error branch", async () => {
+    const response = await request(app)
+      .get("/usuarios")
+      .set("Content-Encoding", "unsupported-encoding-type");
+
+    expect(response.status).toBe(415);
+    expect(response.body).toEqual({
+      encoding: "unsupported-encoding-type",
+      message: "Unsupported content encoding"
+    });
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v3.2.7 /home/administrador/work/w1
+
+stdout | test/__generated__/middlewares.gen.test.ts > Middlewares API tests > should handle malformed JSON / entity parse failed error in error-handler middleware
+{
+  time: '2026-11-28T11:36:14.773Z',
+  level: 'alert',
+  message: 'Entity parse error, user sending request without proper quotation marks.'
+}
+
+stdout | test/__generated__/middlewares.gen.test.ts > Middlewares API tests > should handle URIError for invalid URL parameter encoding
+{
+  time: '2026-11-28T11:36:14.780Z',
+  level: 'alert',
+  message: "URI decode error: Failed to decode param '%E0%A1%A2%invalid'"
+}
+
+ ❯ test/__generated__/middlewares.gen.test.ts (9 tests | 1 failed) 89ms
+   ✓ Middlewares API tests > should return 401 when token is missing on a protected route 34ms
+   ✓ Middlewares API tests > should return 401 when token format is bad (missing Bearer prefix or token part) 5ms
+   ✓ Middlewares API tests > should return 401 when token prefix is not Bearer 3ms
+   ✓ Middlewares API tests > should return 401 when token is invalid or user does not exist 5ms
+   ✓ Middlewares API tests > should return 403 when user is not an administrator on an admin-only route 13ms
+   ✓ Middlewares API tests > should return 400 with schema validation error message when posting invalid user schema 4ms
+   ✓ Middlewares API tests > should handle malformed JSON / entity parse failed error in error-handler middleware 10ms
+   ✓ Middlewares API tests > should handle URIError for invalid URL parameter encoding 4ms
+   × Middlewares API tests > should handle client errors with status 4xx correctly via ehErroDoCliente and general client error branch 10ms
+     → expected 200 to be 415 // Object.is equality
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 8 passed (9)
+   Start at  08:36:13
+   Duration  1.17s (transform 61ms, setup 0ms, collect 731ms, tests 89ms, environment 0ms, prepare 122ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/middlewares.gen.test.ts > Middlewares API tests > should handle client errors with status 4xx correctly via ehErroDoCliente and general client error branch
+AssertionError: expected 200 to be 415 // Object.is equality
+
+- Expected
++ Received
+
+- 415
++ 200
+
+ ❯ test/__generated__/middlewares.gen.test.ts:130:29
+    128|       .set("Content-Encoding", "unsupported-encoding-type");
+    129| 
+    130|     expect(response.status).toBe(415);
+       |                             ^
+    131|     expect(response.body).toEqual({
+    132|       encoding: "unsupported-encoding-type",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

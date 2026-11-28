@@ -1,0 +1,503 @@
+The Vitest test file below for `src/services/carrinhos-service.js` (import path: `../../src/services/carrinhos-service`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Note about this project: The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports.
+
+Source of `src/services/carrinhos-service.js`:
+```js
+'use strict'
+
+const Datastore = require('nedb-promises')
+const { join } = require('path')
+
+const alterarValoresParaRegex = require('../utils/alterarValoresParaRegex')
+const { continuarDaMaiorMarca, doMaisNovoAoMaisAntigo, marcarAlteracao, semMarca } = require('../utils/ordemDeAlteracao')
+const authService = require('../services/auth-service')
+const usuariosService = require('../services/usuarios-service')
+const produtosService = require('../services/produtos-service')
+
+const datastore = Datastore.create({ filename: join(__dirname, '../data/carrinhos.db'), autoload: true })
+continuarDaMaiorMarca(datastore)
+
+// Index frequently searched fields for better query performance
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'idUsuario' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'precoTotal' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'quantidadeTotal' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'produtos.idProduto' })
+
+exports.getAll = async queryString => {
+  queryString = alterarValoresParaRegex(queryString)
+  return doMaisNovoAoMaisAntigo(await datastore.find(queryString))
+}
+
+exports.getOne = async id => {
+  return semMarca(await datastore.findOne({ _id: id }))
+}
+
+exports.existeCarrinho = pesquisa => {
+  return datastore.findOne(pesquisa)
+}
+
+exports.existeCarrinhoComProduto = idProduto => {
+  return datastore.findOne({ produtos: { $elemMatch: { idProduto } } })
+}
+
+exports.criarCarrinho = async body => {
+  return datastore.insert({ ...body, alteradoEm: marcarAlteracao() })
+}
+
+exports.extrairProdutosDuplicados = arrayProdutos => {
+  const vistos = new Set()
+  const duplicados = new Set()
+  for (const { idProduto } of arrayProdutos) {
+    if (vistos.has(idProduto)) duplicados.add(idProduto)
+    vistos.add(idProduto)
+  }
+  return [...duplicados]
+}
+
+exports.getProdutosComPrecoUnitarioOuErro = async arrayProdutos => {
+  // Use batch lookup instead of per-item queries to reduce round-trips
+  const { produtosComPreco, error } = await produtosService.getPrecosUnitariosPorLote(arrayProdutos)
+
+  if (error) {
+    const item = { ...error.item, index: error.index }
+    return { error: { ...error, item } }
+  }
+
+  return { produtosComPrecoUnitario: produtosComPreco }
+}
+
+exports.deleteById = async id => {
+  return datastore.remove({ _id: id }, {})
+}
+
+exports.concluiCompra = async carrinho => {
+  await this.deleteById(carrinho._id)
+}
+
+exports.removeCarrinho = async carrinho => {
+  const { produtos, _id } = carrinho
+  await this.reabasteceEstoque(produtos)
+  await this.deleteById(_id)
+}
+
+exports.getCarrinhoDoUsuario = async (authorization) => {
+  const _id = await idUsuario(authorization)
+  return this.getAll({ idUsuario: _id })
+}
+
+exports.usuarioJaPossuiCarrinho = async (authorization) => {
+  const _id = await idUsuario(authorization)
+  return {
+    idUsuario: _id,
+    possuiCarrinho: await this.existeCarrinho({ idUsuario: _id })
+  }
+}
+
+exports.precoTotal = produtos => produtos.reduce((total, produto) => total + produto.precoUnitario * produto.quantidade, 0)
+
+exports.quantidadeTotal = produtos => produtos.reduce((total, produto) => total + produto.quantidade, 0)
+
+// Acima de Number.MAX_SAFE_INTEGER o total seria gravado já arredondado, e o GET /carrinhos passaria a devolver
+// um número que nenhum contrato com Joi.number() aceita, reprovando a lista inteira e não só esse carrinho.
+exports.totaisSaoSeguros = (precoTotal, quantidadeTotal) =>
+  Number.isSafeInteger(precoTotal) && Number.isSafeInteger(quantidadeTotal)
+
+exports.baixarEstoque = async produtos => {
+  // Use batch update to reduce round-trips instead of updating per-item
+  await produtosService.updateQuantidadePorLote(produtos)
+}
+
+exports.reabasteceEstoque = async produtos => {
+  // Use batch restore to reduce round-trips instead of restoring per-item
+  await produtosService.restoreQuantidadePorLote(produtos)
+}
+
+const idUsuario = async (authorization) => {
+  const { email, password } = authService.verifyToken(authorization)
+  const { _id } = await usuariosService.getDadosDoUsuario({ email, password })
+  return _id
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import carrinhosService from "../../src/services/carrinhos-service";
+import produtosService from "../../src/services/produtos-service";
+import authService from "../../src/services/auth-service";
+import usuariosService from "../../src/services/usuarios-service";
+
+vi.mock("../../src/services/produtos-service", () => ({
+  default: {
+    getPrecosUnitariosPorLote: vi.fn(),
+    updateQuantidadePorLote: vi.fn(),
+    restoreQuantidadePorLote: vi.fn()
+  }
+}));
+
+vi.mock("../../src/services/auth-service", () => ({
+  default: {
+    verifyToken: vi.fn()
+  }
+}));
+
+vi.mock("../../src/services/usuarios-service", () => ({
+  default: {
+    getDadosDoUsuario: vi.fn()
+  }
+}));
+
+describe("extrairProdutosDuplicados", () => {
+  it("should return an empty array when there are no duplicate products", () => {
+    const produtos = [
+      { idProduto: "1", quantidade: 2 },
+      { idProduto: "2", quantidade: 1 }
+    ];
+    const result = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(result).toEqual([]);
+  });
+
+  it("should extract duplicate product IDs when products appear multiple times", () => {
+    const produtos = [
+      { idProduto: "1", quantidade: 2 },
+      { idProduto: "2", quantidade: 1 },
+      { idProduto: "1", quantidade: 3 }
+    ];
+    const result = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(result).toEqual(["1"]);
+  });
+});
+
+describe("precoTotal", () => {
+  it("should calculate total price correctly for a list of products", () => {
+    const produtos = [
+      { precoUnitario: 10, quantidade: 2 },
+      { precoUnitario: 5, quantidade: 4 }
+    ];
+    const result = carrinhosService.precoTotal(produtos);
+    expect(result).toBe(40);
+  });
+
+  it("should return zero when product list is empty", () => {
+    const result = carrinhosService.precoTotal([]);
+    expect(result).toBe(0);
+  });
+});
+
+describe("quantidadeTotal", () => {
+  it("should calculate total quantity correctly for a list of products", () => {
+    const produtos = [
+      { quantidade: 2 },
+      { quantidade: 5 }
+    ];
+    const result = carrinhosService.quantidadeTotal(produtos);
+    expect(result).toBe(7);
+  });
+
+  it("should return zero when product list is empty", () => {
+    const result = carrinhosService.quantidadeTotal([]);
+    expect(result).toBe(0);
+  });
+});
+
+describe("totaisSaoSeguros", () => {
+  it("should return true when both totals are safe integers", () => {
+    const result = carrinhosService.totaisSaoSeguros(100, 50);
+    expect(result).toBe(true);
+  });
+
+  it("should return false when price total is not a safe integer", () => {
+    const result = carrinhosService.totaisSaoSeguros(Number.MAX_SAFE_INTEGER + 1, 10);
+    expect(result).toBe(false);
+  });
+
+  it("should return false when quantity total is not a safe integer", () => {
+    const result = carrinhosService.totaisSaoSeguros(100, Number.MAX_SAFE_INTEGER + 1);
+    expect(result).toBe(false);
+  });
+});
+
+describe("getProdutosComPrecoUnitarioOuErro", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should return produtosComPrecoUnitario when batch lookup succeeds", async () => {
+    const produtos = [{ idProduto: "prod-1", quantidade: 2 }];
+    const produtosComPreco = [{ idProduto: "prod-1", precoUnitario: 15, quantidade: 2 }];
+    vi.mocked(produtosService.getPrecosUnitariosPorLote).mockResolvedValueOnce({ produtosComPreco } as never);
+
+    const result = await carrinhosService.getProdutosComPrecoUnitarioOuErro(produtos);
+    expect(result).toEqual({ produtosComPrecoUnitario: produtosComPreco });
+  });
+
+  it("should return formatted error when batch lookup fails", async () => {
+    const produtos = [{ idProduto: "prod-1", quantidade: 2 }];
+    const errorObj = { message: "Produto não encontrado", item: { idProduto: "prod-1" }, index: 0, statusCode: 400 };
+    vi.mocked(produtosService.getPrecosUnitariosPorLote).mockResolvedValueOnce({ error: errorObj } as never);
+
+    const result = await carrinhosService.getProdutosComPrecoUnitarioOuErro(produtos);
+    expect(result).toEqual({
+      error: {
+        message: "Produto não encontrado",
+        item: { idProduto: "prod-1", index: 0 },
+        index: 0,
+        statusCode: 400
+      }
+    });
+  });
+});
+
+describe("existeCarrinhoComProduto", () => {
+  it("should query datastore with correct elemMatch query for product ID", async () => {
+    const result = await carrinhosService.existeCarrinhoComProduto("abc-123");
+    expect(result).toBeNull();
+  });
+});
+
+describe("removeCarrinho", () => {
+  it("should restore stock and delete carrinho by id", async () => {
+    const carrinho = { _id: "cart-1", produtos: [{ idProduto: "p1", quantidade: 2 }] };
+    const restoreSpy = vi.spyOn(produtosService, "restoreQuantidadePorLote").mockResolvedValueOnce(undefined as never);
+    const deleteSpy = vi.spyOn(carrinhosService, "deleteById").mockResolvedValueOnce(1 as never);
+
+    await carrinhosService.removeCarrinho(carrinho);
+
+    expect(restoreSpy).toHaveBeenCalledWith(carrinho.produtos);
+    expect(deleteSpy).toHaveBeenCalledWith("cart-1");
+  });
+});
+
+describe("getCarrinhoDoUsuario", () => {
+  it("should resolve token, get user id, and query getAll with correct user id", async () => {
+    vi.mocked(authService.verifyToken).mockReturnValueOnce({ email: "test@test.com", password: "123" } as never);
+    vi.mocked(usuariosService.getDadosDoUsuario).mockResolvedValueOnce({ _id: "user-99" } as never);
+    const getAllSpy = vi.spyOn(carrinhosService, "getAll").mockResolvedValueOnce([] as never);
+
+    const result = await carrinhosService.getCarrinhoDoUsuario("Bearer token123");
+
+    expect(authService.verifyToken).toHaveBeenCalledWith("Bearer token123");
+    expect(usuariosService.getDadosDoUsuario).toHaveBeenCalledWith({ email: "test@test.com", password: "123" });
+    expect(getAllSpy).toHaveBeenCalledWith({ idUsuario: "user-99" });
+    expect(result).toEqual([]);
+  });
+});
+
+describe("usuarioJaPossuiCarrinho", () => {
+  it("should verify token, get user id, and check cart existence with user id", async () => {
+    vi.mocked(authService.verifyToken).mockReturnValueOnce({ email: "test@test.com", password: "123" } as never);
+    vi.mocked(usuariosService.getDadosDoUsuario).mockResolvedValueOnce({ _id: "user-99" } as never);
+    const existeCarrinhoSpy = vi.spyOn(carrinhosService, "existeCarrinho").mockResolvedValueOnce(null as never);
+
+    const result = await carrinhosService.usuarioJaPossuiCarrinho("Bearer token123");
+
+    expect(authService.verifyToken).toHaveBeenCalledWith("Bearer token123");
+    expect(usuariosService.getDadosDoUsuario).toHaveBeenCalledWith({ email: "test@test.com", password: "123" });
+    expect(existeCarrinhoSpy).toHaveBeenCalledWith({ idUsuario: "user-99" });
+    expect(result).toEqual({
+      idUsuario: "user-99",
+      possuiCarrinho: null
+    });
+  });
+});
+
+describe("Database initialization and functions", () => {
+  it("should have functions exported correctly", () => {
+    expect(typeof carrinhosService.getAll).toBe("function");
+    expect(typeof carrinhosService.getOne).toBe("function");
+    expect(typeof carrinhosService.existeCarrinho).toBe("function");
+    expect(typeof carrinhosService.existeCarrinhoComProduto).toBe("function");
+    expect(typeof carrinhosService.criarCarrinho).toBe("function");
+    expect(typeof carrinhosService.getProdutosComPrecoUnitarioOuErro).toBe("function");
+    expect(typeof carrinhosService.deleteById).toBe("function");
+    expect(typeof carrinhosService.concluiCompra).toBe("function");
+    expect(typeof carrinhosService.removeCarrinho).toBe("function");
+    expect(typeof carrinhosService.getCarrinhoDoUsuario).toBe("function");
+    expect(typeof carrinhosService.usuarioJaPossuiCarrinho).toBe("function");
+    expect(typeof carrinhosService.baixarEstoque).toBe("function");
+    expect(typeof carrinhosService.reabasteceEstoque).toBe("function");
+  });
+});
+
+describe("Module logic and database operations", () => {
+  it("should return a truthy result for getAll", async () => {
+    const result = await carrinhosService.getAll({ idUsuario: "abc" });
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("should return null or object for getOne", async () => {
+    const result = await carrinhosService.getOne("123");
+    expect(result === null || typeof result === "object").toBe(true);
+  });
+
+  it("should return null or object for existeCarrinho", async () => {
+    const result = await carrinhosService.existeCarrinho({ idUsuario: "abc" });
+    expect(result === null || typeof result === "object").toBe(true);
+  });
+
+  it("should return null or object for existeCarrinhoComProduto", async () => {
+    const result = await carrinhosService.existeCarrinhoComProduto("prod1");
+    expect(result === null || typeof result === "object").toBe(true);
+  });
+
+  it("should return a promise for criarCarrinho", () => {
+    const result = carrinhosService.criarCarrinho({ produtos: [], idUsuario: "abc" });
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for deleteById", () => {
+    const result = carrinhosService.deleteById("123");
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for baixarEstoque", () => {
+    const result = carrinhosService.baixarEstoque([]);
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for reabasteceEstoque", () => {
+    const result = carrinhosService.reabasteceEstoque([]);
+    expect(result).toBeInstanceOf(Promise);
+  });
+
+  it("should return a promise for getProdutosComPrecoUnitarioOuErro", () => {
+    const result = carrinhosService.getProdutosComPrecoUnitarioOuErro([]);
+    expect(result).toBeInstanceOf(Promise);
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v3.2.7 /home/administrador/work/w2
+
+ ❯ test/__generated__/carrinhos-service.gen.test.ts (25 tests | 5 failed) 38ms
+   ✓ extrairProdutosDuplicados > should return an empty array when there are no duplicate products 2ms
+   ✓ extrairProdutosDuplicados > should extract duplicate product IDs when products appear multiple times 0ms
+   ✓ precoTotal > should calculate total price correctly for a list of products 0ms
+   ✓ precoTotal > should return zero when product list is empty 0ms
+   ✓ quantidadeTotal > should calculate total quantity correctly for a list of products 0ms
+   ✓ quantidadeTotal > should return zero when product list is empty 0ms
+   ✓ totaisSaoSeguros > should return true when both totals are safe integers 0ms
+   ✓ totaisSaoSeguros > should return false when price total is not a safe integer 0ms
+   ✓ totaisSaoSeguros > should return false when quantity total is not a safe integer 0ms
+   × getProdutosComPrecoUnitarioOuErro > should return produtosComPrecoUnitario when batch lookup succeeds 20ms
+     → expected { error: { statusCode: 400, …(3) } } to deeply equal { produtosComPrecoUnitario: [ …(1) ] }
+   × getProdutosComPrecoUnitarioOuErro > should return formatted error when batch lookup fails 2ms
+     → expected { error: { statusCode: 400, …(3) } } to deeply equal { error: { …(4) } }
+   ✓ existeCarrinhoComProduto > should query datastore with correct elemMatch query for product ID 1ms
+   × removeCarrinho > should restore stock and delete carrinho by id 2ms
+     → this.reabasteceEstoque is not a function
+   × getCarrinhoDoUsuario > should resolve token, get user id, and query getAll with correct user id 1ms
+     → Cannot destructure property '_id' of '(intermediate value)' as it is null.
+   × usuarioJaPossuiCarrinho > should verify token, get user id, and check cart existence with user id 1ms
+     → Cannot destructure property '_id' of '(intermediate value)' as it is null.
+   ✓ Database initialization and functions > should have functions exported correctly 0ms
+   ✓ Module logic and database operations > should return a truthy result for getAll 0ms
+   ✓ Module logic and database operations > should return null or object for getOne 0ms
+   ✓ Module logic and database operations > should return null or object for existeCarrinho 0ms
+   ✓ Module logic and database operations > should return null or object for existeCarrinhoComProduto 0ms
+   ✓ Module logic and database operations > should return a promise for criarCarrinho 1ms
+   ✓ Module logic and database operations > should return a promise for deleteById 0ms
+   ✓ Module logic and database operations > should return a promise for baixarEstoque 0ms
+   ✓ Module logic and database operations > should return a promise for reabasteceEstoque 0ms
+   ✓ Module logic and database operations > should return a promise for getProdutosComPrecoUnitarioOuErro 0ms
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 20 passed (25)
+   Start at  19:50:50
+   Duration  646ms (transform 86ms, setup 0ms, collect 187ms, tests 38ms, environment 0ms, prepare 77ms)
+
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/carrinhos-service.gen.test.ts > getProdutosComPrecoUnitarioOuErro > should return produtosComPrecoUnitario when batch lookup succeeds
+AssertionError: expected { error: { statusCode: 400, …(3) } } to deeply equal { produtosComPrecoUnitario: [ …(1) ] }
+
+- Expected
++ Received
+
+  {
+-   "produtosComPrecoUnitario": [
+-     {
++   "error": {
++     "index": 0,
++     "item": {
+        "idProduto": "prod-1",
+-       "precoUnitario": 15,
++       "index": 0,
+        "quantidade": 2,
+      },
+-  
+...[truncado 863 caracteres]...
+do",
+      "statusCode": 400,
+    },
+  }
+
+ ❯ test/__generated__/carrinhos-service.gen.test.ts:117:20
+    115| 
+    116|     const result = await carrinhosService.getProdutosComPrecoUnitarioO…
+    117|     expect(result).toEqual({
+       |                    ^
+    118|       error: {
+    119|         message: "Produto não encontrado",
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  test/__generated__/carrinhos-service.gen.test.ts > removeCarrinho > should restore stock and delete carrinho by id
+TypeError: this.reabasteceEstoque is not a function
+ ❯ Object.exports.removeCarrinho src/services/carrinhos-service.js:78:14
+     76| exports.removeCarrinho = async carrinho => {
+     77|   const { produtos, _id } = carrinho
+     78|   await this.reabasteceEstoque(produtos)
+       |              ^
+     79|   await this.deleteById(_id)
+     80| }
+ ❯ test/__generated__/carrinhos-service.gen.test.ts:141:28
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  test/__generated__/carrinhos-service.gen.test.ts > getCarrinhoDoUsuario > should resolve token, get user id, and query getAll with correct user id
+TypeError: Cannot destructure property '_id' of '(intermediate value)' as it is null.
+ ❯ idUsuario src/services/carrinhos-service.js:116:11
+    114| const idUsuario = async (authorization) => {
+    115|   const { email, password } = authService.verifyToken(authorization)
+    116|   const { _id } = await usuariosService.getDadosDoUsuario({ email, pas…
+       |           ^
+    117|   return _id
+    118| }
+ ❯ Object.exports.getCarrinhoDoUsuario src/services/carrinhos-service.js:83:15
+ ❯ test/__generated__/carrinhos-service.gen.test.ts:154:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  test/__generated__/carrinhos-service.gen.test.ts > usuarioJaPossuiCarrinho > should verify token, get user id, and check cart existence with user id
+TypeError: Cannot destructure property '_id' of '(intermediate value)' as it is null.
+ ❯ idUsuario src/services/carrinhos-service.js:116:11
+    114| const idUsuario = async (authorization) => {
+    115|   const { email, password } = authService.verifyToken(authorization)
+    116|   const { _id } = await usuariosService.getDadosDoUsuario({ email, pas…
+       |           ^
+    117|   return _id
+    118| }
+ ❯ Object.exports.usuarioJaPossuiCarrinho src/services/carrinhos-service.js:88:15
+ ❯ test/__generated__/carrinhos-service.gen.test.ts:169:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

@@ -1,0 +1,323 @@
+```ts
+import { describe, it, expect } from "vitest";
+import rateLimiterModule, {
+  criarLimitador,
+  criarOrcamentoDeBytes,
+  criarRateLimiter,
+  BYTES_POR_HORA
+} from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter exportações principais", () => {
+  it("deve exportar BYTES_POR_HORA com o valor correto", () => {
+    expect(BYTES_POR_HORA).toBe(250 * 1024 * 1024);
+  });
+
+  it("deve exportar criarLimitador, criarOrcamentoDeBytes e criarRateLimiter como funções", () => {
+    expect(typeof criarLimitador).toBe("function");
+    expect(typeof criarOrcamentoDeBytes).toBe("function");
+    expect(typeof criarRateLimiter).toBe("function");
+  });
+
+  it("deve exportar uma função middleware padrão", () => {
+    expect(typeof rateLimiterModule).toBe("function");
+  });
+
+  it("deve executar o bypass em ambiente de testes no middleware exportado", async () => {
+    const req = {};
+    let ignorarChamado = false;
+    let nextChamado = false;
+    const res = {
+      locals: {
+        etapas: {
+          ignorar: () => {
+            ignorarChamado = true;
+          }
+        }
+      }
+    };
+    const next = () => {
+      nextChamado = true;
+    };
+
+    await rateLimiterModule(req, res, next);
+    expect(ignorarChamado).toBe(true);
+    expect(nextChamado).toBe(true);
+  });
+});
+
+describe("criarOrcamentoDeBytes", () => {
+  it("deve retornar 0 ms para liberar quando não há consumo", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 1000, segundos: 10 });
+    const ms = await orcamento.msAteLiberar("127.0.0.1");
+    expect(ms).toBe(0);
+  });
+
+  it("deve registrar bytes e respeitar duracaoMs", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 5 });
+    expect(orcamento.duracaoMs).toBe(5000);
+
+    orcamento.registrar("127.0.0.1", 50);
+    const msAntes = await orcamento.msAteLiberar("127.0.0.1");
+    expect(msAntes).toBe(0);
+
+    orcamento.registrar("127.0.0.1", 60);
+    const msDepois = await orcamento.msAteLiberar("127.0.0.1");
+    expect(msDepois).toBeGreaterThan(0);
+  });
+
+  it("não deve registrar penalidade para tamanhos menores ou iguais a zero", async () => {
+    const orcamento = criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+    orcamento.registrar("127.0.0.1", 0);
+    orcamento.registrar("127.0.0.1", -50);
+    const ms = await orcamento.msAteLiberar("127.0.0.1");
+    expect(ms).toBe(0);
+  });
+});
+
+describe("criarLimitador", () => {
+  it("deve retornar null quando nenhum limite for atingido e registrar o evento close contabilizando Content-Length", async () => {
+    let eventoCloseRegistrado = false;
+    let bytesRegistradosNoOrcamento = 0;
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {}, duration: 30 },
+      orcamento: {
+        msAteLiberar: async () => 0,
+        registrar: (chave: string, tamanho: number) => {
+          bytesRegistradosNoOrcamento = tamanho;
+        },
+        duracaoMs: 3600000
+      }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {
+      getHeader: (name: string) => (name === "Content-Length" ? "123" : null),
+      on: (event: string, cb: () => void) => {
+        if (event === "close") {
+          eventoCloseRegistrado = true;
+          cb();
+        }
+      }
+    };
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toBeNull();
+    expect(eventoCloseRegistrado).toBe(true);
+    expect(bytesRegistradosNoOrcamento).toBe(123);
+  });
+
+  it("deve barrar quando o orçamento de bytes for excedido", async () => {
+    const limitador = criarLimitador({
+      orcamento: { msAteLiberar: async () => 1500, duracaoMs: 3600000 }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {};
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toEqual({ tipo: "orcamento-de-bytes", ms: 1500 });
+  });
+
+  it("deve retornar erro no orçamento se msAteLiberar lançar exceção", async () => {
+    const erroArmazenamento = new Error("Falha no redis");
+    const limitador = criarLimitador({
+      orcamento: {
+        msAteLiberar: async () => {
+          throw erroArmazenamento;
+        },
+        duracaoMs: 3600000
+      }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {};
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toEqual({
+      tipo: "orcamento-de-bytes",
+      ms: 3600000,
+      erro: erroArmazenamento
+    });
+  });
+
+  it("deve reconhecer rotas de API com diferentes capitalizações (case-insensitive)", async () => {
+    let orcamentoChamado = false;
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {}, duration: 30 },
+      orcamento: {
+        msAteLiberar: async () => {
+          orcamentoChamado = true;
+          return 0;
+        },
+        duracaoMs: 3600000
+      }
+    });
+
+    const req = { method: "GET", path: "/Usuarios/123", ip: "127.0.0.1" };
+    const res = { getHeader: () => null, on: () => {} };
+
+    await limitador(req, res);
+    expect(orcamentoChamado).toBe(true);
+  });
+
+  it("deve ignorar verificação de orçamento para requisições HEAD ou fora da API", async () => {
+    let orcamentoChamado = false;
+    const limitador = criarLimitador({
+      global: { consume: async () => {} },
+      porIp: { consume: async () => {}, duration: 30 },
+      orcamento: {
+        msAteLiberar: async () => {
+          orcamentoChamado = true;
+          return 1500;
+        },
+        duracaoMs: 3600000
+      }
+    });
+
+    const reqHead = { method: "HEAD", path: "/usuarios", ip: "127.0.0.1" };
+    const reqForaApi = { method: "GET", path: "/documentacao", ip: "127.0.0.1" };
+    const res = { getHeader: () => null, on: () => {} };
+
+    await limitador(reqHead, res);
+    expect(orcamentoChamado).toBe(false);
+
+    await limitador(reqForaApi, res);
+    expect(orcamentoChamado).toBe(false);
+  });
+
+  it("deve barrar pelo limite global ou por ip quando consumidos", async () => {
+    const { RateLimiterRes } = require("rate-limiter-flexible");
+    const resObj = new RateLimiterRes();
+    resObj.msBeforeNext = 5000;
+
+    const limitadorGlobal = criarLimitador({
+      global: {
+        consume: async () => {
+          throw resObj;
+        }
+      },
+      porIp: { consume: async () => {} },
+      orcamento: { msAteLiberar: async () => 0 }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {};
+
+    const resGlobal = await limitadorGlobal(req, res);
+    expect(resGlobal).toEqual({ tipo: "requisicoes-global", ms: 5000 });
+  });
+
+  it("deve retornar erro de armazenamento padrão quando consumo falhar com erro genérico", async () => {
+    const erroGenerico = new Error("Erro de conexão");
+    const limitador = criarLimitador({
+      global: {
+        consume: async () => {
+          throw erroGenerico;
+        },
+        duration: 40
+      },
+      porIp: { consume: async () => {} },
+      orcamento: { msAteLiberar: async () => 0 }
+    });
+
+    const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+    const res = {};
+
+    const resultado = await limitador(req, res);
+    expect(resultado).toEqual({
+      tipo: "requisicoes-global",
+      ms: 40000,
+      erro: erroGenerico
+    });
+  });
+
+  it("deve usar o limite padrão real de ip e global se criados sem parâmetros", async () => {
+    const limitadorReal = criarLimitador();
+    expect(typeof limitadorReal).toBe("function");
+  });
+});
+
+describe("criarRateLimiter", () => {
+  it("deve chamar next() se o limitador retornar null", async () => {
+    const limitador = async () => null;
+    const rateLimiter = criarRateLimiter({ limitador });
+
+    const req = {};
+    let nextChamado = false;
+    const next = () => {
+      nextChamado = true;
+    };
+
+    await rateLimiter(req, {}, next);
+    expect(nextChamado).toBe(true);
+  });
+
+  it("deve retornar status 429 e cabeçalho Retry-After quando houver bloqueio", async () => {
+    const limitador = async () => ({ tipo: "requisicoes-por-ip", ms: 12000 });
+    const rateLimiter = criarRateLimiter({ limitador, maximoDeMarcas: 2 });
+
+    const headers: Record<string, string> = {};
+    let statusEnviado = 0;
+    let corpoEnviado: any = null;
+
+    const req = { ip: "127.0.0.1" };
+    const res = {
+      set: (chave: string, valor: string) => {
+        headers[chave] = valor;
+      },
+      status: (st: number) => {
+        statusEnviado = st;
+        return {
+          send: (body: any) => {
+            corpoEnviado = body;
+            return body;
+          }
+        };
+      }
+    };
+
+    await rateLimiter(req, res, () => {});
+
+    expect(statusEnviado).toBe(429);
+    expect(headers["Retry-After"]).toBe("12");
+    expect(corpoEnviado).toEqual({ message: "Muitas requisições deste IP, tente novamente mais tarde." });
+
+    // Testando deduplicação e limpeza de marcas (máximo de marcas atingido e marca duplicada dentro da folga)
+    await rateLimiter({ ip: "127.0.0.1" }, res, () => {});
+    await rateLimiter({ ip: "127.0.0.2" }, res, () => {});
+    await rateLimiter({ ip: "127.0.0.3" }, res, () => {});
+  });
+
+  it("deve tratar bloqueio com erro de armazenamento retornando 429 e registrando log de erro", async () => {
+    const limitador = async () => ({
+      tipo: "requisicoes-global",
+      ms: 3000,
+      erro: new Error("Erro interno")
+    });
+    const rateLimiter = criarRateLimiter({ limitador });
+
+    const headers: Record<string, string> = {};
+    let statusEnviado = 0;
+
+    const req = { ip: "127.0.0.1" };
+    const res = {
+      set: (chave: string, valor: string) => {
+        headers[chave] = valor;
+      },
+      status: (st: number) => {
+        statusEnviado = st;
+        return {
+          send: (body: any) => body
+        };
+      }
+    };
+
+    await rateLimiter(req, res, () => {});
+
+    expect(statusEnviado).toBe(429);
+    expect(headers["Retry-After"]).toBe("3");
+  });
+});
+```

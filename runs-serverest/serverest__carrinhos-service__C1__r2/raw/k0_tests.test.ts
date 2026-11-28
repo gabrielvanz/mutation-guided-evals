@@ -1,0 +1,64 @@
+import { describe, it, expect } from "vitest";
+import carrinhosService from "../../src/services/carrinhos-service";
+
+describe("carrinhos-service", () => {
+  it("should extract duplicate products correctly", () => {
+    const produtos = [
+      { idProduto: "p1", quantidade: 2 },
+      { idProduto: "p2", quantidade: 1 },
+      { idProduto: "p1", quantidade: 3 },
+      { idProduto: "p3", quantidade: 1 },
+      { idProduto: "p2", quantidade: 4 },
+    ];
+
+    const duplicados = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(duplicados).toEqual(["p1", "p2"]);
+  });
+
+  it("should return empty array when there are no duplicate products", () => {
+    const produtos = [
+      { idProduto: "p1", quantidade: 2 },
+      { idProduto: "p2", quantidade: 1 },
+    ];
+
+    const duplicados = carrinhosService.extrairProdutosDuplicados(produtos);
+    expect(duplicados).toEqual([]);
+  });
+
+  it("should calculate total price correctly", () => {
+    const produtos = [
+      { precoUnitario: 10, quantidade: 2 },
+      { precoUnitario: 5, quantidade: 4 },
+    ];
+
+    const total = carrinhosService.precoTotal(produtos);
+    expect(total).toBe(40);
+  });
+
+  it("should return zero for empty product list price total", () => {
+    const total = carrinhosService.precoTotal([]);
+    expect(total).toBe(0);
+  });
+
+  it("should calculate total quantity correctly", () => {
+    const produtos = [
+      { precoUnitario: 10, quantidade: 2 },
+      { precoUnitario: 5, quantidade: 4 },
+    ];
+
+    const quantidade = carrinhosService.quantidadeTotal(produtos);
+    expect(quantidade).toBe(6);
+  });
+
+  it("should return zero for empty product list quantity total", () => {
+    const quantidade = carrinhosService.quantidadeTotal([]);
+    expect(quantidade).toBe(0);
+  });
+
+  it("should validate safe integer totals correctly", () => {
+    expect(carrinhosService.totaisSaoSeguros(100, 10)).toBe(true);
+    expect(carrinhosService.totaisSaoSeguros(Number.MAX_SAFE_INTEGER + 1, 10)).toBe(false);
+    expect(carrinhosService.totaisSaoSeguros(100, Number.MAX_SAFE_INTEGER + 1)).toBe(false);
+    expect(carrinhosService.totaisSaoSeguros(10.5, 10)).toBe(false);
+  });
+});

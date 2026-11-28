@@ -1,0 +1,121 @@
+```ts
+import { describe, it, expect, vi } from "vitest";
+import mod from "../../src/middlewares/rate-limiter";
+
+describe("rate-limiter", () => {
+  describe("criarOrcamentoDeBytes", () => {
+    it("should allow getting ms before release and registering bytes", async () => {
+      const orcamento = mod.criarOrcamentoDeBytes({ bytes: 100, segundos: 10 });
+      const ms = await orcamento.msAteLiberar("127.0.0.1");
+      expect(ms).toBe(0);
+      expect(orcamento.duracaoMs).toBe(10000);
+
+      orcamento.registrar("127.0.0.1", 50);
+      const msDepois = await orcamento.msAteLiberar("127.0.0.1");
+      expect(msDepois).toBe(0);
+    });
+
+    it("should ignore zero or negative sizes when registering", async () => {
+      const orcamento = mod.criarOrcamentoDeBytes({ bytes: 10, segundos: 1 });
+      orcamento.registrar("127.0.0.1", 0);
+      orcamento.registrar("127.0.0.1", -5);
+      const ms = await orcamento.msAteLiberar("127.0.0.1");
+      expect(ms).toBe(0);
+    });
+  });
+
+  describe("criarLimitador", () => {
+    it("should allow request when within limits", async () => {
+      const limitador = mod.criarLimitador();
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {
+        getHeader: () => "10",
+        on: (event: string, cb: () => void) => {
+          if (event === "close") {
+            // cb();
+          }
+        }
+      };
+
+      const resultado = await limitador(req, res);
+      expect(resultado).toBeNull();
+    });
+
+    it("should ignore HEAD requests for api routes byte budget", async () => {
+      const orcamentoMock = {
+        msAteLiberar: vi.fn().mockResolvedValue(5000),
+        duracaoMs: 3600000,
+        registrar: vi.fn()
+      };
+      const limitador = mod.criarLimitador({ orcamento: orcamentoMock });
+      const req = { method: "HEAD", path: "/usuarios", ip: "127.0.0.1" };
+      const res = { getHeader: () => "10", on: () => {} };
+
+      const resultado = await limitador(req, res);
+      expect(orcamentoMock.msAteLiberar).not.toHaveBeenCalled();
+      expect(resultado).not.toHaveProperty("tipo", "orcamento-de-bytes");
+    });
+  });
+
+  describe("criarRateLimiter", () => {
+    it("should call next when limitador returns null", async () => {
+      const limitadorMock = vi.fn().mockResolvedValue(null);
+      const rateLimiter = mod.criarRateLimiter({ limitador: limitadorMock });
+
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {
+        set: vi.fn(),
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+      const next = vi.fn();
+
+      await rateLimiter(req, res, next);
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it("should return 429 when limitador returns a block", async () => {
+      const limitadorMock = vi.fn().mockResolvedValue({
+        tipo: "requisicoes-por-ip",
+        ms: 5000
+      });
+      const rateLimiter = mod.criarRateLimiter({ limitador: limitadorMock });
+
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {
+        set: vi.fn(),
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+      const next = vi.fn();
+
+      await rateLimiter(req, res, next);
+      expect(res.set).toHaveBeenCalledWith("Retry-After", "5");
+      expect(res.status).toHaveBeenCalledWith(429);
+      expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.any(String) })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("middleware exportado principal", () => {
+    it("should bypass rate limiter in test environment and call next", async () => {
+      const req = { method: "GET", path: "/usuarios", ip: "127.0.0.1" };
+      const res = {
+        locals: {
+          etapas: {
+            ignorar: vi.fn()
+          }
+        }
+      };
+      const next = vi.fn();
+
+      await mod(req, res, next);
+      expect(res.locals.etapas.ignorar).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+```

@@ -1,0 +1,434 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest__error-handler__C3__r1",
+  "started_at": "2026-11-28T11:13:58.675Z",
+  "finished_at": "2026-11-28T11:16:54.464Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "src/middlewares/error-handler.js",
+    "module_loc": 91,
+    "mutants_total": 142,
+    "human_test_files": [
+      "test/integration/outros/error-handler.test.js"
+    ]
+  },
+  "condition": "C3",
+  "repetition": 1,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "3207ea1273280d442b5ac2a36ea16851d195944ffcfe06a480b6320e7f5c957e"
+  },
+  "memorization": {
+    "probe_similarity": 0.0674,
+    "stratum": "low"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 56.5217,
+        "ms_feedback": 61.6438,
+        "ms_all": 59.1549,
+        "ms_covered": 65.625
+      },
+      "coverage": {
+        "line_cov": 96.51,
+        "branch_cov": 84.21
+      },
+      "mutants_eval": {
+        "killed": 39,
+        "survived": 24,
+        "no_coverage": 6,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 45,
+        "survived": 20,
+        "no_coverage": 8,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 12,
+        "n_asserts": 24,
+        "sha256": "5fd595b26fd5cdd454e30815d7676936d26514f49e8f027024456a6b59f6d0c1"
+      },
+      "prompt_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 1,
+        "repair_calls": 0,
+        "tokens_in": 3799,
+        "tokens_out": 1628,
+        "usd_ref": 0.001031,
+        "wall_s": 34.44,
+        "stryker_s": 25.27
+      }
+    },
+    {
+      "k": 1,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/error-handler.js:11:10-11:84:LogicalOperator:error.expose === true && error.statusCode >= 400 || error.statusCode < 500",
+        "src/middlewares/error-handler.js:11:35-11:58:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:11:62-11:84:EqualityOperator:error.statusCode <= 500",
+        "src/middlewares/error-handler.js:19:7-23:4:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:20:27-20:33:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:22:10-22:34:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:22:10-22:34:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:34:20-34:56:StringLiteral:``",
+        "src/middlewares/error-handler.js:34:9-34:58:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:59:33-59:38:Regex:/Z_/",
+        "src/middlewares/error-handler.js:69:39-71:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:73:57-73:84:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:80:12-80:19:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:81:14-81:152:StringLiteral:``",
+        "src/middlewares/error-handler.js:84:7-84:18:OptionalChaining:error.type",
+        "src/middlewares/error-handler.js:88:133-88:168:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:88:133-88:168:LogicalOperator:error.stack && 'No stack available'",
+        "src/middlewares/error-handler.js:88:31-88:172:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:88:74-88:170:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:88:85-88:124:LogicalOperator:error.message && 'No message available'"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k1_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 2,
+        "tokens_in": 27127,
+        "tokens_out": 9530,
+        "usd_ref": 0.006525,
+        "wall_s": 58.63,
+        "stryker_s": 25.27
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 56.5217,
+        "ms_feedback": 64.3836,
+        "ms_all": 60.5634,
+        "ms_covered": 63.2353
+      },
+      "coverage": {
+        "line_cov": 97.67,
+        "branch_cov": 87.8
+      },
+      "mutants_eval": {
+        "killed": 39,
+        "survived": 26,
+        "no_coverage": 4,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 47,
+        "survived": 24,
+        "no_coverage": 2,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/error-handler.js:11:10-11:84:LogicalOperator:error.expose === true && error.statusCode >= 400 || error.statusCode < 500",
+        "src/middlewares/error-handler.js:11:62-11:84:EqualityOperator:error.statusCode <= 500",
+        "src/middlewares/error-handler.js:19:7-23:4:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:20:27-20:33:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:22:10-22:34:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:22:7-22:77:StringLiteral:``",
+        "src/middlewares/error-handler.js:34:20-34:56:StringLiteral:``",
+        "src/middlewares/error-handler.js:34:9-34:58:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:59:33-59:38:Regex:/Z_/",
+        "src/middlewares/error-handler.js:69:39-71:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:70:33-70:307:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:80:12-80:19:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:81:14-81:152:StringLiteral:``",
+        "src/middlewares/error-handler.js:81:72-81:107:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:84:7-84:18:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:84:7-84:18:OptionalChaining:error.type",
+        "src/middlewares/error-handler.js:88:133-88:168:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:88:133-88:168:LogicalOperator:error.stack && 'No stack available'",
+        "src/middlewares/error-handler.js:88:74-88:170:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:88:85-88:124:LogicalOperator:error.message && 'No message available'"
+      ],
+      "tests": {
+        "n_tests": 16,
+        "n_asserts": 31,
+        "sha256": "4777bde3c234c06084af76a0192421886db4f6fac16410d2823f2e6b0ac1269f"
+      },
+      "prompt_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k2_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 5,
+        "repair_calls": 2,
+        "tokens_in": 34291,
+        "tokens_out": 11942,
+        "usd_ref": 0.008206,
+        "wall_s": 96.53,
+        "stryker_s": 49.66
+      }
+    },
+    {
+      "k": 3,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/error-handler.js:11:10-11:84:LogicalOperator:error.expose === true && error.statusCode >= 400 || error.statusCode < 500",
+        "src/middlewares/error-handler.js:11:35-11:58:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:11:62-11:84:EqualityOperator:error.statusCode <= 500",
+        "src/middlewares/error-handler.js:19:7-23:4:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:20:27-20:33:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:22:10-22:34:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:34:20-34:56:StringLiteral:``",
+        "src/middlewares/error-handler.js:34:9-34:58:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:54:9-54:71:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:69:39-71:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:69:7-69:37:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:70:33-70:307:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:73:57-73:84:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:80:12-80:19:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:81:14-81:152:StringLiteral:``",
+        "src/middlewares/error-handler.js:81:72-81:107:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:84:7-84:18:OptionalChaining:error.type",
+        "src/middlewares/error-handler.js:88:133-88:168:LogicalOperator:error.stack && 'No stack available'",
+        "src/middlewares/error-handler.js:88:74-88:170:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:88:85-88:124:LogicalOperator:error.message && 'No message available'"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k3_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 4,
+        "tokens_in": 59473,
+        "tokens_out": 21999,
+        "usd_ref": 0.014747,
+        "wall_s": 121.64,
+        "stryker_s": 49.66
+      }
+    },
+    {
+      "k": 4,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/error-handler.js:11:10-11:84:LogicalOperator:error.expose === true && error.statusCode >= 400 || error.statusCode < 500",
+        "src/middlewares/error-handler.js:11:62-11:84:EqualityOperator:error.statusCode <= 500",
+        "src/middlewares/error-handler.js:19:7-23:4:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:20:27-20:33:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:22:10-22:34:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:22:7-22:77:StringLiteral:``",
+        "src/middlewares/error-handler.js:34:9-34:58:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:54:9-54:71:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:69:39-71:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:69:7-69:37:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:70:33-70:307:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:80:12-80:19:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:81:14-81:152:StringLiteral:``",
+        "src/middlewares/error-handler.js:84:7-84:18:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:84:7-84:18:OptionalChaining:error.type",
+        "src/middlewares/error-handler.js:88:133-88:168:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:88:133-88:168:LogicalOperator:error.stack && 'No stack available'",
+        "src/middlewares/error-handler.js:88:74-88:170:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:88:85-88:124:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:88:85-88:124:LogicalOperator:error.message && 'No message available'"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k4_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 11,
+        "repair_calls": 6,
+        "tokens_in": 84591,
+        "tokens_out": 31870,
+        "usd_ref": 0.021207,
+        "wall_s": 148.93,
+        "stryker_s": 49.66
+      }
+    },
+    {
+      "k": 5,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 20,
+      "survivor_ids": [
+        "src/middlewares/error-handler.js:11:10-11:84:LogicalOperator:error.expose === true && error.statusCode >= 400 || error.statusCode < 500",
+        "src/middlewares/error-handler.js:11:35-11:58:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:11:62-11:84:EqualityOperator:error.statusCode <= 500",
+        "src/middlewares/error-handler.js:19:7-23:4:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:22:10-22:34:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:22:10-22:34:ConditionalExpression:true",
+        "src/middlewares/error-handler.js:22:7-22:77:StringLiteral:``",
+        "src/middlewares/error-handler.js:34:20-34:56:StringLiteral:``",
+        "src/middlewares/error-handler.js:34:9-34:58:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:54:9-54:71:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:69:39-71:4:BlockStatement:{}",
+        "src/middlewares/error-handler.js:70:33-70:307:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:73:57-73:84:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:80:12-80:19:StringLiteral:\"\"",
+        "src/middlewares/error-handler.js:81:14-81:152:StringLiteral:``",
+        "src/middlewares/error-handler.js:84:7-84:18:OptionalChaining:error.type",
+        "src/middlewares/error-handler.js:88:133-88:168:ConditionalExpression:false",
+        "src/middlewares/error-handler.js:88:133-88:168:LogicalOperator:error.stack && 'No stack available'",
+        "src/middlewares/error-handler.js:88:74-88:170:ObjectLiteral:{}",
+        "src/middlewares/error-handler.js:88:85-88:124:LogicalOperator:error.message && 'No message available'"
+      ],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest-v2/serverest__error-handler__C3__r1/raw/k5_a0_response.txt",
+      "best_k_so_far": 2,
+      "cost_cumulative": {
+        "calls": 14,
+        "repair_calls": 8,
+        "tokens_in": 109411,
+        "tokens_out": 41382,
+        "usd_ref": 0.027494,
+        "wall_s": 175.79,
+        "stryker_s": 49.66
+      }
+    }
+  ],
+  "selected_iteration": 2,
+  "final": {
+    "scores": {
+      "ms_eval": 56.5217,
+      "ms_feedback": 64.3836,
+      "ms_all": 60.5634,
+      "ms_covered": 63.2353
+    },
+    "coverage": {
+      "line_cov": 97.67,
+      "branch_cov": 87.8
+    },
+    "cost": {
+      "calls": 14,
+      "repair_calls": 8,
+      "tokens_in": 109411,
+      "tokens_out": 41382,
+      "usd_ref": 0.027494,
+      "wall_s": 175.79,
+      "stryker_s": 49.66
+    },
+    "tests": {
+      "n_tests": 16,
+      "n_asserts": 31,
+      "sha256": "4777bde3c234c06084af76a0192421886db4f6fac16410d2823f2e6b0ac1269f"
+    },
+    "gap_cov_ms": 37.1066,
+    "valid_rate": 0.3333,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest-v2/serverest__error-handler__C3__r1/raw"
+  }
+}

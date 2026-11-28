@@ -1,0 +1,794 @@
+Improve the Vitest + supertest test file for this API unit: the produtos API (files under test: src/controllers/produtos-controller.js, src/services/produtos-service.js, src/models/produtos-model.js) (app import path: `../../src/app`).
+
+Note about this project: This is an Express REST API (CommonJS JavaScript). The application object is exported by src/app.js (`module.exports = app`); import it with a default import. The routes are mounted on the paths listed in the context files. Use supertest (`import request from "supertest"`) and never start a real server.
+
+Project conventions (CLAUDE.md):
+<conventions>
+# Convenções de teste (projetos UnJS)
+
+- Framework: Vitest. Imports no topo: `import { describe, it, expect } from "vitest";`.
+- Estilo do código: aspas duplas, ponto e vírgula, indentação de 2 espaços.
+- Organização: um `describe` de nível superior por função exportada; dentro dele, casos agrupados por comportamento.
+- Para funções puras, prefira testes orientados a tabela (array de casos `{ input, expected }` percorrido com `for ... of` ou `it.each`), como nos testes originais do projeto.
+- Títulos de teste descritivos, no formato "should ..." ou o valor de entrada serializado; um comportamento por teste.
+- Asserções exatas: use `toBe` para primitivos, `toEqual`/`toStrictEqual` para objetos e arrays, `toThrow` (com tipo ou mensagem) para erros. Evite asserções frouxas como `toBeTruthy` quando o valor exato é conhecido.
+- Cubra: o uso principal documentado, argumentos omitidos/valores padrão, entradas vazias, valores limite, caracteres especiais e os caminhos de erro.
+- Não use snapshots, não faça mocks do módulo sob teste e não dependa de ordem de execução entre testes.
+- Teste apenas a API pública exportada pelo módulo.
+
+## Específico: ServeRest como API (testes de API via HTTP com supertest)
+
+- Os testes exercitam a API só por requisições HTTP ao app Express (`request(app).get("/usuarios")`, `.post`, `.put`, `.delete`), com `.send({...})` para o corpo e `.set("authorization", token)` para rotas protegidas. O token vem de `POST /login`.
+- O banco de dados é em memória e compartilhado pelos testes do arquivo. Cada teste cadastra os dados de que precisa, com valores únicos (por exemplo, e-mail e nome com um sufixo exclusivo), e não depende de outro teste nem da ordem de execução.
+- Verifique sempre o status HTTP e o corpo da resposta (`res.status`, `res.body`), com o texto exato das mensagens que aparece no código-fonte.
+- Cubra, para cada rota: o caminho feliz, validação do corpo (campos ausentes, tipos errados, valores em branco ou limites), autenticação e autorização (sem token, token inválido, usuário não administrador), recursos inexistentes, conflitos (e-mail ou nome já usado) e regras de negócio (por exemplo, não excluir usuário com carrinho, estoque insuficiente).
+- Filtros e listas: teste cada parâmetro de consulta suportado e a ordem em que a lista é devolvida.
+- Não importe controllers, services ou models: só o app.
+</conventions>
+
+Read-only context file `src/routes/produtos-route.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+const express = require('express')
+
+const authentication = require('../middlewares/authentication-middleware')
+const controller = require('../controllers/produtos-controller')
+const model = require('../models/produtos-model')
+const validateSchema = require('../services/validateSchema-service')
+const { filtrosDaLista } = require('../utils/filtrosDaQuery')
+const { etapa, plano } = require('../utils/etapas')
+
+const router = express.Router()
+router.get('/', plano('schema', 'read'), filtrosDaLista(model.schemaGet), etapa('read', controller.get))
+router.get('/:id', plano('schema', 'read'), validateSchema(model.schemaGetOne), etapa('read', controller.getOne))
+router.post('/', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaPost), etapa('rules', controller.post))
+router.delete('/:id', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaDelete), etapa('rules', controller.delete))
+router.put('/:id', plano('auth', 'schema', 'rules'), authentication.checkAdm, validateSchema(model.schemaPut), etapa('rules', controller.put))
+
+module.exports = router
+
+```
+
+Read-only context file `src/utils/rotas-da-api.js` (it is NOT mutated or tested directly; use it to learn the API):
+```js
+'use strict'
+
+// As rotas da API, numa lista só: o painel de etapas mede só elas, o orçamento de bytes do rate limiter conta só
+// elas e os buscadores não as indexam.
+module.exports = {
+  ROTAS_DA_API: ['/login', '/usuarios', '/produtos', '/carrinhos']
+}
+
+```
+
+Source of `the produtos API (files under test: src/controllers/produtos-controller.js, src/services/produtos-service.js, src/models/produtos-model.js)`:
+```js
+// ===== file: src/controllers/produtos-controller.js =====
+'use strict'
+
+const carrinhosService = require('../services/carrinhos-service')
+const constant = require('../utils/constants')
+const service = require('../services/produtos-service')
+
+exports.get = async (req, res) => {
+  const produtos = await service.getAll(req.query)
+  res.status(200).send({ quantidade: produtos.length, produtos })
+}
+
+exports.getOne = async (req, res) => {
+  const { id } = req.params
+  const produto = await service.getOne(id)
+  if (!produto) {
+    return res.status(400).json({ message: constant.PRODUCT_NOT_FOUND })
+  }
+  return res.status(200).send(produto)
+}
+
+exports.post = async (req, res) => {
+  const { nome } = req.body
+  const trimmedName = nome.trim()
+
+  const productExists = await service.existeProduto({ nome: trimmedName })
+
+  if (productExists) {
+    return res.status(400).send({ message: constant.NAME_ALREADY_USED })
+  }
+
+  const { _id } = await service.criarProduto(req.body)
+
+  res.status(201).send({ message: constant.POST_SUCCESS, _id })
+}
+
+exports.delete = async (req, res) => {
+  const carrinhoComProduto = await carrinhosService.existeCarrinhoComProduto(req.params.id)
+  if (carrinhoComProduto) {
+    return res.status(400).send({ message: constant.DELETE_PRODUCT_WITH_CART, idCarrinhos: [carrinhoComProduto._id] })
+  }
+  const quantidadeRegistrosExcluidos = await service.deleteById(req.params.id)
+  const message = quantidadeRegistrosExcluidos === 0 ? constant.DELETE_NONE : constant.DELETE_SUCCESS
+  res.status(200).send({ message })
+}
+
+exports.put = async (req, res) => {
+  const { id } = req.params
+  const { nome } = req.body
+  const product = { nome: nome.trim(), $not: { _id: id } }
+
+  const productExists = await service.existeProduto(product)
+
+  if (productExists) {
+    return res.status(400).json({ message: constant.NAME_ALREADY_USED })
+  }
+
+  const updatedProduct = await service.createOrUpdateById(id, req.body)
+  if (updatedProduct._id !== id) {
+    return res.status(201).json({ message: constant.POST_SUCCESS, _id: updatedProduct._id })
+  }
+
+  return res.status(200).json({ message: constant.PUT_SUCCESS })
+}
+
+// ===== file: src/services/produtos-service.js =====
+'use strict'
+
+const constant = require('../utils/constants')
+const Datastore = require('nedb-promises')
+const { join } = require('path')
+
+const alterarValoresParaRegex = require('../utils/alterarValoresParaRegex')
+const { continuarDaMaiorMarca, doMaisNovoAoMaisAntigo, marcarAlteracao, semMarca } = require('../utils/ordemDeAlteracao')
+
+const datastore = Datastore.create({ filename: join(__dirname, '../data/produtos.db'), autoload: true })
+continuarDaMaiorMarca(datastore)
+
+// Index frequently searched fields for better query performance
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'nome', sparse: true })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'preco' })
+/* istanbul ignore next */
+datastore.ensureIndex({ fieldName: 'quantidade' })
+
+exports.getAll = async queryString => {
+  queryString = alterarValoresParaRegex(queryString)
+  return doMaisNovoAoMaisAntigo(await datastore.find(queryString))
+}
+
+exports.getOne = async id => {
+  return semMarca(await datastore.findOne({ _id: id }))
+}
+
+/* istanbul ignore next */
+exports.getDadosDoProduto = queryString => {
+  return datastore.findOne(queryString)
+}
+
+exports.existeProduto = pesquisa => {
+  return datastore.findOne(pesquisa)
+}
+
+/* istanbul ignore next */
+exports.updateQuantidade = async ({ idProduto, quantidade }) => {
+  const { quantidade: quantidadeEmEstoque } = await this.getDadosDoProduto({ _id: idProduto })
+  const novaQuantidade = quantidadeEmEstoque - quantidade
+  await this.updateById(idProduto, { $set: { quantidade: novaQuantidade } })
+}
+
+/* istanbul ignore next */
+exports.updateQuantidadePorLote = async (arrayProdutosComQuantidade) => {
+  // Batch update to reduce round-trips: fetch all, calculate new quantities, update all
+  const idProdutos = arrayProdutosComQuantidade.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Calculate new quantities and perform updates
+  const updates = arrayProdutosComQuantidade.map(produto => {
+    const { idProduto, quantidade } = produto
+    const produtoAtual = produtosMap.get(idProduto)
+    if (produtoAtual) {
+      const novaQuantidade = produtoAtual.quantidade - quantidade
+      return this.updateById(idProduto, { $set: { quantidade: novaQuantidade } })
+    }
+    return Promise.resolve()
+  })
+
+  await Promise.all(updates)
+}
+
+/* istanbul ignore next */
+exports.restoreQuantidadePorLote = async (arrayProdutosComQuantidade) => {
+  // Batch restore to reduce round-trips: fetch all, calculate restored quantities, update all
+  const idProdutos = arrayProdutosComQuantidade.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Calculate restored quantities and perform updates
+  const updates = arrayProdutosComQuantidade.map(produto => {
+    const { idProduto, quantidade } = produto
+    const produtoAtual = produtosMap.get(idProduto)
+    if (produtoAtual) {
+      // O estoque não passa de Number.MAX_SAFE_INTEGER: um PUT pode ter levado o produto ao limite enquanto o
+      // carrinho estava aberto, e a soma gravaria um número já arredondado.
+      const quantidadeRestaurada = Math.min(produtoAtual.quantidade + quantidade, Number.MAX_SAFE_INTEGER)
+      return this.updateById(idProduto, { $set: { quantidade: quantidadeRestaurada } })
+    }
+    return Promise.resolve()
+  })
+
+  await Promise.all(updates)
+}
+
+exports.criarProduto = async body => {
+  body = formatarValores(body)
+  return datastore.insert({ ...body, alteradoEm: marcarAlteracao() })
+}
+
+/* istanbul ignore next */
+exports.getPrecoUnitarioOuErro = async (produto) => {
+  const quantidade = Number(produto.quantidade)
+  const { idProduto } = produto
+  const existePedido = await this.existeProduto({ _id: idProduto })
+  if (!existePedido) {
+    return { error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade } } }
+  }
+
+  const { quantidade: quantidadeEstoque, preco } = await this.getDadosDoProduto({ _id: idProduto })
+  if (quantidade > quantidadeEstoque) {
+    return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque } } }
+  }
+  return { precoUnitario: preco }
+}
+
+exports.getPrecosUnitariosPorLote = async (arrayProdutos) => {
+  // Fetch all products in one query to reduce round-trips
+  const idProdutos = arrayProdutos.map(p => p.idProduto)
+  const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+  const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+
+  // Validate each product and build result
+  for (let i = 0; i < arrayProdutos.length; i++) {
+    const produto = arrayProdutos[i]
+    const quantidade = Number(produto.quantidade)
+    const { idProduto } = produto
+
+    const produtoEmEstoque = produtosMap.get(idProduto)
+    if (!produtoEmEstoque) {
+      return { error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade }, index: i } }
+    }
+
+    if (quantidade > produtoEmEstoque.quantidade) {
+      return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque: produtoEmEstoque.quantidade }, index: i } }
+    }
+  }
+
+  // Build result with prices
+  const produtosComPreco = arrayProdutos.map((produto, index) => ({
+    ...produto,
+    precoUnitario: produtosMap.get(produto.idProduto).preco
+  }))
+
+  return { produtosComPreco }
+}
+
+exports.deleteById = async id => {
+  return datastore.remove({ _id: id }, {})
+}
+
+exports.createOrUpdateById = async (idDoProdutoQueSeraAlterado, body) => {
+  body = formatarValores(body)
+  // Só o PUT marca: a baixa e a reposição de estoque feitas pelos carrinhos não mudam a posição na lista.
+  return this.updateById(idDoProdutoQueSeraAlterado, { ...body, alteradoEm: marcarAlteracao() })
+}
+
+exports.updateById = async (idDoProdutoQueSeraAlterado, body) => {
+  return datastore.update({ _id: idDoProdutoQueSeraAlterado }, body, { upsert: true, returnUpdatedDocs: true })
+}
+
+function formatarValores (body) {
+  body.nome = body.nome.trim()
+  // O express-validation não devolve ao req.body o número que o Joi converteu, então um texto
+  // como "470" chega aqui. Number, e não parseInt: o Joi aceita "4e2" como 400 e o parseInt leria 4.
+  // O + 0 transforma -0 em 0, como o Joi faz com "-0".
+  body.preco = Number(body.preco) + 0
+  body.quantidade = Number(body.quantidade) + 0
+  if (body.imagem) {
+    body.imagem = body.imagem.trim()
+  }
+  return body
+}
+
+// ===== file: src/models/produtos-model.js =====
+'use strict'
+
+const { Joi } = require('express-validation')
+
+const filtroDeTexto = require('../utils/filtroDeTexto')
+
+exports.schemaGet = {
+  query: Joi.object({
+    _id: filtroDeTexto,
+    nome: filtroDeTexto,
+    preco: Joi.number().positive().integer(),
+    descricao: filtroDeTexto,
+    quantidade: Joi.number().min(0).integer(),
+    imagem: filtroDeTexto
+  })
+}
+
+exports.schemaGetOne = {
+  params: Joi.object({
+    id: Joi.string().regex(/^[a-zA-Z0-9]{16}$/).required()
+  })
+}
+
+exports.schemaPost = {
+  body: Joi.object({
+    nome: Joi.string().trim().required(),
+    preco: Joi.number().positive().integer().required(),
+    descricao: Joi.string().required(),
+    quantidade: Joi.number().min(0).integer().required(),
+    imagem: Joi.string().trim().optional()
+  })
+}
+
+exports.schemaDelete = {
+  params: Joi.object({
+    id: Joi.string().regex(/^[a-zA-Z0-9]{16}$/).required()
+  })
+}
+
+exports.schemaPut = {
+  params: this.schemaDelete.params,
+  body: this.schemaPost.body
+}
+
+```
+
+Current test file (it passes on the original source):
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Produtos API", () => {
+  let counter = 0;
+  function getUniqueString(prefix: string) {
+    counter++;
+    return `${prefix}${counter}`;
+  }
+
+  async function getAdminToken() {
+    const adminEmail = getUniqueString("admin_prod_") + "@qa.com";
+    await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "Admin Test",
+        email: adminEmail,
+        password: "teste",
+        administrador: "true"
+      });
+
+    const loginRes = await request(app)
+      .post("/login")
+      .send({
+        email: adminEmail,
+        password: "teste"
+      });
+
+    return loginRes.body.authorization;
+  }
+
+  async function getRegularToken() {
+    const userEmail = getUniqueString("user_prod_") + "@qa.com";
+    await request(app)
+      .post("/usuarios")
+      .send({
+        nome: "User Test",
+        email: userEmail,
+        password: "teste",
+        administrador: "false"
+      });
+
+    const loginRes = await request(app)
+      .post("/login")
+      .send({
+        email: userEmail,
+        password: "teste"
+      });
+
+    return loginRes.body.authorization;
+  }
+
+  describe("GET /produtos", () => {
+    it("should return a list of products", async () => {
+      const token = await getAdminToken();
+      const uniqueName = getUniqueString("Produto Lista ");
+      await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 100,
+          descricao: "Descrição do produto",
+          quantidade: 10
+        });
+
+      const res = await request(app).get("/produtos");
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("quantidade");
+      expect(res.body).toHaveProperty("produtos");
+      expect(Array.isArray(res.body.produtos)).toBe(true);
+      expect(res.body.quantidade).toBeGreaterThanOrEqual(1);
+    });
+
+    it("should filter products by query parameters", async () => {
+      const token = await getAdminToken();
+      const uniqueName = getUniqueString("Produto Filtro ");
+      await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 250,
+          descricao: "Filtro desc",
+          quantidade: 5
+        });
+
+      const res = await request(app).get(`/produtos?nome=${encodeURIComponent(uniqueName)}`);
+      expect(res.status).toBe(200);
+      expect(res.body.quantidade).toBe(1);
+      expect(res.body.produtos[0].nome).toBe(uniqueName);
+    });
+  });
+
+  describe("GET /produtos/:id", () => {
+    it("should return a single product by id", async () => {
+      const token = await getAdminToken();
+      const uniqueName = getUniqueString("Produto One ");
+      const createRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 50,
+          descricao: "One desc",
+          quantidade: 20
+        });
+
+      const productId = createRes.body._id;
+      const res = await request(app).get(`/produtos/${productId}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("_id", productId);
+      expect(res.body.nome).toBe(uniqueName);
+    });
+
+    it("should return 400 when product id does not exist", async () => {
+      const res = await request(app).get("/produtos/abc1234567890123");
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Produto não encontrado" });
+    });
+
+    it("should return validation error for invalid id format", async () => {
+      const res = await request(app).get("/produtos/invalid-id");
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("POST /produtos", () => {
+    it("should create a new product successfully when authenticated as admin", async () => {
+      const token = await getAdminToken();
+      const uniqueName = getUniqueString("Produto Novo ");
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 470,
+          descricao: "Mouse gamer",
+          quantidade: 381,
+          imagem: "  https://imagem.com/img.jpg  "
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+      expect(res.body).toHaveProperty("_id");
+
+      const getRes = await request(app).get(`/produtos/${res.body._id}`);
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.imagem).toBe("https://imagem.com/img.jpg");
+    });
+
+    it("should return 400 when product name is already used", async () => {
+      const token = await getAdminToken();
+      const uniqueName = getUniqueString("Produto Duplicado ");
+      const payload = {
+        nome: uniqueName,
+        preco: 100,
+        descricao: "Desc",
+        quantidade: 10
+      };
+
+      await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send(payload);
+
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send(payload);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Já existe produto com esse nome" });
+    });
+
+    it("should return error when token is missing", async () => {
+      const res = await request(app)
+        .post("/produtos")
+        .send({
+          nome: "Sem Token",
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      expect(res.status).toBe(401);
+    });
+
+    it("should return error when user is not admin", async () => {
+      const token = await getRegularToken();
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: "Usuario Comum",
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      expect(res.status).toBe(403);
+    });
+
+    it("should validate required fields in request body", async () => {
+      const token = await getAdminToken();
+      const res = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          preco: 100
+        });
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("PUT /produtos/:id", () => {
+    it("should update an existing product successfully", async () => {
+      const token = await getAdminToken();
+      const uniqueName = getUniqueString("Produto Put ");
+      const createRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      const productId = createRes.body._id;
+      const updatedName = getUniqueString("Produto Atualizado ");
+      const res = await request(app)
+        .put(`/produtos/${productId}`)
+        .set("authorization", token)
+        .send({
+          nome: updatedName,
+          preco: 150,
+          descricao: "Desc Nova",
+          quantidade: 15
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro alterado com sucesso" });
+    });
+
+    it("should create product via put if id does not exist", async () => {
+      const token = await getAdminToken();
+      const nonExistentId = "a1b2c3d4e5f6g7h8";
+      const uniqueName = getUniqueString("Produto Upsert ");
+      const res = await request(app)
+        .put(`/produtos/${nonExistentId}`)
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 200,
+          descricao: "Desc",
+          quantidade: 5
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+      expect(res.body).toHaveProperty("_id");
+    });
+
+    it("should return 400 when updating with an existing name belonging to another product", async () => {
+      const token = await getAdminToken();
+      const name1 = getUniqueString("Prod A ");
+      const name2 = getUniqueString("Prod B ");
+
+      const p1 = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({ nome: name1, preco: 100, descricao: "D1", quantidade: 10 });
+
+      await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({ nome: name2, preco: 100, descricao: "D2", quantidade: 10 });
+
+      const res = await request(app)
+        .put(`/produtos/${p1.body._id}`)
+        .set("authorization", token)
+        .send({ nome: name2, preco: 120, descricao: "D1", quantidade: 10 });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ message: "Já existe produto com esse nome" });
+    });
+  });
+
+  describe("DELETE /produtos/:id", () => {
+    it("should delete an existing product successfully", async () => {
+      const token = await getAdminToken();
+      const uniqueName = getUniqueString("Produto Delete ");
+      const createRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      const productId = createRes.body._id;
+      const res = await request(app)
+        .delete(`/produtos/${productId}`)
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Registro excluído com sucesso" });
+    });
+
+    it("should return delete none message when product does not exist", async () => {
+      const token = await getAdminToken();
+      const nonExistentId = "z9y8x7w6v5u4t3s2";
+      const res = await request(app)
+        .delete(`/produtos/${nonExistentId}`)
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: "Nenhum registro excluído" });
+    });
+
+    it("should not delete product when it is part of a cart", async () => {
+      const token = await getAdminToken();
+      const uniqueName = getUniqueString("Produto Carrinho ");
+      const createRes = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: uniqueName,
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      const productId = createRes.body._id;
+
+      await request(app)
+        .post("/carrinhos")
+        .set("authorization", token)
+        .send({
+          produtos: [{ idProduto: productId, quantidade: 2 }]
+        });
+
+      const res = await request(app)
+        .delete(`/produtos/${productId}`)
+        .set("authorization", token);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("message", "Não é permitido excluir produto que faz parte de carrinho");
+      expect(res.body).toHaveProperty("idCarrinhos");
+      expect(Array.isArray(res.body.idCarrinhos)).toBe(true);
+    });
+  });
+});
+
+```
+
+A mutation testing tool changed the source in small ways, and the current tests did NOT detect the 20 changes below (24 undetected changes in total; a sample is shown). A change is detected only when at least one test fails on the mutated code.
+
+1. file src/services/produtos-service.js, line 31, operator BlockStatement (no test executes this code)
+   line: exports.getDadosDoProduto = queryString => {
+   original fragment: "{\r\n  return datastore.findOne(queryString)\r\n}"
+   mutated fragment:  "{}"
+2. file src/services/produtos-service.js, line 40, operator BlockStatement (no test executes this code)
+   line: exports.updateQuantidade = async ({ idProduto, quantidade }) => {
+   original fragment: "{\r\n  const { quantidade: quantidadeEmEstoque } = await this.getDadosDoProduto({ _id: idProduto })\r\n  const novaQuantidade = quantidadeEmEstoque - quantidade\r\n  await this.updateById(idProduto, { $set:..."
+   mutated fragment:  "{}"
+3. file src/services/produtos-service.js, line 41, operator ObjectLiteral (no test executes this code)
+   line: const { quantidade: quantidadeEmEstoque } = await this.getDadosDoProduto({ _id: idProduto })
+   original fragment: "{ _id: idProduto }"
+   mutated fragment:  "{}"
+4. file src/services/produtos-service.js, line 42, operator ArithmeticOperator (no test executes this code)
+   line: const novaQuantidade = quantidadeEmEstoque - quantidade
+   original fragment: "quantidadeEmEstoque - quantidade"
+   mutated fragment:  "quantidadeEmEstoque + quantidade"
+5. file src/services/produtos-service.js, line 43, operator ObjectLiteral (no test executes this code)
+   line: await this.updateById(idProduto, { $set: { quantidade: novaQuantidade } })
+   original fragment: "{ quantidade: novaQuantidade }"
+   mutated fragment:  "{}"
+6. file src/services/produtos-service.js, line 70, operator ArrowFunction (no test executes this code)
+   line: const idProdutos = arrayProdutosComQuantidade.map(p => p.idProduto)
+   original fragment: "p => p.idProduto"
+   mutated fragment:  "() => undefined"
+7. file src/services/produtos-service.js, line 71, operator ObjectLiteral (no test executes this code)
+   line: const produtosEmEstoque = await datastore.find({ _id: { $in: idProdutos } })
+   original fragment: "{ _id: { $in: idProdutos } }"
+   mutated fragment:  "{}"
+8. file src/services/produtos-service.js, line 72, operator ArrowFunction (no test executes this code)
+   line: const produtosMap = new Map(produtosEmEstoque.map(p => [p._id, p]))
+   original fragment: "p => [p._id, p]"
+   mutated fragment:  "() => undefined"
+9. file src/services/produtos-service.js, line 81, operator MethodExpression (no test executes this code)
+   line: const quantidadeRestaurada = Math.min(produtoAtual.quantidade + quantidade, Number.MAX_SAFE_INTEGER)
+   original fragment: "Math.min(produtoAtual.quantidade + quantidade, Number.MAX_SAFE_INTEGER)"
+   mutated fragment:  "Math.max(produtoAtual.quantidade + quantidade, Number.MAX_SAFE_INTEGER)"
+10. file src/services/produtos-service.js, line 81, operator ArithmeticOperator (no test executes this code)
+   line: const quantidadeRestaurada = Math.min(produtoAtual.quantidade + quantidade, Number.MAX_SAFE_INTEGER)
+   original fragment: "produtoAtual.quantidade + quantidade"
+   mutated fragment:  "produtoAtual.quantidade - quantidade"
+11. file src/services/produtos-service.js, line 99, operator ObjectLiteral (no test executes this code)
+   line: const existePedido = await this.existeProduto({ _id: idProduto })
+   original fragment: "{ _id: idProduto }"
+   mutated fragment:  "{}"
+12. file src/services/produtos-service.js, line 100, operator BlockStatement (no test executes this code)
+   line: if (!existePedido) {
+   original fragment: "{\r\n    return { error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade } } }\r\n  }"
+   mutated fragment:  "{}"
+13. file src/services/produtos-service.js, line 100, operator ConditionalExpression (no test executes this code)
+   line: if (!existePedido) {
+   original fragment: "!existePedido"
+   mutated fragment:  "true"
+14. file src/services/produtos-service.js, line 101, operator ObjectLiteral (no test executes this code)
+   line: return { error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade } } }
+   original fragment: "{ statusCode: 400, message: constant.PRODUCT_NOT_FOUND, item: { idProduto, quantidade } }"
+   mutated fragment:  "{}"
+15. file src/services/produtos-service.js, line 105, operator ConditionalExpression (no test executes this code)
+   line: if (quantidade > quantidadeEstoque) {
+   original fragment: "quantidade > quantidadeEstoque"
+   mutated fragment:  "false"
+16. file src/services/produtos-service.js, line 105, operator ConditionalExpression (no test executes this code)
+   line: if (quantidade > quantidadeEstoque) {
+   original fragment: "quantidade > quantidadeEstoque"
+   mutated fragment:  "true"
+17. file src/services/produtos-service.js, line 105, operator EqualityOperator (no test executes this code)
+   line: if (quantidade > quantidadeEstoque) {
+   original fragment: "quantidade > quantidadeEstoque"
+   mutated fragment:  "quantidade <= quantidadeEstoque"
+18. file src/services/produtos-service.js, line 106, operator ObjectLiteral (no test executes this code)
+   line: return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque } } }
+   original fragment: "{ statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque } }"
+   mutated fragment:  "{}"
+19. file src/services/produtos-service.js, line 128, operator BlockStatement (no test executes this code)
+   line: if (quantidade > produtoEmEstoque.quantidade) {
+   original fragment: "{\r\n      return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque: produtoEmEstoque.quantidade }, index: i } }\r\n    }"
+   mutated fragment:  "{}"
+20. file src/services/produtos-service.js, line 129, operator ObjectLiteral (no test executes this code)
+   line: return { error: { statusCode: 400, message: constant.INSUFFICIENT_STOCK, item: { idProduto, quantidade, quantidadeEstoque: produtoEmEstoque.quantidade }, index: i } }
+   original fragment: "{ idProduto, quantidade, quantidadeEstoque: produtoEmEstoque.quantidade }"
+   mutated fragment:  "{}"
+
+Return the COMPLETE updated test file. Keep the existing tests that are valuable, and add tests with precise assertions on concrete expected values that would fail if the code behaved like the mutated versions. Do not write tests that merely replicate the mutated code. All tests must still pass on the ORIGINAL source shown above.

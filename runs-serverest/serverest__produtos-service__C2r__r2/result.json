@@ -1,0 +1,389 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest__produtos-service__C2r__r2",
+  "started_at": "2026-11-27T20:49:02.891Z",
+  "finished_at": "2026-11-27T20:52:43.844Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "src/services/produtos-service.js",
+    "module_loc": 167,
+    "mutants_total": 115,
+    "human_test_files": [
+      "test/integration/produtos/contrato.test.js",
+      "test/integration/produtos/delete.test.js",
+      "test/integration/produtos/get.test.js",
+      "test/integration/produtos/getOne.test.js",
+      "test/integration/produtos/ordem.test.js",
+      "test/integration/produtos/post.test.js",
+      "test/integration/produtos/put.test.js"
+    ]
+  },
+  "condition": "C2r",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": "3207ea1273280d442b5ac2a36ea16851d195944ffcfe06a480b6320e7f5c957e"
+  },
+  "memorization": {
+    "probe_similarity": 0.2198,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": 36.5385,
+        "ms_feedback": 47.3684,
+        "ms_all": 42.2018,
+        "ms_covered": 83.6364
+      },
+      "coverage": {
+        "line_cov": 63.47,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 19,
+        "survived": 6,
+        "no_coverage": 27,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 27,
+        "survived": 3,
+        "no_coverage": 27,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 9,
+        "n_asserts": 15,
+        "sha256": "a6281b95e3e643ad1a829fbf65689fe394e63d82434028f57e01a29faef0325c"
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 3,
+        "repair_calls": 2,
+        "tokens_in": 11673,
+        "tokens_out": 3305,
+        "usd_ref": 0.002489,
+        "wall_s": 52.72,
+        "stryker_s": 27.36
+      }
+    },
+    {
+      "k": 1,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 21.1538,
+        "ms_feedback": 28.0702,
+        "ms_all": 24.7706,
+        "ms_covered": 64.2857
+      },
+      "coverage": {
+        "line_cov": 55.68,
+        "branch_cov": 81.81
+      },
+      "mutants_eval": {
+        "killed": 11,
+        "survived": 8,
+        "no_coverage": 33,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 16,
+        "survived": 7,
+        "no_coverage": 34,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 7,
+        "n_asserts": 15,
+        "sha256": "b5ee495cdc2e4637c9834ea2e0e2dba53608ff868ff2f5616b451da5ca95ee8b"
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k1_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k1_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 4,
+        "repair_calls": 2,
+        "tokens_in": 14651,
+        "tokens_out": 4037,
+        "usd_ref": 0.00308,
+        "wall_s": 83.98,
+        "stryker_s": 51.42
+      }
+    },
+    {
+      "k": 2,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 23.0769,
+        "ms_feedback": 26.3158,
+        "ms_all": 24.7706,
+        "ms_covered": 64.2857
+      },
+      "coverage": {
+        "line_cov": 55.68,
+        "branch_cov": 81.81
+      },
+      "mutants_eval": {
+        "killed": 12,
+        "survived": 7,
+        "no_coverage": 33,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 15,
+        "survived": 8,
+        "no_coverage": 34,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 7,
+        "n_asserts": 15,
+        "sha256": "0424316ab60b2b42e943798b79c6a1ca745860e3a8888ba78549606c15137feb"
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k2_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k2_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 6,
+        "repair_calls": 3,
+        "tokens_in": 21471,
+        "tokens_out": 5621,
+        "usd_ref": 0.004396,
+        "wall_s": 124.91,
+        "stryker_s": 75.97
+      }
+    },
+    {
+      "k": 3,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 1,
+      "scores": {
+        "ms_eval": 21.1538,
+        "ms_feedback": 28.0702,
+        "ms_all": 24.7706,
+        "ms_covered": 64.2857
+      },
+      "coverage": {
+        "line_cov": 55.68,
+        "branch_cov": 81.81
+      },
+      "mutants_eval": {
+        "killed": 11,
+        "survived": 8,
+        "no_coverage": 33,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 16,
+        "survived": 7,
+        "no_coverage": 34,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 7,
+        "n_asserts": 16,
+        "sha256": "f5051cd81b3f9b01f80ce5d393c9f51086652acd2f92cde37c4b615cdc3e6d35"
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k3_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k3_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 8,
+        "repair_calls": 4,
+        "tokens_in": 28289,
+        "tokens_out": 7194,
+        "usd_ref": 0.005707,
+        "wall_s": 165.62,
+        "stryker_s": 100.48
+      }
+    },
+    {
+      "k": 4,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 19.2308,
+        "ms_feedback": 24.5614,
+        "ms_all": 22.0183,
+        "ms_covered": 57.1429
+      },
+      "coverage": {
+        "line_cov": 55.68,
+        "branch_cov": 81.81
+      },
+      "mutants_eval": {
+        "killed": 10,
+        "survived": 9,
+        "no_coverage": 33,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 14,
+        "survived": 9,
+        "no_coverage": 34,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 7,
+        "n_asserts": 13,
+        "sha256": "8e7b64737f747fa2878f13f7dac897ddf122d5bc6fe6d3ca2f2c3e184396c281"
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k4_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k4_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 9,
+        "repair_calls": 4,
+        "tokens_in": 31267,
+        "tokens_out": 7885,
+        "usd_ref": 0.006281,
+        "wall_s": 198.76,
+        "stryker_s": 126.01
+      }
+    },
+    {
+      "k": 5,
+      "valid": false,
+      "discard_reason": "tests_fail_on_original",
+      "repair_attempts": 2,
+      "scores": {
+        "ms_eval": null,
+        "ms_feedback": null,
+        "ms_all": null,
+        "ms_covered": null
+      },
+      "coverage": {
+        "line_cov": null,
+        "branch_cov": null
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 0,
+        "n_asserts": 0,
+        "sha256": ""
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k5_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C2r__r2/raw/k5_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 12,
+        "repair_calls": 6,
+        "tokens_in": 42771,
+        "tokens_out": 11628,
+        "usd_ref": 0.008928,
+        "wall_s": 220.95,
+        "stryker_s": 126.01
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 36.5385,
+      "ms_feedback": 47.3684,
+      "ms_all": 42.2018,
+      "ms_covered": 83.6364
+    },
+    "coverage": {
+      "line_cov": 63.47,
+      "branch_cov": 100
+    },
+    "cost": {
+      "calls": 12,
+      "repair_calls": 6,
+      "tokens_in": 42771,
+      "tokens_out": 11628,
+      "usd_ref": 0.008928,
+      "wall_s": 220.95,
+      "stryker_s": 126.01
+    },
+    "tests": {
+      "n_tests": 9,
+      "n_asserts": 15,
+      "sha256": "a6281b95e3e643ad1a829fbf65689fe394e63d82434028f57e01a29faef0325c"
+    },
+    "gap_cov_ms": 21.2682,
+    "valid_rate": 0.8333,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest__produtos-service__C2r__r2/raw"
+  }
+}

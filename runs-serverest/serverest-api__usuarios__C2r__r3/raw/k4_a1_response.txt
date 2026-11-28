@@ -1,0 +1,163 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Usuarios API", () => {
+  it("should get all usuarios", async () => {
+    const res = await request(app).get("/usuarios");
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("quantidade");
+    expect(res.body).toHaveProperty("usuarios");
+    expect(Array.isArray(res.body.usuarios)).toBe(true);
+  });
+
+  it("should filter usuarios by nome", async () => {
+    const uniqueName = "UserTestABC";
+    const email = "usertestabc@email.com";
+
+    await request(app).post("/usuarios").send({
+      nome: uniqueName,
+      email,
+      password: "password123",
+      administrador: "false"
+    });
+
+    const res = await request(app).get(`/usuarios?nome=${uniqueName}`);
+    expect(res.status).toBe(200);
+    expect(res.body.quantidade).toBeGreaterThanOrEqual(1);
+    const found = res.body.usuarios.some((u: any) => u.nome === uniqueName);
+    expect(found).toBe(true);
+  });
+
+  it("should get one usuario by valid id", async () => {
+    const uniqueName = "UserOneABC";
+    const email = "useroneabc@email.com";
+
+    const createRes = await request(app).post("/usuarios").send({
+      nome: uniqueName,
+      email,
+      password: "password123",
+      administrador: "false"
+    });
+
+    const userId = createRes.body._id;
+
+    const res = await request(app).get(`/usuarios/${userId}`);
+    expect(res.status).toBe(200);
+    expect(res.body._id).toBe(userId);
+    expect(res.body.nome).toBe(uniqueName);
+  });
+
+  it("should return 400 when usuario id format is invalid on getOne", async () => {
+    const res = await request(app).get("/usuarios/invalidid123");
+    expect(res.status).toBe(400);
+  });
+
+  it("should return 400 when usuario does not exist on getOne", async () => {
+    const fakeId = "1234567890abcdef";
+    const res = await request(app).get(`/usuarios/${fakeId}`);
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Usuário não encontrado" });
+  });
+
+  it("should create a new usuario successfully", async () => {
+    const email = "newuserabc@email.com";
+    const res = await request(app).post("/usuarios").send({
+      nome: "Novo Usuário",
+      email,
+      password: "password123",
+      administrador: "true"
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+    expect(res.body).toHaveProperty("_id");
+  });
+
+  it("should return 400 when creating usuario with already used email", async () => {
+    const email = "duplicateabc@email.com";
+    const payload = {
+      nome: "Usuário Duplicado",
+      email,
+      password: "password123",
+      administrador: "false"
+    };
+
+    await request(app).post("/usuarios").send(payload);
+
+    const res = await request(app).post("/usuarios").send(payload);
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ message: "Este email já está sendo usado" });
+  });
+
+  it("should return 400 when creating usuario with missing required fields", async () => {
+    const res = await request(app).post("/usuarios").send({
+      nome: "Incompleto"
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("should delete an existing usuario", async () => {
+    const email = "deleteuserabc@email.com";
+    const createRes = await request(app).post("/usuarios").send({
+      nome: "Para Deletar",
+      email,
+      password: "password123",
+      administrador: "false"
+    });
+
+    const userId = createRes.body._id;
+
+    const res = await request(app).delete(`/usuarios/${userId}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Registro excluído com sucesso" });
+  });
+
+  it("should return DELETE_NONE message when deleting non-existent usuario with valid format id", async () => {
+    const fakeId = "abcdef1234567890";
+    const res = await request(app).delete(`/usuarios/${fakeId}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Nenhum registro excluído" });
+  });
+
+  it("should update an existing usuario successfully (PUT)", async () => {
+    const email = "putuserabc@email.com";
+    const createRes = await request(app).post("/usuarios").send({
+      nome: "Para Atualizar",
+      email,
+      password: "password123",
+      administrador: "false"
+    });
+
+    const userId = createRes.body._id;
+
+    const res = await request(app).put(`/usuarios/${userId}`).send({
+      nome: "Atualizado Nome",
+      email,
+      password: "password456",
+      administrador: "true"
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ message: "Registro alterado com sucesso" });
+  });
+
+  it("should create usuario via PUT if id does not exist (upsert)", async () => {
+    const fakeId = "fedcba0987654321";
+    const email = "upsertuserabc@email.com";
+
+    const res = await request(app).put(`/usuarios/${fakeId}`).send({
+      nome: "Upsert User",
+      email,
+      password: "password123",
+      administrador: "false"
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("message", "Cadastro realizado com sucesso");
+    expect(res.body._id).toBe(fakeId);
+  });
+});
+```

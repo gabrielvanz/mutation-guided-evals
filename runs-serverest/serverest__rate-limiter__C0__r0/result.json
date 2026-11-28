@@ -1,0 +1,129 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest__rate-limiter__C0__r0",
+  "started_at": "2026-11-27T15:05:03.360Z",
+  "finished_at": "2026-11-27T15:06:33.278Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "src/middlewares/rate-limiter.js",
+    "module_loc": 165,
+    "mutants_total": 131,
+    "human_test_files": [
+      "test/unit/orcamento-de-bytes.test.js",
+      "test/unit/resposta-do-limite.test.js"
+    ]
+  },
+  "condition": "C0",
+  "repetition": 0,
+  "c0_scope": "module",
+  "model": null,
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": null
+  },
+  "memorization": {
+    "probe_similarity": 0.1289,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 88.7097,
+        "ms_feedback": 85.5072,
+        "ms_all": 87.0229,
+        "ms_covered": 91.2
+      },
+      "coverage": {
+        "line_cov": 93.93,
+        "branch_cov": 92.3
+      },
+      "mutants_eval": {
+        "killed": 52,
+        "survived": 5,
+        "no_coverage": 2,
+        "timeout": 3,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 57,
+        "survived": 6,
+        "no_coverage": 4,
+        "timeout": 2,
+        "compile_error": 0,
+        "runtime_error": 0,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 32,
+        "n_asserts": 55,
+        "sha256": "09e61b15f79b89a867153e362f692f7f65b271f67efdaef541c183a70af84f99"
+      },
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 0,
+        "repair_calls": 0,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "usd_ref": 0,
+        "wall_s": 89.92,
+        "stryker_s": 75.92
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 88.7097,
+      "ms_feedback": 85.5072,
+      "ms_all": 87.0229,
+      "ms_covered": 91.2
+    },
+    "coverage": {
+      "line_cov": 93.93,
+      "branch_cov": 92.3
+    },
+    "cost": {
+      "calls": 0,
+      "repair_calls": 0,
+      "tokens_in": 0,
+      "tokens_out": 0,
+      "usd_ref": 0,
+      "wall_s": 89.92,
+      "stryker_s": 75.92
+    },
+    "tests": {
+      "n_tests": 32,
+      "n_asserts": 55,
+      "sha256": "09e61b15f79b89a867153e362f692f7f65b271f67efdaef541c183a70af84f99"
+    },
+    "gap_cov_ms": 6.9071,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest__rate-limiter__C0__r0/raw"
+  }
+}

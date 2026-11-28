@@ -1,0 +1,78 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found", async () => {
+    const produto = await produtosService.existeProduto({ _id: "inexistente" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("deleteById", () => {
+  it("should remove product by id and return 0 affected documents if not found", async () => {
+    const removedCount = await produtosService.deleteById("id-inexistente-remover");
+    expect(removedCount).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should update or insert product by id", async () => {
+    const resultado = await produtoServiceTestUpdate("id-teste-update");
+    expect(resultado).toBeDefined();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should format values and insert product", async () => {
+    const novoProduto = {
+      nome: "  Produto Teste  ",
+      preco: "100",
+      quantidade: "10",
+      descricao: "Teste",
+      imagem: " imagem.jpg "
+    };
+    const produtoCriado = await produtosService.criarProduto(novoProduto);
+    expect(produtoCriado).toHaveProperty("_id");
+    expect(produtoCriado.nome).toBe("Produto Teste");
+    expect(produtoCriado.preco).toBe(100);
+    expect(produtoCriado.quantidade).toBe(10);
+    expect(produtoCriado.imagem).toBe("imagem.jpg");
+    expect(produtoCriado).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "inexistente-lote", quantidade: 1 }
+    ]);
+    expect(resultado).toHaveProperty("error");
+    expect(resultado.error.statusCode).toBe(400);
+  });
+});
+
+async function produtoServiceTestUpdate(id) {
+  return produtosService.updateById(id, {
+    $set: {
+      nome: "Produto Atualizado",
+      preco: 50,
+      quantidade: 5
+    }
+  });
+}
+```

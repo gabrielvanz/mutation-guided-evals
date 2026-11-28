@@ -1,0 +1,272 @@
+```ts
+import { describe, it, expect, vi } from "vitest";
+import errorHandler from "../../src/middlewares/error-handler";
+import logger from "../../src/utils/logger";
+
+describe("errorHandler", () => {
+  function mockResponse() {
+    const res: any = {
+      headersSent: false,
+      writableEnded: false,
+      status: vi.fn().mockImplementation((code) => {
+        res.statusCode = code;
+        return res;
+      }),
+      json: vi.fn().mockImplementation((data) => {
+        res.body = data;
+        return res;
+      }),
+      send: vi.fn().mockImplementation((data) => {
+        res.body = data;
+        return res;
+      })
+    };
+    return res;
+  }
+
+  it("should handle headersSent = true when request timed out", () => {
+    const req: any = {
+      timedout: true,
+      method: "GET",
+      originalUrl: "/usuarios",
+      socket: { destroy: vi.fn() }
+    };
+    const res = mockResponse();
+    res.headersSent = true;
+    const error: any = new Error("Timeout occurred");
+    error.code = "ETIMEDOUT";
+
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: "warn",
+        message: expect.stringContaining("timedout: true")
+      })
+    );
+    expect(res.socket.destroy).toHaveBeenCalled();
+  });
+
+  it("should handle headersSent = true when not timed out", () => {
+    const req: any = {
+      timedout: false,
+      method: "POST",
+      originalUrl: "/produtos",
+      socket: { destroy: vi.fn() }
+    };
+    const res = mockResponse();
+    res.headersSent = true;
+    const error: any = new Error("Some error");
+
+    const spyLog = vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(spyLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: "error",
+        message: expect.stringContaining("timedout: false")
+      })
+    );
+    expect(res.socket.destroy).toHaveBeenCalled();
+  });
+
+  it("should not destroy socket if res.writableEnded is true", () => {
+    const req: any = {
+      timedout: false,
+      method: "GET",
+      originalUrl: "/",
+      socket: { destroy: vi.fn() }
+    };
+    const res = mockResponse();
+    res.headersSent = true;
+    res.writableEnded = true;
+    const error: any = new Error("Finished");
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.socket.destroy).not.toHaveBeenCalled();
+  });
+
+  it("should handle ValidationError", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = new Error("Validation Error");
+    error.name = "ValidationError";
+    error.details = {
+      body: [
+        {
+          context: { label: "email" },
+          type: "string.email",
+          message: "email must be valid"
+        }
+      ]
+    };
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.body).toEqual({ email: "email deve ser um email válido" });
+  });
+
+  it("should handle URIError", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = new URIError("Malformed URI");
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.body).toEqual({
+      message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+    });
+  });
+
+  it("should handle entity.parse.failed", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = new Error("Parse failed");
+    error.type = "entity.parse.failed";
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.body).toEqual({
+      message: "Adicione aspas em todos os valores. Para mais informações acesse a issue https://github.com/ServeRest/ServeRest/issues/225"
+    });
+  });
+
+  it.each([
+    "entity.too.large",
+    "parameters.too.many"
+  ])("should handle payload too large for type %s", (type) => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = new Error("Too large");
+    error.type = type;
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(413);
+    expect(res.body).toEqual({ message: "Payload too large" });
+  });
+
+  it("should handle charset.unsupported", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = new Error("Charset unsupported");
+    error.type = "charset.unsupported";
+    error.charset = "utf-16";
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(res.body).toEqual({ message: "Unsupported charset", charset: "utf-16" });
+  });
+
+  it("should handle encoding.unsupported", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = new Error("Encoding unsupported");
+    error.type = "encoding.unsupported";
+    error.encoding = "deflate";
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(415);
+    expect(res.body).toEqual({ message: "Unsupported content encoding", encoding: "deflate" });
+  });
+
+  it("should handle zlib compressed body errors", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = new Error("Zlib data error");
+    error.expose = true;
+    error.statusCode = 400;
+    error.code = "Z_DATA_ERROR";
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.body).toEqual({
+      message: "Corpo comprimido inválido. Envie o corpo de acordo com o header Content-Encoding ou remova o header."
+    });
+  });
+
+  it("should handle ETIMEDOUT code error", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = new Error("Timed out");
+    error.code = "ETIMEDOUT";
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(408);
+    expect(res.body).toEqual({ message: "Timeout da requisição atingido" });
+  });
+
+  it("should handle general client errors (ehErroDoCliente)", () => {
+    const req: any = {};
+    const res = mockResponse();
+    const error: any = new Error("Bad request");
+    error.expose = true;
+    error.statusCode = 400;
+    error.type = "invalid.syntax";
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.body).toEqual({
+      message: "Não foi possível ler a requisição. Confira o corpo e os headers enviados.",
+      error: "invalid.syntax"
+    });
+  });
+
+  it("should handle server error with error.type", () => {
+    const req: any = { body: {} };
+    const res = mockResponse();
+    const error: any = new Error("Internal server failure");
+    error.type = "database.error";
+    error.stack = "Error stack";
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.error).toBe("database.error");
+  });
+
+  it("should handle server error without error.type", () => {
+    const req: any = { body: {} };
+    const res = mockResponse();
+    const error: any = new Error("Unknown error");
+    error.stack = "Some stack";
+
+    vi.spyOn(logger, "log");
+
+    errorHandler(error, req, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.error).toHaveProperty("message", "Unknown error");
+  });
+});
+```

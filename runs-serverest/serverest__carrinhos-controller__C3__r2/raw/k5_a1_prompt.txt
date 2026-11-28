@@ -1,0 +1,568 @@
+The Vitest test file below for `src/controllers/carrinhos-controller.js` (import path: `../../src/controllers/carrinhos-controller`) is not acceptable.
+
+The source code is correct and must not be changed. Fix the TESTS so that they pass against the source and follow the task rules.
+
+Note about this project: The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports.
+
+Source of `src/controllers/carrinhos-controller.js`:
+```js
+'use strict'
+
+const constant = require('../utils/constants')
+const service = require('../services/carrinhos-service')
+
+exports.get = async (req, res) => {
+  const carrinhos = await service.getAll(req.query)
+  res.status(200).send({ quantidade: carrinhos.length, carrinhos })
+}
+
+exports.getOne = async (req, res) => {
+  const { id } = req.params
+  const carrinho = await service.getOne(id)
+  if (!carrinho) {
+    return res.status(400).json({ message: constant.CART_NOT_FOUND })
+  }
+  return res.status(200).send(carrinho)
+}
+
+exports.post = async (req, res) => {
+  const { etapas } = res.locals
+  etapas.regras('single_cart', 'no_duplicate_product', 'product_exists', 'enough_stock', 'safe_totals')
+
+  const { idUsuario, possuiCarrinho } = await service.usuarioJaPossuiCarrinho(req.headers.authorization)
+  etapas.regra('single_cart', !possuiCarrinho)
+  if (possuiCarrinho) {
+    return res.status(400).send({ message: constant.LIMIT_JUST_ONE_CART })
+  }
+
+  // O express-validation não devolve ao req.body o número que o Joi converteu. Sem o Number,
+  // quantidade "2" seria gravada como texto e quantidadeTotal viraria "02". O + 0 transforma -0 em 0.
+  const produtos = req.body.produtos.map(produto => ({ ...produto, quantidade: Number(produto.quantidade) + 0 }))
+
+  const idProdutosDuplicados = service.extrairProdutosDuplicados(produtos)
+  etapas.regra('no_duplicate_product', !idProdutosDuplicados.length)
+  if (idProdutosDuplicados.length) {
+    return res.status(400).send({ message: constant.CART_WITH_DUPLICATE_PRODUCT, idProdutosDuplicados })
+  }
+
+  const { produtosComPrecoUnitario, error } = await service.getProdutosComPrecoUnitarioOuErro(produtos)
+  if (error) {
+    // As duas regras são avaliadas item a item e param no primeiro item que falha.
+    if (error.message === constant.PRODUCT_NOT_FOUND) {
+      etapas.regra('product_exists', false, { item: error.index })
+    } else {
+      etapas.regra('product_exists', true)
+      etapas.regra('enough_stock', false, { item: error.index })
+    }
+    return res.status(error.statusCode).send({ message: error.message, item: error.item })
+  }
+  etapas.regra('product_exists', true)
+  etapas.regra('enough_stock', true)
+
+  const precoTotal = service.precoTotal(produtosComPrecoUnitario)
+  const quantidadeTotal = service.quantidadeTotal(produtosComPrecoUnitario)
+  const totaisSeguros = service.totaisSaoSeguros(precoTotal, quantidadeTotal)
+  etapas.regra('safe_totals', totaisSeguros)
+  if (!totaisSeguros) {
+    return res.status(400).send({ message: constant.CART_TOTALS_TOO_BIG })
+  }
+
+  etapas.abrir('write')
+  await service.baixarEstoque(produtosComPrecoUnitario)
+
+  const carrinho = { produtos: produtosComPrecoUnitario, precoTotal, quantidadeTotal, idUsuario }
+
+  const dadosCadastrados = await service.criarCarrinho(carrinho)
+  res.status(201).send({ message: constant.POST_SUCCESS, _id: dadosCadastrados._id })
+}
+
+exports.cancelarCompra = async (req, res) => {
+  const carrinhoDoUsuario = await service.getCarrinhoDoUsuario(req.headers.authorization)
+
+  if (carrinhoDoUsuario.length) {
+    await service.removeCarrinho(carrinhoDoUsuario[0])
+    return res.status(200).send({ message: `${constant.DELETE_SUCCESS}. ${constant.REPLENISHED_STOCK}` })
+  }
+
+  res.status(200).send({ message: constant.NO_CART })
+}
+
+exports.concluirCompra = async (req, res) => {
+  const carrinhoDoUsuario = await service.getCarrinhoDoUsuario(req.headers.authorization)
+
+  if (carrinhoDoUsuario.length) {
+    await service.concluiCompra(carrinhoDoUsuario[0])
+    return res.status(200).send({ message: constant.DELETE_SUCCESS })
+  }
+  res.status(200).send({ message: constant.NO_CART })
+}
+
+```
+
+Current test file:
+```ts
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import carrinhosController from "../../src/controllers/carrinhos-controller";
+import service from "../../src/services/carrinhos-service";
+import constant from "../../src/utils/constants";
+
+vi.mock("../../src/services/carrinhos-service");
+vi.mock("../../src/utils/constants", () => ({
+  CART_NOT_FOUND: "Não foi encontrado carrinho para este usuário",
+  LIMIT_JUST_ONE_CART: "Não é permitido possuir mais de 1 carrinho",
+  CART_WITH_DUPLICATE_PRODUCT: "Não é permitido possuir produtos duplicados",
+  PRODUCT_NOT_FOUND: "Produto não encontrado",
+  CART_TOTALS_TOO_BIG: "Totais muito grandes",
+  POST_SUCCESS: "Cadastro realizado com sucesso",
+  DELETE_SUCCESS: "Registro excluído com sucesso",
+  REPLENISHED_STOCK: "Estoque reencontrado",
+  NO_CART: "Não foi encontrado carrinho"
+}));
+
+describe("carrinhos-controller", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("get", () => {
+    it("deve retornar todos os carrinhos com status 200", async () => {
+      const mockCarrinhos = [{ _id: "1" }, { _id: "2" }];
+      vi.spyOn(service, "getAll").mockResolvedValueOnce(mockCarrinhos);
+
+      const req = { query: {} };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.get(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({
+        quantidade: 2,
+        carrinhos: mockCarrinhos
+      });
+    });
+  });
+
+  describe("getOne", () => {
+    it("deve retornar o carrinho quando encontrado com status 200", async () => {
+      const mockCarrinho = { _id: "1", produtos: [] };
+      vi.spyOn(service, "getOne").mockResolvedValueOnce(mockCarrinho);
+
+      const req = { params: { id: "1" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn(),
+        json: vi.fn()
+      };
+
+      await carrinhosController.getOne(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith(mockCarrinho);
+    });
+
+    it("deve retornar erro 400 quando o carrinho não for encontrado", async () => {
+      vi.spyOn(service, "getOne").mockResolvedValueOnce(null);
+
+      const req = { params: { id: "nao-existe" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn(),
+        json: vi.fn().mockReturnThis()
+      };
+
+      await carrinhosController.concluirCompra ? await carrinhosController.getOne(req, res) : null;
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ message: constant.CART_NOT_FOUND });
+    });
+  });
+
+  describe("post", () => {
+    it("deve retornar erro 400 se o usuário já possui carrinho", async () => {
+      const resLocalEtapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "p1", quantidade: "2" }] }
+      };
+      const res = {
+        locals: { etapas: resLocalEtapas },
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      vi.spyOn(service, "usuarioJaPossuiCarrinho").mockResolvedValueOnce({
+        idUsuario: "u1",
+        possuiCarrinho: true
+      });
+
+      await carrinhosController.post(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({ message: constant.LIMIT_JUST_ONE_CART });
+    });
+
+    it("deve retornar erro 400 se houver produtos duplicados", async () => {
+      const resLocalEtapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "p1", quantidade: 1 }, { idProduto: "p1", quantidade: 2 }] }
+      };
+      const res = {
+        locals: { etapas: resLocalEtapas },
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      vi.spyOn(service, "usuarioJaPossuiCarrinho").mockResolvedValueOnce({
+        idUsuario: "u1",
+        possuiCarrinho: false
+      });
+      vi.spyOn(service, "extrairProdutosDuplicados").mockReturnValueOnce(["p1"]);
+
+      await carrinhosController.post(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        message: constant.CART_WITH_DUPLICATE_PRODUCT,
+        idProdutosDuplicados: ["p1"]
+      });
+    });
+
+    it("deve retornar erro 400 se houver erro ao buscar preço unitário", async () => {
+      const resLocalEtapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "p1", quantidade: 1 }] }
+      };
+      const res = {
+        locals: { etapas: resLocalEtapas },
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      vi.spyOn(service, "usuarioJaPossuiCarrinho").mockResolvedValueOnce({
+        idUsuario: "u1",
+        possuiCarrinho: false
+      });
+      vi.spyOn(service, "extrairProdutosDuplicados").mockReturnValueOnce([]);
+      vi.spyOn(service, "getProdutosComPrecoUnitarioOuErro").mockResolvedValueOnce({
+        error: { statusCode: 400, message: constant.PRODUCT_NOT_FOUND, index: 0, item: "p1" }
+      });
+
+      await carrinhosController.post(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({
+        message: constant.PRODUCT_NOT_FOUND,
+        item: "p1"
+      });
+    });
+
+    it("deve retornar erro 400 se os totais forem muito grandes", async () => {
+      const resLocalEtapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "p1", quantidade: 1 }] }
+      };
+      const res = {
+        locals: { etapas: resLocalEtapas },
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      vi.spyOn(service, "usuarioJaPossuiCarrinho").mockResolvedValueOnce({
+        idUsuario: "u1",
+        possuiCarrinho: false
+      });
+      vi.spyOn(service, "extrairProdutosDuplicados").mockReturnValueOnce([]);
+      vi.spyOn(service, "getProdutosComPrecoUnitarioOuErro").mockResolvedValueOnce({
+        produtosComPrecoUnitario: [{ idProduto: "p1", precoUnitario: 10, quantidade: 1 }]
+      });
+      vi.spyOn(service, "precoTotal").mockReturnValueOnce(1000000000);
+      vi.spyOn(service, "quantidadeTotal").mockReturnValueOnce(100);
+      vi.spyOn(service, "totaisSaoSeguros").mockReturnValueOnce(false);
+
+      await carrinhosController.post(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({ message: constant.CART_TOTALS_TOO_BIG });
+    });
+
+    it("deve criar o carrinho com sucesso com status 201", async () => {
+      const resLocalEtapas = {
+        regras: vi.fn(),
+        regra: vi.fn(),
+        abrir: vi.fn()
+      };
+      const req = {
+        headers: { authorization: "Bearer token" },
+        body: { produtos: [{ idProduto: "p1", quantidade: "2" }] }
+      };
+      const res = {
+        locals: { etapas: resLocalEtapas },
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      vi.spyOn(service, "usuarioJaPossuiCarrinho").mockResolvedValueOnce({
+        idUsuario: "u1",
+        possuiCarrinho: false
+      });
+      vi.spyOn(service, "extrairProdutosDuplicados").mockReturnValueOnce([]);
+      vi.spyOn(service, "getProdutosComPrecoUnitarioOuErro").mockResolvedValueOnce({
+        produtosComPrecoUnitario: [{ idProduto: "p1", precoUnitario: 10, quantidade: 2 }]
+      });
+      vi.spyOn(service, "precoTotal").mockReturnValueOnce(20);
+      vi.spyOn(service, "quantidadeTotal").mockReturnValueOnce(2);
+      vi.spyOn(service, "totaisSaoSeguros").mockReturnValueOnce(true);
+      vi.spyOn(service, "baixarEstoque").mockResolvedValueOnce(undefined);
+      vi.spyOn(service, "criarCarrinho").mockResolvedValueOnce({ _id: "cart123" });
+
+      await carrinhosController.post(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.send).toHaveBeenCalledWith({
+        message: constant.POST_SUCCESS,
+        _id: "cart123"
+      });
+    });
+  });
+
+  describe("cancelarCompra", () => {
+    it("deve remover o carrinho e repor o estoque se o carrinho existir", async () => {
+      const mockCarrinho = { _id: "c1" };
+      vi.spyOn(service, "getCarrinhoDoUsuario").mockResolvedValueOnce([mockCarrinho]);
+      vi.spyOn(service, "removeCarrinho").mockResolvedValueOnce(undefined);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.cancelarCompra(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({
+        message: `${constant.DELETE_SUCCESS}. ${constant.REPLENISHED_STOCK}`
+      });
+    });
+
+    it("deve retornar mensagem NO_CART se o usuário não tiver carrinho", async () => {
+      vi.spyOn(service, "getCarrinhoDoUsuario").mockResolvedValueOnce([]);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.cancelarCompra(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({ message: constant.NO_CART });
+    });
+  });
+
+  describe("concluirCompra", () => {
+    it("deve concluir a compra se o carrinho existir", async () => {
+      const mockCarrinho = { _id: "c1" };
+      vi.spyOn(service, "getCarrinhoDoUsuario").mockResolvedValueOnce([mockCarrinho]);
+      vi.spyOn(service, "concluiCompra").mockResolvedValueOnce(undefined);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.concluirCompra(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({ message: constant.DELETE_SUCCESS });
+    });
+
+    it("deve retornar mensagem NO_CART se o usuário não tiver carrinho ao concluir", async () => {
+      vi.spyOn(service, "getCarrinhoDoUsuario").mockResolvedValueOnce([]);
+
+      const req = { headers: { authorization: "Bearer token" } };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        send: vi.fn()
+      };
+
+      await carrinhosController.concluirCompra(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith({ message: constant.NO_CART });
+    });
+  });
+});
+
+```
+
+Problems:
+```
+
+ RUN  v3.2.7 /home/administrador/work/w1
+
+ ❯ test/__generated__/carrinhos-controller.gen.test.ts (12 tests | 12 failed) 34ms
+   × carrinhos-controller > get > deve retornar todos os carrinhos com status 200 17ms
+     → expected "spy" to be called with arguments: [ { quantidade: 2, …(1) } ]
+
+Received: 
+
+  1st spy call:
+
+  [
+    {
+      "carrinhos": [
+        {
+-         "_id": "1",
++         "_id": "qbMqntef4iTOwWfg",
++         "alteradoEm": undefined,
++         "idUsuario": "0uxuPY0cbmQhpEz1",
++         "precoTotal": 6180,
++         "produtos": [
++           {
++             "idProduto": "BeeJh5lz3k6kSIzA",
++             "precoUnitario": 470,
++             "quantidade": 2,
+            },
+            {
+-         "_id": "2",
++             "idProduto": "K6leHdftCeOJj8BJ",
++             "precoUnitario": 5240,
++             "quantidade": 1,
++           },
++         ],
++         "quantidadeTotal": 3,
+        },
+      ],
+-     "quantidade": 2,
++     "quantidade": 1,
+    },
+  ]
+
+
+Number of calls: 1
+
+   × carrinhos-controller > getOne > deve retornar o carrinho quando encontrado com status 200 2ms
+     → expected "spy" to be called with arguments: [ 200 ]
+
+Received: 
+
+  1st spy call:
+
+  [
+-   200,
++   400,
+  ]
+
+
+Number of calls: 1
+
+   × carrinhos-controller > getOne > deve retornar erro 400 quando o carrinho não for encontrado 4ms
+     → [vitest] No "default" export is defined on the "../../src/utils/constants" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+   × carrinhos-controller > post > deve retornar erro 400 se o usuário já possui carrinho 3ms
+     → Cannot destructure property '_id' of '(intermediate value)' as it is null.
+   × carrinhos-controller > post > deve retornar erro 400 se houver produtos duplicados 1ms
+     → Cannot destructure property '_id' of '(intermediate value)' as it is null.
+   × carrinhos-controller > post > deve retornar erro 400 se houver erro ao buscar preço unitário 1ms
+     → [vitest] No "default" export is defined on the "../../src/utils/constants" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+   × carrinhos-controller > post > deve retornar erro 400 se os totais forem muito grandes 1ms
+     → Cannot destructure property '_id' of '(intermediate value)' as it is null.
+   × carrinhos-controller > post > deve criar o carrinho com sucesso com status 201 1ms
+     → Cannot destructure property '_id' of '(intermediate value)' as it is null.
+   × carrinhos-controller > cancelarCompra > deve remover o carrinho e repor o estoque se o carrinho existir 1ms
+     → Cannot destructure property '_id' of '(intermediate value)' as it is null.
+   × carrinhos-controller > cancelarCompra > deve retornar mensagem NO_CART se o usuário não tiver carrinho 1ms
+     → Cannot destructure property '_id' of '(intermediate value)' as it is null.
+   × carrinhos-controller > concluirCompra > deve concluir a compra se o carrinho existir 1ms
+     → Cannot destructure property '_id' of '(intermediate value)' as it is null.
+   × carrinhos-controller > concluirCompra > deve retornar mensagem NO_CART se o usuário não tiver carrinho ao concluir 1ms
+     → Cannot destructure property '_id' of '(intermediate value)' as it is null.
+
+ Test Files  1 failed (1)
+      Tests  12 failed (12)
+   Start at  17:45:15
+   Duration  576ms (transform 129ms, setup 0ms, collect 202ms, tests 34ms, environment 0ms, prepare 136ms)
+
+
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 12 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/__generated__/carrinh
+...[truncado 2034 caracteres]...
+rrinhos-controller > cancelarCompra > deve retornar mensagem NO_CART se o usuário não tiver carrinho
+TypeError: Cannot destructure property '_id' of '(intermediate value)' as it is null.
+ ❯ idUsuario src/services/carrinhos-service.js:116:11
+    114| const idUsuario = async (authorization) => {
+    115|   const { email, password } = authService.verifyToken(authorization)
+    116|   const { _id } = await usuariosService.getDadosDoUsuario({ email, pas…
+       |           ^
+    117|   return _id
+    118| }
+ ❯ Object.exports.getCarrinhoDoUsuario src/services/carrinhos-service.js:83:15
+ ❯ Object.exports.cancelarCompra src/controllers/carrinhos-controller.js:72:29
+ ❯ test/__generated__/carrinhos-controller.gen.test.ts:276:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/12]⎯
+
+ FAIL  test/__generated__/carrinhos-controller.gen.test.ts > carrinhos-controller > concluirCompra > deve concluir a compra se o carrinho existir
+TypeError: Cannot destructure property '_id' of '(intermediate value)' as it is null.
+ ❯ idUsuario src/services/carrinhos-service.js:116:11
+    114| const idUsuario = async (authorization) => {
+    115|   const { email, password } = authService.verifyToken(authorization)
+    116|   const { _id } = await usuariosService.getDadosDoUsuario({ email, pas…
+       |           ^
+    117|   return _id
+    118| }
+ ❯ Object.exports.getCarrinhoDoUsuario src/services/carrinhos-service.js:83:15
+ ❯ Object.exports.concluirCompra src/controllers/carrinhos-controller.js:83:29
+ ❯ test/__generated__/carrinhos-controller.gen.test.ts:295:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/12]⎯
+
+ FAIL  test/__generated__/carrinhos-controller.gen.test.ts > carrinhos-controller > concluirCompra > deve retornar mensagem NO_CART se o usuário não tiver carrinho ao concluir
+TypeError: Cannot destructure property '_id' of '(intermediate value)' as it is null.
+ ❯ idUsuario src/services/carrinhos-service.js:116:11
+    114| const idUsuario = async (authorization) => {
+    115|   const { email, password } = authService.verifyToken(authorization)
+    116|   const { _id } = await usuariosService.getDadosDoUsuario({ email, pas…
+       |           ^
+    117|   return _id
+    118| }
+ ❯ Object.exports.getCarrinhoDoUsuario src/services/carrinhos-service.js:83:15
+ ❯ Object.exports.concluirCompra src/controllers/carrinhos-controller.js:83:29
+ ❯ test/__generated__/carrinhos-controller.gen.test.ts:310:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/12]⎯
+
+
+```
+
+Return the COMPLETE corrected test file.

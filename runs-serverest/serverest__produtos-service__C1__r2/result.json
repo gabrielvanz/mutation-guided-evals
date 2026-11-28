@@ -1,0 +1,142 @@
+{
+  "schema_version": "0.1",
+  "run_id": "serverest__produtos-service__C1__r2",
+  "started_at": "2026-11-27T20:48:36.976Z",
+  "finished_at": "2026-11-27T20:49:01.559Z",
+  "status": "ok",
+  "error": null,
+  "subject": {
+    "library": "serverest",
+    "repo": "ServeRest/ServeRest",
+    "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+    "license": "GPL-3.0",
+    "module_path": "src/services/produtos-service.js",
+    "module_loc": 167,
+    "mutants_total": 115,
+    "human_test_files": [
+      "test/integration/produtos/contrato.test.js",
+      "test/integration/produtos/delete.test.js",
+      "test/integration/produtos/get.test.js",
+      "test/integration/produtos/getOne.test.js",
+      "test/integration/produtos/ordem.test.js",
+      "test/integration/produtos/post.test.js",
+      "test/integration/produtos/put.test.js"
+    ]
+  },
+  "condition": "C1",
+  "repetition": 2,
+  "model": {
+    "provider": "google-ai-studio",
+    "model_id": "gemini-3.5-flash-lite",
+    "temperature": 0.7,
+    "top_p": null,
+    "seed": null,
+    "max_output_tokens": 8192
+  },
+  "tooling": {
+    "node": "v22.22.1",
+    "vitest": "3.2.7",
+    "mocha": "11.7.5",
+    "stryker": "10.1.1",
+    "split_seed": "mge-2026-split-v1",
+    "claude_md_sha256": null
+  },
+  "memorization": {
+    "probe_similarity": 0.2198,
+    "stratum": "high"
+  },
+  "iterations": [
+    {
+      "k": 0,
+      "valid": true,
+      "discard_reason": null,
+      "repair_attempts": 0,
+      "scores": {
+        "ms_eval": 1.9231,
+        "ms_feedback": 1.7544,
+        "ms_all": 1.8349,
+        "ms_covered": 33.3333
+      },
+      "coverage": {
+        "line_cov": 31.73,
+        "branch_cov": 100
+      },
+      "mutants_eval": {
+        "killed": 1,
+        "survived": 2,
+        "no_coverage": 49,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 2,
+        "ignored": 0
+      },
+      "mutants_feedback": {
+        "killed": 1,
+        "survived": 2,
+        "no_coverage": 54,
+        "timeout": 0,
+        "compile_error": 0,
+        "runtime_error": 4,
+        "ignored": 0
+      },
+      "survivors_sent": 0,
+      "survivor_ids": [],
+      "tests": {
+        "n_tests": 2,
+        "n_asserts": 9,
+        "sha256": "381b26782446c6905f50bc617cb72c511e52ad888ab483e61f2bedabc6c0504a"
+      },
+      "prompt_file": "runs-serverest/serverest__produtos-service__C1__r2/raw/k0_a0_prompt.txt",
+      "response_file": "runs-serverest/serverest__produtos-service__C1__r2/raw/k0_a0_response.txt",
+      "best_k_so_far": 0,
+      "cost_cumulative": {
+        "calls": 1,
+        "repair_calls": 0,
+        "tokens_in": 2422,
+        "tokens_out": 244,
+        "usd_ref": 0.00034,
+        "wall_s": 24.58,
+        "stryker_s": 18.14
+      }
+    }
+  ],
+  "selected_iteration": 0,
+  "final": {
+    "scores": {
+      "ms_eval": 1.9231,
+      "ms_feedback": 1.7544,
+      "ms_all": 1.8349,
+      "ms_covered": 33.3333
+    },
+    "coverage": {
+      "line_cov": 31.73,
+      "branch_cov": 100
+    },
+    "cost": {
+      "calls": 1,
+      "repair_calls": 0,
+      "tokens_in": 2422,
+      "tokens_out": 244,
+      "usd_ref": 0.00034,
+      "wall_s": 24.58,
+      "stryker_s": 18.14
+    },
+    "tests": {
+      "n_tests": 2,
+      "n_asserts": 9,
+      "sha256": "381b26782446c6905f50bc617cb72c511e52ad888ab483e61f2bedabc6c0504a"
+    },
+    "gap_cov_ms": 29.8951,
+    "valid_rate": 1,
+    "tokens_per_pp": null
+  },
+  "guardrails": {
+    "src_diff_empty": true,
+    "forbidden_patterns_found": [],
+    "flaky": false,
+    "reruns": 3
+  },
+  "artifacts": {
+    "raw_dir": "runs-serverest/serverest__produtos-service__C1__r2/raw"
+  }
+}

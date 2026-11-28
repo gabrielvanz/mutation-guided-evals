@@ -1,0 +1,192 @@
+```ts
+import { describe, it, expect } from "vitest";
+import produtosService from "../../src/services/produtos-service";
+
+describe("getAll", () => {
+  it("should return all products matching query", async () => {
+    const produtos = await produtosService.getAll({});
+    expect(Array.isArray(produtos)).toBe(true);
+  });
+});
+
+describe("getOne", () => {
+  it("should return null when product does not exist", async () => {
+    const produto = await produtosService.getOne("id-inexistente");
+    expect(produto).toBeNull();
+  });
+});
+
+describe("existeProduto", () => {
+  it("should return null when product is not found", async () => {
+    const produto = await produtosService.existeProduto({ _id: "inexistente" });
+    expect(produto).toBeNull();
+  });
+});
+
+describe("criarProduto", () => {
+  it("should format values and insert product", async () => {
+    const novoProduto = {
+      nome: "  Produto Teste  ",
+      preco: "100",
+      quantidade: "10",
+      descricao: "Teste",
+      imagem: " imagem.jpg "
+    };
+    const resultado = await produtosService.criarProduto(novoProduto);
+    expect(resultado).toHaveProperty("_id");
+    expect(resultado.nome).toBe("Produto Teste");
+    expect(resultado.preco).toBe(100);
+    expect(resultado.quantidade).toBe(10);
+    expect(resultado.imagem).toBe("imagem.jpg");
+    expect(resultado).toHaveProperty("alteradoEm");
+  });
+});
+
+describe("getPrecoUnitarioOuErro", () => {
+  it("should return error when product does not exist", async () => {
+    // When calling imported CommonJS objects, `this` inside methods may not be bound
+    // unless called as a method or bound. We can assign to a variable or call via object method if needed,
+    // but wait, in CommonJS exports, `this` refers to `exports`. Let's test calling `produtosService.getPrecoUnitarioOuErro` properly.
+    // Actually, in JS module.exports, `this` inside an arrow function or normal function depends on how it's invoked.
+    // Wait, `produtosService.getPrecoUnitarioOuErro` makes `this` be `produtosService` if called as `produtosService.getPrecoUnitarioOuErro()`.
+    const resultado = await produtosService.getPrecoUnitarioOuErro({
+      idProduto: "id-inexistente",
+      quantidade: 5
+    });
+    expect(resultado).toEqual({
+      error: {
+        statusCode: 400,
+        message: "Produto não encontrado",
+        item: { idProduto: "id-inexistente", quantidade: 5 }
+      }
+    });
+  });
+
+  it("should return error when stock is insufficient", async () => {
+    const produtoCriado = await produtosService.criarProduto({
+      nome: "Produto Estoque",
+      preco: 50,
+      quantidade: 2,
+      descricao: "Desc"
+    });
+
+    const resultado = await produtosService.getPrecoUnitarioOuErro({
+      idProduto: produtoCriado._id,
+      quantidade: 5
+    });
+
+    expect(resultado).toEqual({
+      error: {
+        statusCode: 400,
+        message: "Produto não possui quantidade suficiente",
+        item: {
+          idProduto: produtoCriado._id,
+          quantidade: 5,
+          quantidadeEstoque: 2
+        }
+      }
+    });
+  });
+
+  it("should return unit price when stock is sufficient", async () => {
+    const produtoCriado = await produtosService.criarProduto({
+      nome: "Produto Suficiente",
+      preco: 75,
+      quantidade: 10,
+      descricao: "Desc"
+    });
+
+    const resultado = await produtosService.getPrecoUnitarioOuErro({
+      idProduto: produtoCriado._id,
+      quantidade: 5
+    });
+
+    expect(resultado).toEqual({ precoUnitario: 75 });
+  });
+});
+
+describe("getPrecosUnitariosPorLote", () => {
+  it("should return error when product in batch does not exist", async () => {
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: "inexistente", quantidade: 1 }
+    ]);
+    expect(resultado).toEqual({
+      error: {
+        statusCode: 400,
+        message: "Produto não encontrado",
+        item: { idProduto: "inexistente", quantidade: 1 },
+        index: 0
+      }
+    });
+  });
+
+  it("should return error when stock is insufficient in batch", async () => {
+    const produtoCriado = await produtosService.criarProduto({
+      nome: "Produto Lote",
+      preco: 25,
+      quantidade: 3,
+      descricao: "Desc"
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: produtoCriado._id, quantidade: 5 }
+    ]);
+
+    expect(resultado).toEqual({
+      error: {
+        statusCode: 400,
+        message: "Produto não possui quantidade suficiente",
+        item: {
+          idProduto: produtoCriado._id,
+          quantidade: 5,
+          quantidadeEstoque: 3
+        },
+        index: 0
+      }
+    });
+  });
+
+  it("should return products with unit prices when batch is valid", async () => {
+    const produto1 = await produtosService.criarProduto({
+      nome: "P1",
+      preco: 10,
+      quantidade: 10,
+      descricao: "Desc"
+    });
+    const produto2 = await produtosService.criarProduto({
+      nome: "P2",
+      preco: 20,
+      quantidade: 10,
+      descricao: "Desc"
+    });
+
+    const resultado = await produtosService.getPrecosUnitariosPorLote([
+      { idProduto: produto1._id, quantidade: 2 },
+      { idProduto: produto2._id, quantidade: 3 }
+    ]);
+
+    expect(resultado).toEqual({
+      produtosComPreco: [
+        { idProduto: produto1._id, quantidade: 2, precoUnitario: 10 },
+        { idProduto: produto2._id, quantidade: 3, precoUnitario: 20 }
+      ]
+    });
+  });
+});
+
+describe("deleteById", () => {
+  it("should return 0 removed count when product does not exist", async () => {
+    const removidos = await produtosService.deleteById("id-inexistente");
+    expect(removidos).toBe(0);
+  });
+});
+
+describe("updateById", () => {
+  it("should upsert product when id does not exist", async () => {
+    const resultado = await produtosService.updateById("id-novo-update", {
+      $set: { nome: "Atualizado" }
+    });
+    expect(resultado).toHaveProperty("_id", "id-novo-update");
+  });
+});
+```

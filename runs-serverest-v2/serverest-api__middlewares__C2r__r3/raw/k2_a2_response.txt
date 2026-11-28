@@ -1,0 +1,93 @@
+```ts
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import app from "../../src/app";
+
+describe("Middlewares API", () => {
+  describe("Authentication Middleware", () => {
+    it("should return 401 when token is missing on protected routes", async () => {
+      const response = await request(app).post("/carrinhos").send({
+        produtos: []
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({ message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais" });
+    });
+
+    it("should return 401 when token format is invalid", async () => {
+      const response = await request(app)
+        .post("/carrinhos")
+        .set("authorization", "InvalidFormat")
+        .send({ produtos: [] });
+
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({ message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais" });
+    });
+
+    it("should return 401 when token is invalid or user does not exist", async () => {
+      const response = await request(app)
+        .post("/carrinhos")
+        .set("authorization", "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature")
+        .send({ produtos: [] });
+
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({ message: "Token de acesso ausente, inválido, expirado ou usuário do token não existe mais" });
+    });
+
+    it("should return 403 when a non-admin user tries to access admin-only routes", async () => {
+      const regularUser = {
+        nome: "Test User Reg",
+        email: "testuserreg@qa.com",
+        password: "teste",
+        administrador: "false"
+      };
+
+      const createResponse = await request(app).post("/usuarios").send(regularUser);
+      expect(createResponse.status).toBe(201);
+
+      const loginResponse = await request(app).post("/login").send({
+        email: regularUser.email,
+        password: regularUser.password
+      });
+
+      expect(loginResponse.status).toBe(200);
+      const token = loginResponse.body.authorization;
+
+      const productResponse = await request(app)
+        .post("/produtos")
+        .set("authorization", token)
+        .send({
+          nome: "Produto Reg",
+          preco: 100,
+          descricao: "Desc",
+          quantidade: 10
+        });
+
+      expect(productResponse.status).toBe(403);
+      expect(productResponse.body).toEqual({ message: "Rota exclusiva para administradores" });
+    });
+  });
+
+  describe("Error Handler Middleware", () => {
+    it("should handle URIError and return 400 with specific message", async () => {
+      const response = await request(app).get("/usuarios/%E0%A4%A");
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        message: "Parâmetro de URL inválido. Verifique os caracteres especiais e tente novamente."
+      });
+    });
+
+    it("should handle invalid JSON body parse error and return 400", async () => {
+      const response = await request(app)
+        .post("/usuarios")
+        .set("content-type", "application/json")
+        .send("{invalid json}");
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("message");
+      expect(response.body.message).toContain("Adicione aspas em todos os valores");
+    });
+  });
+});
+```
