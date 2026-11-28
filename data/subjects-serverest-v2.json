@@ -1,0 +1,148 @@
+{
+  "schema_version": "0.1",
+  "libraries": [
+    {
+      "name": "serverest",
+      "repo": "ServeRest/ServeRest",
+      "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+      "license": "GPL-3.0",
+      "pm": "npm",
+      "language": "js",
+      "humanRunner": "mocha",
+      "mocha": {
+        "suiteSpecs": [
+          "test/unit/**/*.test.js",
+          "test/integration/**/*.test.js"
+        ],
+        "integrationRequire": [
+          "test/integration/utils/global.js"
+        ],
+        "timeoutMs": 30000
+      },
+      "preload": "nedb-em-memoria",
+      "vitestRelated": false,
+      "srcPathspec": [
+        "src",
+        ":(exclude)src/data"
+      ],
+      "testEnv": {
+        "TEST_TYPE": "mutation",
+        "NODE_ENV": "serverest-test"
+      },
+      "promptNotes": "The modules of this project are CommonJS JavaScript (module.exports / exports.x), not TypeScript. In the Vitest test file you can import them with a default import (`import mod from ...`, which is module.exports) or named imports. IMPORTANT (v2 instruction): do NOT use vi.mock or vi.doMock on project modules: Vitest cannot intercept the require() calls made by CommonJS code under test, so the real module would run and your spies would never be called. If you need to stub or observe a dependency, import it (a default import is its module.exports object) and use vi.spyOn(thatObject, 'method'); the module under test reaches it through the same object. The direct dependencies of the unit are provided below as read-only context: read them to learn the exact input and error shapes, and assert only behaviour you can derive from the source and that context, never guesses.",
+      "modules": [
+        {
+          "id": "error-handler",
+          "path": "src/middlewares/error-handler.js",
+          "loc": 91,
+          "humanTests": [
+            "test/integration/outros/error-handler.test.js"
+          ],
+          "importPath": "../../src/middlewares/error-handler",
+          "contextFiles": [
+            "src/utils/montarMensagemDeErroDeSchema.js",
+            "src/utils/constants.js",
+            "src/utils/logger.js"
+          ]
+        },
+        {
+          "id": "carrinhos-controller",
+          "path": "src/controllers/carrinhos-controller.js",
+          "loc": 90,
+          "humanTests": [
+            "test/integration/carrinhos/cancelarCompra.test.js",
+            "test/integration/carrinhos/concluirCompra.test.js",
+            "test/integration/carrinhos/contrato.test.js",
+            "test/integration/carrinhos/get.test.js",
+            "test/integration/carrinhos/getOne.test.js",
+            "test/integration/carrinhos/ordem.test.js",
+            "test/integration/carrinhos/post.test.js"
+          ],
+          "importPath": "../../src/controllers/carrinhos-controller",
+          "contextFiles": [
+            "src/services/carrinhos-service.js",
+            "src/utils/constants.js"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "serverest-api",
+      "repo": "ServeRest/ServeRest",
+      "commit": "357bb6507dd862742cb312dc8a00c01c7984e057",
+      "license": "GPL-3.0",
+      "pm": "npm",
+      "language": "js",
+      "humanRunner": "mocha",
+      "mocha": {
+        "suiteSpecs": [
+          "test/unit/**/*.test.js",
+          "test/integration/**/*.test.js"
+        ],
+        "integrationRequire": [
+          "test/integration/utils/global.js"
+        ],
+        "timeoutMs": 30000
+      },
+      "preload": "nedb-em-memoria",
+      "vitestRelated": false,
+      "srcPathspec": [
+        "src",
+        ":(exclude)src/data"
+      ],
+      "testEnv": {
+        "TEST_TYPE": "mutation",
+        "NODE_ENV": "serverest-test"
+      },
+      "promptNotes": "This is an Express REST API (CommonJS JavaScript). The application object is exported by src/app.js (`module.exports = app`); import it with a default import. The routes are mounted on the paths listed in the context files. Use supertest (`import request from \"supertest\"`) and never start a real server. IMPORTANT (v2 instruction): do NOT use vi.mock or vi.doMock on project modules: Vitest cannot intercept the require() calls made by CommonJS code under test, so the real module would run and your spies would never be called. If you need to stub or observe a dependency, import it (a default import is its module.exports object) and use vi.spyOn(thatObject, 'method'); the module under test reaches it through the same object. The direct dependencies of the unit are provided below as read-only context: read them to learn the exact input and error shapes, and assert only behaviour you can derive from the source and that context, never guesses. Which routes require a token or an administrator is defined in the route files provided as context (checkToken / checkAdm): assert 401 or 403 only on routes whose route file applies them, and obtain real tokens through POST /login instead of assuming them. Do not assume that a URL produces an error unless the source shows it.",
+      "modules": [
+        {
+          "id": "middlewares",
+          "path": "api/middlewares",
+          "mutatePaths": [
+            "src/middlewares/error-handler.js",
+            "src/middlewares/authentication-middleware.js"
+          ],
+          "contextFiles": [
+            "src/utils/rotas-da-api.js",
+            "src/routes/usuarios-route.js",
+            "src/routes/produtos-route.js",
+            "src/routes/carrinhos-route.js",
+            "src/routes/login-route.js"
+          ],
+          "loc": 136,
+          "humanTests": [
+            "test/integration/outros/error-handler.test.js",
+            "test/integration/usuarios/contrato.test.js",
+            "test/integration/usuarios/delete.test.js",
+            "test/integration/usuarios/get.test.js",
+            "test/integration/usuarios/getOne.test.js",
+            "test/integration/usuarios/ordem.test.js",
+            "test/integration/usuarios/post.test.js",
+            "test/integration/usuarios/put.test.js",
+            "test/integration/produtos/contrato.test.js",
+            "test/integration/produtos/delete.test.js",
+            "test/integration/produtos/get.test.js",
+            "test/integration/produtos/getOne.test.js",
+            "test/integration/produtos/ordem.test.js",
+            "test/integration/produtos/post.test.js",
+            "test/integration/produtos/put.test.js",
+            "test/integration/carrinhos/cancelarCompra.test.js",
+            "test/integration/carrinhos/concluirCompra.test.js",
+            "test/integration/carrinhos/contrato.test.js",
+            "test/integration/carrinhos/get.test.js",
+            "test/integration/carrinhos/getOne.test.js",
+            "test/integration/carrinhos/ordem.test.js",
+            "test/integration/carrinhos/post.test.js",
+            "test/integration/login/post.test.js"
+          ],
+          "importPath": "../../src/app"
+        }
+      ],
+      "kind": "api",
+      "allowedImports": [
+        "supertest"
+      ]
+    }
+  ]
+}

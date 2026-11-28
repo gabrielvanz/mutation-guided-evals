@@ -1,0 +1,154 @@
+name: experiment-serverest
+# Extensão do experimento: a mesma malha de continuous evals aplicada à ServeRest (API REST em Node/Express, JavaScript).
+# Protocolo: PROTOCOL_EXT_SERVEREST.md. Os resultados ficam em runs-serverest/ e NÃO entram na análise principal (runs/).
+# Requer o secret GEMINI_API_KEY (ou ajuste LLM_PROVIDER/LLM_BASE_URL/LLM_API_KEY para outro provedor).
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "ID EXATO do modelo (sem alias -latest). Registrado em cada result.json."
+        required: true
+      conditions:
+        description: "Condições (separadas por vírgula)"
+        default: "C0,C1,C2,C2r,C3"
+      reps:
+        description: "Repetições por condição com LLM"
+        default: "3"
+      min_interval_ms:
+        description: "Intervalo mínimo entre chamadas por job (ms). Com max-parallel=2, use o dobro do necessário por job."
+        default: "9000"
+
+# Mesmo grupo do experimento principal: os dois workflows commitam resultados e não podem correr ao mesmo tempo.
+concurrency:
+  group: experiment
+  cancel-in-progress: false
+
+env:
+  SUBJECTS_FILE: data/subjects-serverest.json
+  RUNS_DIR: runs-serverest
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+      pending: ${{ steps.m.outputs.pending }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - id: m
+        env:
+          # runs de OUTRO modelo não contam como concluídos (não misturar modelos)
+          LLM_MODEL: ${{ inputs.model }}
+        run: |
+          M="$(npm run -s matrix -- --subjects "$SUBJECTS_FILE" --out "$RUNS_DIR" --conditions ${{ inputs.conditions }} --reps ${{ inputs.reps }} --skip-done)"
+          echo "matrix=$M" >> "$GITHUB_OUTPUT"
+          echo "pending=$(echo "$M" | jq '.include | length')" >> "$GITHUB_OUTPUT"
+
+  run:
+    needs: matrix
+    if: needs.matrix.outputs.pending != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.matrix.outputs.matrix) }}
+    env:
+      LLM_PROVIDER: gemini
+      LLM_MODEL: ${{ inputs.model }}
+      LLM_MIN_INTERVAL_MS: ${{ inputs.min_interval_ms }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Preparar a ServeRest no commit fixado (npm; Vitest, Stryker e mocha-runner)
+        run: scripts/setup-subject.sh ${{ matrix.library }} "$RUNNER_TEMP/${{ matrix.library }}"
+      - name: Executar run (repete o run inteiro se o erro for de infraestrutura)
+        run: |
+          # Código de saída 2 = erro de infraestrutura (503 "high demand", cota, timeout): o CLI refaz o run do zero.
+          # Qualquer outro desfecho (ok, invalid_all_iterations) sai com 0 e NÃO é repetido.
+          for attempt in 1 2 3; do
+            rc=0
+            npm run -s run -- \
+              --subjects "$SUBJECTS_FILE" --out "$RUNS_DIR" \
+              --library ${{ matrix.library }} --module ${{ matrix.module }} \
+              --condition ${{ matrix.condition }} --rep ${{ matrix.rep }} \
+              --workdir "$RUNNER_TEMP/${{ matrix.library }}" || rc=$?
+            if [ "$rc" -ne 2 ]; then exit "$rc"; fi
+            echo "::warning::tentativa $attempt/3 terminou com erro de infraestrutura"
+            if [ "$attempt" -lt 3 ]; then sleep 300; fi
+          done
+          exit 2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          # nome = run_id: o job persist baixa cada artifact em runs-serverest/<run_id>/
+          name: ${{ matrix.library }}__${{ matrix.module }}__${{ matrix.condition }}__r${{ matrix.rep }}
+          path: runs-serverest/${{ matrix.library }}__${{ matrix.module }}__${{ matrix.condition }}__r${{ matrix.rep }}
+          retention-days: 90
+
+  # Guarda os resultados no repositório ao fim de cada lote. Sem isso, o próximo dispatch começa do zero.
+  persist:
+    needs: [matrix, run]
+    if: always() && needs.matrix.result == 'success' && needs.run.result != 'skipped'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "serverest__*__r[0-9]*"
+          path: runs-serverest
+      - name: Descartar runs com erro de infraestrutura (refeitos no próximo lote)
+        run: |
+          for f in runs-serverest/*/result.json; do
+            [ -f "$f" ] || continue
+            s="$(jq -r .status "$f")"
+            case "$s" in
+              provider_error|stryker_error|timeout) echo "descartando $(dirname "$f") ($s)"; rm -rf "$(dirname "$f")" ;;
+            esac
+          done
+      - name: Commitar resultados (result.json + raw/, sem work/)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add runs-serverest/ ':(exclude,glob)runs-serverest/*/work/**'
+          if git diff --cached --quiet; then echo "Nada novo para guardar."; exit 0; fi
+          git commit -m "data: resultados da extensão ServeRest (modelo ${{ inputs.model }}, workflow run ${{ github.run_id }})"
+          for i in 1 2 3; do
+            git pull --rebase origin "${{ github.ref_name }}" && git push origin "HEAD:${{ github.ref_name }}" && exit 0
+            sleep 5
+          done
+          echo "Falha ao enviar os resultados"; exit 1
+
+  analyze:
+    needs: [matrix, persist]
+    if: always() && needs.matrix.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: npm ci
+      - run: npm run -s validate -- --dir "$RUNS_DIR"
+      - run: pip install -r analysis/requirements.txt
+      # --paper aponta para outra pasta: as tabelas e figuras do artigo principal não são sobrescritas
+      - run: python analysis/analyze.py --runs "$RUNS_DIR" --out analysis/out-serverest --paper analysis/paper-serverest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: analysis-serverest
+          path: |
+            analysis/out-serverest/
+            analysis/paper-serverest/

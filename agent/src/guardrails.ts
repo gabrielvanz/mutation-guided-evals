@@ -100,6 +100,8 @@ function hasHelperCall(node: ts.Node, helpers: Set<string>): boolean {
 export interface GuardrailOptions {
   /** Prefixo permitido para imports relativos do módulo sob teste (ex.: "../../src"). */
   allowedImportSubstr?: string;
+  /** Pacotes (além de "vitest") cujo import é permitido, ex.: ["supertest"]. */
+  allowedImports?: string[];
 }
 
 export function analyzeTestFile(source: string, opts: GuardrailOptions = {}): GuardrailReport {
@@ -141,7 +143,11 @@ export function analyzeTestFile(source: string, opts: GuardrailOptions = {}): Gu
       const spec = n.moduleSpecifier.text;
       const okVitest = spec === "vitest";
       const okRel = spec.startsWith(".") && (!opts.allowedImportSubstr || spec.includes(opts.allowedImportSubstr));
-      if (!okVitest && !okRel) flag("forbidden_import", `import não permitido: "${spec}" (só "vitest" e o módulo sob teste)`);
+      const okExtra = opts.allowedImports?.includes(spec) ?? false;
+      if (!okVitest && !okRel && !okExtra) {
+        const allowed = ['"vitest"', ...(opts.allowedImports ?? []).map((a) => `"${a}"`), "o módulo sob teste"].join(", ");
+        flag("forbidden_import", `import não permitido: "${spec}" (só ${allowed})`);
+      }
       if (/^(node:)?(http|https|net|dgram|tls|http2)$/.test(spec)) flag("network", `import de rede: "${spec}"`);
     }
     if (ts.isCallExpression(n)) {

@@ -74,7 +74,7 @@ def runs_to_frames(runs: list[dict]) -> tuple[pd.DataFrame, pd.DataFrame]:
         cond = "C0" if r["condition"] == "C0" and r.get("c0_scope", "module") == "module" else r["condition"]
         if r["condition"] == "C0" and r.get("c0_scope") == "suite":
             cond = "C0-suite"
-        mod = f'{r["subject"]["library"]}/{r["subject"]["module_path"].split("/")[-1].replace(".ts", "")}'
+        mod = f'{r["subject"]["library"]}/{r["subject"]["module_path"].split("/")[-1].replace(".ts", "").replace(".js", "")}'
         f = r["final"]
         ks = killed_set(r)
         rows.append(

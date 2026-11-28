@@ -137,6 +137,8 @@ export interface RunResult {
     commit: string;
     license: string;
     module_path: string;
+    /** Arquivos mutados quando a unidade tem mais de um (unidades de API da extensão ServeRest). */
+    mutate_paths?: string[];
     module_loc: number;
     mutants_total: number;
     human_test_files: string[];
@@ -156,6 +158,8 @@ export interface RunResult {
   tooling: {
     node: string;
     vitest: string;
+    /** Versão do Mocha, quando o baseline humano é executado nele (ex.: ServeRest). */
+    mocha?: string;
     stryker: string;
     stryker_config_sha256?: string;
     split_seed: string;

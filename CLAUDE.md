@@ -10,6 +10,14 @@ Leia `PROTOCOL.md` antes de qualquer mudança no experimento.
 - `npm run validate` valida `runs/**/result.json` contra `schemas/run-result.schema.json`
 - `python analysis/analyze.py --runs runs --out analysis/out`
 
+## Extensão ServeRest
+
+- Protocolo em `PROTOCOL_EXT_SERVEREST.md`; sujeitos em `data/subjects-serverest.json` (**não** em `data/subjects.json`) e
+  resultados em `runs-serverest/` (**nunca** em `runs/`). Use `--subjects data/subjects-serverest.json --out runs-serverest`.
+- A seleção de unidades usa só C0 e está congelada; mudanças vão em §9 do protocolo da extensão.
+- O comportamento do experimento principal não pode mudar: as opções novas do executor (`humanRunner`, `preload`, `mutatePaths`,
+  `kind`) só valem quando o sujeito as define.
+
 ## Regras
 
 - **Não altere `PROTOCOL.md` nem `config/split.json` depois de iniciar a coleta.** Desvios vão em §12 (registro de desvios).

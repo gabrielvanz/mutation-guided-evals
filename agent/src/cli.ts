@@ -65,6 +65,8 @@ async function cmdRun(argv: string[]): Promise<number> {
       rep: { type: "string", default: "1" },
       workdir: { type: "string" },
       out: { type: "string", default: path.join(ROOT, "runs") },
+      // conjunto alternativo de sujeitos (extensão), ex.: data/subjects-serverest.json; o padrão é o experimento principal
+      subjects: { type: "string" },
       n: { type: "string" },
       "c0-scope": { type: "string", default: "module" },
       force: { type: "boolean", default: false },
@@ -77,13 +79,14 @@ async function cmdRun(argv: string[]): Promise<number> {
   const rep = condition === "C0" ? 0 : Number(v.rep);
   const c0Scope = (v["c0-scope"] as "module" | "suite") ?? "module";
 
-  const [cfg, subjects, pricing, splitSeed] = await Promise.all([loadExperiment(ROOT), loadSubjects(ROOT), loadPricing(ROOT), loadSplitSeed(ROOT)]);
+  const [cfg, subjects, pricing, splitSeed] = await Promise.all([loadExperiment(ROOT), loadSubjects(ROOT, v.subjects), loadPricing(ROOT), loadSplitSeed(ROOT)]);
   const lib = subjects.libraries.find((l) => l.name === v.library);
   const mod = lib?.modules.find((m) => m.id === v.module);
   if (!lib || !mod) throw new Error(`módulo não encontrado em data/subjects.json: ${v.library}/${v.module}`);
 
   const id = runId(lib.name, mod.id, condition, rep, condition === "C0" ? c0Scope : undefined);
-  const runDir = path.join(v.out!, id);
+  // absoluto: o Stryker resolve o caminho do relatório a partir do workdir, não do cwd do agente
+  const runDir = path.join(path.resolve(v.out!), id);
   const resultFile = path.join(runDir, "result.json");
   if (existsSync(resultFile) && !v.force) {
     const prev = JSON.parse(await readFile(resultFile, "utf8")) as RunResult;
@@ -96,7 +99,13 @@ async function cmdRun(argv: string[]): Promise<number> {
   if (existsSync(runDir)) await rm(runDir, { recursive: true, force: true });
 
   const workdir = path.resolve(v.workdir);
-  const source = await readFile(path.join(workdir, mod.path), "utf8");
+  const mutatePaths = mod.mutatePaths && mod.mutatePaths.length > 0 ? mod.mutatePaths : [mod.path];
+  // Unidade de um arquivo: o texto do arquivo (como sempre foi). Unidade de API: todos os arquivos mutados, com cabeçalho.
+  const source =
+    mutatePaths.length === 1
+      ? await readFile(path.join(workdir, mod.path), "utf8")
+      : (await Promise.all(mutatePaths.map(async (p) => `// ===== file: ${p} =====\n${await readFile(path.join(workdir, p), "utf8")}`))).join("\n");
+  const contextFiles = await Promise.all((mod.contextFiles ?? []).map(async (p) => ({ path: p, content: await readFile(path.join(workdir, p), "utf8") })));
   const humanSources = await Promise.all(mod.humanTests.map((t) => readFile(path.join(workdir, t), "utf8")));
   const needsLLM = condition !== "C0";
   const provider = needsLLM ? providerFromEnv(cfg) : null;
@@ -106,16 +115,24 @@ async function cmdRun(argv: string[]): Promise<number> {
   const evaluator = new SubjectEvaluator({
     workdir,
     modulePath: mod.path,
+    mutatePaths,
     humanTests: mod.humanTests,
     artifactDir: path.join(runDir, "work"),
     moduleId: mod.id,
     strykerConcurrency: cfg.stryker_concurrency,
     reruns: cfg.vitest_reruns,
+    humanRunner: lib.humanRunner,
+    mocha: lib.mocha,
+    resetPaths: lib.resetPaths,
+    srcPathspec: lib.srcPathspec,
+    testEnv: lib.testEnv,
+    preload: lib.preload,
+    vitestRelated: lib.vitestRelated,
   });
 
   console.log(`[run] ${id}`);
   const result = await executeRun({
-    subject: { library: lib.name, repo: lib.repo, commit: lib.commit, license: lib.license, module: { id: mod.id, path: mod.path, loc: mod.loc, humanTests: mod.humanTests } },
+    subject: { library: lib.name, repo: lib.repo, commit: lib.commit, license: lib.license, module: { id: mod.id, path: mod.path, loc: mod.loc, humanTests: mod.humanTests, mutatePaths } },
     condition,
     rep,
     n: v.n ? Number(v.n) : cfg.n_iterations,
@@ -123,6 +140,11 @@ async function cmdRun(argv: string[]): Promise<number> {
     evaluator,
     source,
     importPath: mod.importPath,
+    sourceLang: lib.language === "js" ? "js" : undefined,
+    promptNotes: lib.promptNotes,
+    kind: lib.kind === "api" ? "api" : undefined,
+    allowedImports: lib.allowedImports,
+    contextFiles: contextFiles.length > 0 ? contextFiles : undefined,
     conventions,
     splitSeed,
     temperature: cfg.temperature,
@@ -135,6 +157,7 @@ async function cmdRun(argv: string[]): Promise<number> {
     tooling: {
       node: process.version,
       vitest: await pkgVersion(workdir, "vitest"),
+      ...(lib.humanRunner === "mocha" ? { mocha: await pkgVersion(workdir, "mocha") } : {}),
       stryker: await pkgVersion(workdir, "@stryker-mutator/core"),
       split_seed: splitSeed,
       claude_md_sha256: conventions ? sha256(conventions) : null,
@@ -168,10 +191,13 @@ async function cmdMatrix(argv: string[]): Promise<number> {
       library: { type: "string" },
       // omite runs que já têm result.json em runs/ (status final); provider_error/stryker_error/timeout são refeitos
       "skip-done": { type: "boolean", default: false },
+      subjects: { type: "string" },
+      // pasta de resultados consultada por --skip-done (padrão: runs/)
+      out: { type: "string" },
     },
   });
   const cfg = await loadExperiment(ROOT);
-  const subjects = await loadSubjects(ROOT);
+  const subjects = await loadSubjects(ROOT, v.subjects);
   const reps = v.reps ? Number(v.reps) : cfg.repetitions;
   const include: { library: string; module: string; condition: string; rep: number }[] = [];
   for (const lib of subjects.libraries) {
@@ -183,17 +209,17 @@ async function cmdMatrix(argv: string[]): Promise<number> {
       }
     }
   }
-  const pending = v["skip-done"] ? await filterPending(include) : include;
+  const pending = v["skip-done"] ? await filterPending(include, v.out ?? path.join(ROOT, "runs")) : include;
   if (v["skip-done"]) console.error(`[matrix] ${include.length - pending.length} de ${include.length} runs já concluídos; ${pending.length} pendentes`);
   console.log(JSON.stringify({ include: pending }));
   return 0;
 }
 
-async function filterPending<T extends { library: string; module: string; condition: string; rep: number }>(all: T[]): Promise<T[]> {
+async function filterPending<T extends { library: string; module: string; condition: string; rep: number }>(all: T[], runsDir: string): Promise<T[]> {
   const pending: T[] = [];
   for (const e of all) {
     const id = runId(e.library, e.module, e.condition as Condition, e.rep, e.condition === "C0" ? "module" : undefined);
-    const file = path.join(ROOT, "runs", id, "result.json");
+    const file = path.join(runsDir, id, "result.json");
     let done = false;
     if (existsSync(file)) {
       try {
@@ -248,11 +274,11 @@ async function cmdValidate(argv: string[]): Promise<number> {
 async function cmdProbe(argv: string[]): Promise<number> {
   const { values: v } = parseArgs({
     args: argv,
-    options: { workdirs: { type: "string" }, out: { type: "string", default: path.join(ROOT, "data/memorization.json") } },
+    options: { workdirs: { type: "string" }, out: { type: "string", default: path.join(ROOT, "data/memorization.json") }, subjects: { type: "string" } },
   });
-  if (!v.workdirs) throw new Error("uso: probe --workdirs ufo=/p/ufo,defu=/p/defu,...");
+  if (!v.workdirs) throw new Error("uso: probe --workdirs ufo=/p/ufo,defu=/p/defu,... [--subjects data/subjects-serverest.json --out data/memorization-serverest.json]");
   const dirs = Object.fromEntries(v.workdirs.split(",").map((kv) => kv.split("=") as [string, string]));
-  const [cfg, subjects] = await Promise.all([loadExperiment(ROOT), loadSubjects(ROOT)]);
+  const [cfg, subjects] = await Promise.all([loadExperiment(ROOT), loadSubjects(ROOT, v.subjects)]);
   const provider = providerFromEnv(cfg);
   const res: Record<string, { similarity: number; stratum?: string }> = {};
   for (const lib of subjects.libraries) {

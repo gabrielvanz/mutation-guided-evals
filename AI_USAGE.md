@@ -24,6 +24,17 @@ trecho correspondente no capítulo de Metodologia do artigo.
 | Registro de desvio | Redigiu a entrada de 2026-11-26 em §12 do `PROTOCOL.md` (3 runs extras de `pathe/path` fora da análise) | Os autores decidiram o desvio; a origem exata dos runs extras não foi confirmada |
 | Artigo | Redigiu o rascunho e, depois, reescreveu resumos, resultados, sensibilidade e conclusão com os números reais | Números conferidos contra `analysis/out` e contra `data/module-selection.csv`; **o `main.tex` ainda não foi compilado nesta fase**; **os autores devem revisar integralmente** e conferir as referências |
 
+## Extensão ServeRest (Claude Code, 27/11/2026)
+
+| Parte | Contribuição da IA | Verificação feita |
+|---|---|---|
+| Suporte a sujeitos JavaScript no arcabouço | Baseline humano em Mocha com `nyc`, banco em memória, unidades de API com vários arquivos e `supertest`, opções novas do executor, workflow e protocolo da extensão | 87 testes unitários passam (16 novos); typecheck limpo; o experimento principal não mudou (os 71 testes originais passam) |
+| Seleção de módulos | Mediu o C0 de 26 candidatos e aplicou os critérios do protocolo | Números em `data/module-selection-serverest.csv`; a seleção usou só C0, antes de qualquer C1 a C3 |
+| Achado de validade | Detectou que o banco em arquivo inflava o score humano e criou o banco em memória | Medição nos dois ambientes (ver `PROTOCOL_EXT_SERVEREST.md` §3) |
+| Teste de fumaça | Rodou o executor real com um modelo falso em uma unidade de módulo e em uma de API | Resultado ok e `git diff -- src` vazio |
+
+A coleta de C1 a C3 e a sonda V1 da ServeRest foram executadas pelo Claude Code com a chave do `.env` autorizada pelo usuário (WSL Ubuntu, `gemini-3.5-flash-lite`), com duas pausas e um timeout de requisição adicionado (ver §9 do protocolo da extensão). Os números vêm de `runs-serverest/`; **os autores devem revisar a interpretação**. Depois, a IA diagnosticou por que três unidades não tinham teste válido (rodando os testes gerados contra o código original), escreveu e registrou a análise complementar v2 (§11 do protocolo da extensão, antes das runs) e a executou em 36 runs; a v3 foi descartada por decisão dos autores.
+
 ## O que a IA NÃO fez
 
 - Não executou as condições C1, C2, C2r e C3: foram executadas pelos autores no GitHub Actions (exigem chave de API que a IA não possui). A IA só analisou os `result.json` resultantes.

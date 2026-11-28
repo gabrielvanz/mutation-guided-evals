@@ -1,0 +1,27 @@
+library,module,loc,mutants_total,mutants_valid,human_ms_module_pct,line_cov_pct,decision,reason
+serverest,carrinhos-controller,90,72,72,79.2,100,include,
+serverest,carrinhos-service,118,61,61,68.9,98.3,include,
+serverest,error-handler,91,142,142,65.5,82.05,include,
+serverest,produtos-service,167,115,115,50.4,95.55,include,
+serverest,rate-limiter,165,131,131,87.0,93.93,include,
+serverest,alterarValoresParaRegex,21,13,13,100,100,exclude,menos de 50 mutantes válidos (13)
+serverest,authentication-middleware,45,49,49,73.5,100,exclude,menos de 50 mutantes válidos (49)
+serverest,carrinhos-model,31,12,12,0,100,exclude,menos de 50 mutantes válidos (12)
+serverest,etapas,98,81,81,96.3,100,exclude,teto: score humano acima de 92%
+serverest,filtrosDaQuery,38,27,27,81.5,100,exclude,menos de 50 mutantes válidos (27)
+serverest,getRandomFinancialContributor,30,29,29,89.7,100,exclude,menos de 50 mutantes válidos; faz requisição de rede
+serverest,github-release,89,128,128,75.8,100,exclude,faz requisição de rede (axios); o protocolo exige testes sem rede
+serverest,lab-entrega,136,142,142,79.6,100,exclude,lê o sistema de arquivos em tempo de execução (fs); o protocolo exige testes sem I/O
+serverest,login-controller,18,8,8,100,100,exclude,menos de 50 mutantes válidos (8)
+serverest,ordemDeAlteracao,44,39,39,84.6,100,exclude,menos de 50 mutantes válidos (39)
+serverest,produtos-controller,63,40,40,95,100,exclude,menos de 50 mutantes válidos (40)
+serverest,produtos-model,43,21,21,0,100,exclude,menos de 50 mutantes válidos (21)
+serverest,swagger-sw,95,115,115,0,,exclude,o teste humano não executa o módulo (lê o texto do arquivo): baseline sem valor
+serverest,usuarios-controller,47,38,38,100,100,exclude,menos de 50 mutantes válidos (38)
+serverest,usuarios-model,41,17,17,0,100,exclude,menos de 50 mutantes válidos (17)
+serverest,usuarios-service,48,24,24,58.3,87.5,exclude,menos de 50 mutantes válidos (24)
+serverest-api,carrinhos,239,145,145,68.3,99.16,include,
+serverest-api,middlewares,136,191,191,67.5,89.71,include,
+serverest-api,produtos,273,176,176,54.5,97.78,include,
+serverest-api,usuarios,136,79,79,65.8,95.16,include,
+serverest-api,login,49,21,21,42.9,100,exclude,menos de 50 mutantes válidos (21)

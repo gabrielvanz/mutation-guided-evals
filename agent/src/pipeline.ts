@@ -1,7 +1,7 @@
 import { analyzeTestFile } from "./guardrails.js";
 import { extractCode } from "./extract.js";
 import { assignGroups, computeScores, countFeedbackSurvivors, selectSurvivors, totalMutants } from "./mutants.js";
-import { buildFeedbackPrompt, buildInitialPrompt, buildRepairPrompt, SYSTEM_PROMPT } from "./prompts.js";
+import { buildFeedbackPrompt, buildInitialPrompt, buildRepairPrompt, systemPromptFor, type ContextFile } from "./prompts.js";
 import { ProviderError, type LLMProvider, type LLMResponse } from "./providers/provider.js";
 import type { Evaluator, Measurement } from "./runner.js";
 import type {
@@ -32,7 +32,7 @@ export interface RunOptions {
     repo: string;
     commit: string;
     license: string;
-    module: { id: string; path: string; loc: number; humanTests: string[] };
+    module: { id: string; path: string; loc: number; humanTests: string[]; mutatePaths?: string[] };
   };
   condition: Condition;
   rep: number;
@@ -57,6 +57,14 @@ export interface RunOptions {
   c0Scope?: "module" | "suite";
   humanTestSources?: string[];
   memorization?: RunResult["memorization"];
+  /** Linguagem do módulo no bloco de código dos prompts (padrão "ts") e nota fixa do sujeito. Ausentes nas bibliotecas TypeScript. */
+  sourceLang?: string;
+  promptNotes?: string | null;
+  /** "api": testes via HTTP (supertest). Ausente nas bibliotecas TypeScript originais. */
+  kind?: "unit" | "api";
+  /** Pacotes permitidos nos testes gerados além do Vitest (ex.: ["supertest"]). */
+  allowedImports?: string[];
+  contextFiles?: ContextFile[];
 }
 
 class CostMeter {
@@ -94,8 +102,8 @@ class CostMeter {
 
 const NULL_SCORES: Scores = { ms_eval: null, ms_feedback: null, ms_all: null, ms_covered: null };
 
-function statsOf(source: string, allowedImportSubstr?: string): TestStats {
-  const g = analyzeTestFile(source, { allowedImportSubstr });
+function statsOf(source: string, allowedImportSubstr?: string, allowedImports?: string[]): TestStats {
+  const g = analyzeTestFile(source, { allowedImportSubstr, allowedImports });
   return { n_tests: g.n_tests, n_asserts: g.n_asserts, sha256: sha256(source) };
 }
 
@@ -123,6 +131,11 @@ export async function executeRun(o: RunOptions): Promise<RunResult> {
   let bestK: number | null = null;
   const claudeMdSha = o.conventions ? sha256(o.conventions) : null;
   const importSubstr = "src";
+  // Nome da unidade nos prompts: o caminho do módulo; nas unidades de API, o nome e os arquivos que são mutados.
+  const promptUnit =
+    o.kind === "api" && o.subject.module.mutatePaths
+      ? `the ${o.subject.module.id} API (files under test: ${o.subject.module.mutatePaths.join(", ")})`
+      : o.subject.module.path;
 
   const pickBest = (): ValidIteration | null => {
     let best: ValidIteration | null = null;
@@ -154,7 +167,7 @@ export async function executeRun(o: RunOptions): Promise<RunResult> {
     let responseFile = "";
     for (let attempt = 0; attempt <= o.maxRepairs; attempt++) {
       const resp = await o.provider.generate({
-        system: SYSTEM_PROMPT,
+        system: systemPromptFor(o.kind),
         user: prompt,
         temperature: o.temperature,
         topP: o.topP,
@@ -175,7 +188,7 @@ export async function executeRun(o: RunOptions): Promise<RunResult> {
         problems = "The reply did not contain a complete ```ts code block with a test file.";
       } else {
         current = code;
-        const g = analyzeTestFile(code, { allowedImportSubstr: importSubstr });
+        const g = analyzeTestFile(code, { allowedImportSubstr: importSubstr, allowedImports: o.allowedImports });
         g.violations.forEach((v) => violationsSeen.add(v));
         if (!g.ok) {
           reason = "guardrail_violation";
@@ -188,11 +201,15 @@ export async function executeRun(o: RunOptions): Promise<RunResult> {
         }
       }
       prompt = buildRepairPrompt({
-        modulePath: o.subject.module.path,
+        modulePath: promptUnit,
         importPath: o.importPath,
         source: o.source,
         currentTests: current ?? "(no valid test file was produced)",
         problems,
+        sourceLang: o.sourceLang,
+        notes: o.promptNotes,
+        kind: o.kind,
+        contextFiles: o.contextFiles,
       });
     }
     return { source: null, repairs: o.maxRepairs, reason, promptFile, responseFile };
@@ -239,7 +256,7 @@ export async function executeRun(o: RunOptions): Promise<RunResult> {
       mutants_feedback: b.feedback,
       survivors_sent: survivorsSent.count,
       survivor_ids: survivorsSent.ids,
-      tests: statsOf(p.source, importSubstr),
+      tests: statsOf(p.source, importSubstr, o.allowedImports),
       prompt_file: p.promptFile,
       response_file: p.responseFile,
     });
@@ -281,10 +298,14 @@ export async function executeRun(o: RunOptions): Promise<RunResult> {
     } else {
       const conv = o.condition === "C1" ? null : o.conventions;
       const initialPrompt = buildInitialPrompt({
-        modulePath: o.subject.module.path,
+        modulePath: promptUnit,
         importPath: o.importPath,
         source: o.source,
         conventions: conv,
+        sourceLang: o.sourceLang,
+        notes: o.promptNotes,
+        kind: o.kind,
+        contextFiles: o.contextFiles,
       });
       const base = [o.subject.library, o.subject.module.id, o.condition, o.rep];
 
@@ -328,10 +349,14 @@ export async function executeRun(o: RunOptions): Promise<RunResult> {
             seed: `${o.splitSeed}|${o.subject.library}|${o.subject.module.id}|${o.rep}|${k}`,
           });
           const prompt = buildFeedbackPrompt({
-            modulePath: o.subject.module.path,
+            modulePath: promptUnit,
             importPath: o.importPath,
             source: o.source,
             conventions: conv,
+            sourceLang: o.sourceLang,
+            notes: o.promptNotes,
+            kind: o.kind,
+            contextFiles: o.contextFiles,
             currentTests: best.source,
             survivors,
             totalSurvivorsInFeedbackGroup: totalSurv,
@@ -381,6 +406,7 @@ export async function executeRun(o: RunOptions): Promise<RunResult> {
       commit: o.subject.commit,
       license: o.subject.license,
       module_path: o.subject.module.path,
+      ...(o.subject.module.mutatePaths && o.subject.module.mutatePaths.length > 1 ? { mutate_paths: o.subject.module.mutatePaths } : {}),
       module_loc: o.subject.module.loc,
       mutants_total: moduleReportTotal,
       human_test_files: o.subject.module.humanTests,

@@ -84,6 +84,13 @@
         "module_path": {
           "type": "string"
         },
+        "mutate_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "arquivos mutados, quando a unidade tem mais de um (extensão ServeRest)"
+        },
         "module_loc": {
           "type": "integer",
           "minimum": 1
@@ -174,6 +181,10 @@
         },
         "vitest": {
           "type": "string"
+        },
+        "mocha": {
+          "type": "string",
+          "description": "versão do Mocha, quando o baseline humano roda nele"
         },
         "stryker": {
           "type": "string"

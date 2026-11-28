@@ -5,6 +5,8 @@ interface GeminiOptions {
   modelId: string;
   baseUrl?: string;
   minIntervalMs?: number;
+  /** tempo máximo de uma requisição (padrão 180 s); estourar vira falha de rede, que é refeita */
+  requestTimeoutMs?: number;
   /** 0 desativa o "thinking" (custo e variância menores). undefined = padrão do modelo. */
   thinkingBudget?: number;
   /**
@@ -55,6 +57,8 @@ export class GeminiProvider implements LLMProvider {
       try {
         res = await this.fetchImpl(`${this.baseUrl}/models/${encodeURIComponent(this.modelId)}:generateContent`, {
           method: "POST",
+          // sem limite, uma conexão que o servidor deixa pendurada trava o run para sempre
+          signal: AbortSignal.timeout(this.o.requestTimeoutMs ?? 180_000),
           headers: { "content-type": "application/json", "x-goog-api-key": this.o.apiKey },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: req.system }] },

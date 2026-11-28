@@ -340,6 +340,30 @@ para não sobrescrever o artigo.
 > `thinkingBudget: 0` dá HTTP 400 e `thinkingLevel: "minimal"` funciona, então `config/experiment.json` usa
 > `thinking_level: "minimal"`. `agent/scripts/check-api.ts` testa cada campo da API.
 
+## 9.1 Extensão: ServeRest (API REST em Node/Express)
+
+O arcabouço também roda sobre a **ServeRest**, uma API real em JavaScript (rotas, middlewares, validação e banco NeDB), como
+extensão **separada** do experimento principal. Ela responde à limitação "só funções puras". O protocolo está em
+[`PROTOCOL_EXT_SERVEREST.md`](PROTOCOL_EXT_SERVEREST.md); nada dela entra na análise principal (`runs/`).
+
+- **Dois conjuntos:** `serverest` (5 módulos testados por chamada de função) e `serverest-api` (4 unidades de API, cada uma com
+  controller, service e model mutados juntos e testes gerados via HTTP com `supertest`). As 9 unidades saíram de 26
+  candidatas, só com medições do baseline humano (`data/module-selection-serverest.csv`).
+- **Baseline humano em Mocha** (a suíte original da ServeRest), com cobertura pelo `nyc`; os testes gerados continuam em Vitest.
+- **Banco em memória** (`agent/assets/nedb-em-memoria.cjs`) em todas as condições: com o banco em arquivo, o estado de um
+  mutante passava ao seguinte e inflava o score humano (por exemplo, `usuarios-service` de 58,3% para 87,5%).
+- **Exploratória e descritiva:** com 4 e 5 unidades não há poder para testes confirmatórios.
+
+```bash
+scripts/setup-subject.sh serverest subjects/serverest
+npm run run -- --subjects data/subjects-serverest.json --out runs-serverest \
+  --library serverest-api --module usuarios --condition C0 --workdir subjects/serverest
+python analysis/analyze.py --runs runs-serverest --out analysis/out-serverest --paper analysis/paper-serverest
+```
+
+Em lote: workflow `experiment-serverest.yml`. Teste de fumaça sem LLM: `agent/scripts/smoke-serverest.ts`.
+**Resultados (27/11/2026):** 117 runs coletadas (9 C0 + 108 de C1 a C3, 3 repetições) em `runs-serverest/`: 77 `ok` e 40 `invalid_all_iterations`. Três unidades (`error-handler`, `carrinhos-controller`, `middlewares`) não tiveram nenhum teste gerado válido (`tests_fail_on_original`). Extensão exploratória: ver `PROTOCOL_EXT_SERVEREST.md` §10. Análise complementar v2 das três unidades sem dados (`runs-serverest-v2/`, §11): `middlewares` passou a gerar testes válidos (11 de 12 runs), `error-handler` melhorou pouco (2 de 12) e `carrinhos-controller` segue sem nenhuma run válida (limitação do Vitest com CommonJS).
+
 ### Rodando no GitHub Actions
 
 1. Crie o secret `GEMINI_API_KEY` no repositório.
@@ -378,11 +402,13 @@ conventions/                convenções injetadas em C2/C3 (base + uma por bibl
 config/                     experimento, preços de referência, seed do split
 data/subjects.json          bibliotecas, commits fixados, módulos e testes humanos
 data/module-selection.csv   medições que justificam a inclusão/exclusão de cada módulo
+data/subjects-serverest.json, data/module-selection-serverest.csv   extensão ServeRest (PROTOCOL_EXT_SERVEREST.md)
 data/memorization*.json     resultado do probe de memorização (V1)
 schemas/                    JSON Schema do result.json
 scripts/setup-subject.sh    prepara uma biblioteca no commit fixado (+ Vitest, cobertura, Stryker)
 analysis/                   analyze.py (H1–H3, V1, V4), sensitivity_v2.py (V2), figuras e tabelas
 runs/                       um diretório por run: result.json + raw/ (prompts, respostas, relatórios do Stryker)
+runs-serverest/             resultados da extensão ServeRest (fora da análise principal)
 .github/workflows/          ci.yml, experiment.yml (matriz), probe.yml (memorização)
 paper/                      artigo (LaTeX), tabelas e figuras geradas
 ```
